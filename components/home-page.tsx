@@ -135,18 +135,29 @@ function HeroSection() {
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.965]);
 
   return (
-    <section
-      id="home"
-      ref={ref}
-      className="relative min-h-screen scroll-mt-28 overflow-hidden px-5 pb-16 pt-32 sm:px-8 lg:pt-36 xl:pt-40"
+   <section
+    id="home"
+    ref={ref}
+    className="relative min-h-screen scroll-mt-28 overflow-hidden px-5 pb-16 pt-32 sm:px-8 lg:pt-36 xl:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-16 h-[42rem] w-[42rem] rounded-full bg-primary/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_68%,transparent)]" />
 
-      <div className="mx-auto grid min-h-[calc(100vh-8.5rem)] max-w-[1480px] items-center gap-8 lg:grid-cols-2 xl:gap-12">
+      <div
+       className="
+       mx-auto
+       grid
+       max-w-[1480px]
+       items-center
+       gap-6
+       lg:min-h-[calc(100vh-8.5rem)]
+       grid-cols-2
+       xl:gap-12
+       "
+      >
         <motion.div
-          className="relative z-10 max-w-5xl"
+          className="relative z-10 max-w-none"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
@@ -169,10 +180,10 @@ function HeroSection() {
             Kroo Production crafts cinematic visuals, branded storytelling, and
             high-impact digital experiences for brands that move culture.
           </motion.p>
-          <motion.div
-            variants={fadeUp}
-            custom={5}
-            className="mt-9 flex flex-col gap-4 sm:flex-row"
+         <motion.div
+          variants={fadeUp}
+          custom={6}
+          className="mt-8 grid max-w-2xl grid-cols-2 gap-3 lg:grid-cols-4"
           >
             <Button size="lg" asChild>
               <a href="#work">
@@ -191,7 +202,7 @@ function HeroSection() {
           <motion.div
             variants={fadeUp}
             custom={6}
-            className="mt-10 grid max-w-2xl grid-cols-2 gap-3 lg:grid-cols-4"
+            className="mt-6 grid max-w-2xl grid-cols-4 gap-2"
           >
             {capabilities.map((item) => (
               <div

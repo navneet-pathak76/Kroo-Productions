@@ -46,7 +46,7 @@ export function KrooMark() {
   }, [mx, my]);
 
   return (
-    <div className="relative flex items-center justify-center h-[1100px] w-full overflow-visible">
+    <div className="relative flex items-center justify-center h-auto w-full overflow-visible">
 
       {/* Ambient Orange Atmosphere */}
       <div className="pointer-events-none absolute inset-0">
@@ -56,43 +56,41 @@ export function KrooMark() {
       {/* Hero Logo */}
       <motion.div
         style={{
-          x: tx,
-          rotateX,
-          rotateY,
-          transformPerspective: 2500,
-        }}
+        x: tx,
+        rotateX,
+        rotateY,
+        transformPerspective: 2500,
+      }}
         animate={{
-          y: [0, -12, 0],
-        }}
+        y: [0, -8, 0],
+      }}
         transition={{
-          duration: 7,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="relative z-20 flex items-center justify-center scale-125 lg:scale-150 will-change-transform"
+        duration: 7,
+        repeat: Infinity,
+      ease: "easeInOut",
+      }}
+      className="relative z-20 flex items-center justify-center will-change-transform"
       >
-        <Image
-          src="/images/kroo.jpeg"
-          alt="Kroo Production Logo"
-          width={2200}
-          height={2200}
-          priority
-          quality={100}
-          className="
-           w-[450px]
-           sm:w-[700px]
-           md:w-[900px]
-           lg:w-[1000px]
-           xl:w-[1100px]
-           2xl:w-[1200px]
-            max-w-none
-            h-auto
-            object-contain
-            select-none
-            drop-shadow-[0_0_120px_rgba(255,100,0,0.28)]
-          "
-        />
-      </motion.div>
+    <Image
+      src="/images/kroo.jpeg"
+      alt="Kroo Production Logo"
+      width={1400}
+      height={1400}
+      priority
+      quality={100}
+      className="
+      w-[140px]
+      sm:w-[180px]
+      md:w-[250px]
+      lg:w-[650px]
+      xl:w-[800px]
+      h-auto
+      object-contain
+      select-none
+      drop-shadow-[0_0_120px_rgba(255,100,0,0.20)]
+    "
+  />
+</motion.div>
 
     </div>
   );
