@@ -1,0 +1,152 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-geist-sans: "Geist", "Satoshi", "General Sans", "Inter", "Arial", sans-serif;
+  --font-geist-mono: "Geist Mono", "SFMono-Regular", "Consolas", monospace;
+  --background: 0 0% 1%;
+  --foreground: 0 0% 98%;
+  --muted: 0 0% 8%;
+  --muted-foreground: 0 0% 67%;
+  --border: 0 0% 100% / 0.13;
+  --input: 0 0% 100% / 0.16;
+  --ring: 15 100% 54%;
+  --primary: 15 100% 54%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 8%;
+  --secondary-foreground: 0 0% 96%;
+  --accent: 15 100% 54%;
+  --accent-foreground: 0 0% 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #020202;
+  color-scheme: dark;
+  scroll-behavior: auto;
+  scroll-padding-top: 7rem;
+}
+
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at 78% 8%, rgba(255, 77, 18, 0.22), transparent 31rem),
+    radial-gradient(circle at 15% 42%, rgba(255, 77, 18, 0.08), transparent 26rem),
+    #020202;
+  color: hsl(var(--foreground));
+  font-feature-settings: "ss01", "cv01", "cv11";
+}
+
+::selection {
+  background: rgba(255, 77, 18, 0.8);
+  color: white;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .headline {
+    font-size: clamp(3.35rem, 9.1vw, 10.6rem);
+    line-height: 0.8;
+    letter-spacing: 0;
+    font-weight: 950;
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-size: clamp(2.4rem, 5.8vw, 7rem);
+    line-height: 0.9;
+    letter-spacing: 0;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .cinema-panel {
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background:
+      linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
+      rgba(7, 7, 7, 0.72);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  /* film-grain/noise overlay removed to produce a clean luxury black background */
+
+  .grid-mask {
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, transparent, black 15%, black 70%, transparent);
+  }
+
+  .orange-text {
+    color: #ff4d12;
+    text-shadow: 0 0 30px rgba(255, 77, 18, 0.38);
+  }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+}
+
+.word-mask > span {
+  display: inline-block;
+}
+
+.magnetic-target {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+/* ============================= */
+/* PROJECTS MARQUEE ANIMATION */
+/* ============================= */
+
+@keyframes project-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-33.333%);
+  }
+}
+
+.animate-project-marquee {
+  animation: project-marquee 35s linear infinite;
+  will-change: transform;
+}
+
+.animate-project-marquee:hover {
+  animation-play-state: paused;
+}
