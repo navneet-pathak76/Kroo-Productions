@@ -44,6 +44,7 @@ export const founders = [
   {
     name: "Vivek Das",
     role: "Founder",
+    image: "/images/vivekdas.jpeg",
     tone: "from-zinc-200 via-neutral-700 to-black",
   },
   {

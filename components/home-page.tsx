@@ -355,10 +355,21 @@ function FoundersSection() {
             className="group cinema-panel overflow-hidden rounded-md p-3 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow min-w-[320px] snap-start"
           >
             <div className="overflow-hidden rounded-sm">
-              <div className="transition duration-700 group-hover:scale-105">
-                <FounderPortrait tone={founder.tone} />
-              </div>
+            <div className="transition duration-700 group-hover:scale-105">
+               {founder.image ? (
+            <div className="relative aspect-[4/5] w-full">
+            <Image
+                src={founder.image}
+                alt={founder.name}
+                fill
+                className="object-cover"
+              />
             </div>
+              ) : (
+            <FounderPortrait tone={founder.tone} />
+             )}
+          </div>
+          </div>
             <div className="p-4">
               <h3 className="text-lg font-black uppercase tracking-[0.08em] text-primary">
                 {founder.name}
