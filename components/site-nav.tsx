@@ -68,7 +68,7 @@ export function SiteNav() {
     >
       <nav
         className={cn(
-          "mx-auto flex max-w-[1520px] items-center justify-between rounded-full border px-4 py-3 backdrop-blur-2xl transition-all duration-500 sm:px-5",
+          "mx-auto flex max-w-[1520px] items-center justify-between gap-3 rounded-full border px-4 py-3 backdrop-blur-2xl transition-all duration-500 sm:px-5",
           scrolled
             ? "border-primary/25 bg-black/[0.72] shadow-[0_18px_70px_rgba(0,0,0,0.55),0_0_42px_rgba(255,77,18,0.12)]"
             : "border-white/10 bg-black/[0.34] shadow-2xl shadow-black/25",
@@ -80,7 +80,7 @@ export function SiteNav() {
             scrollToSection(event, "#home");
             setOpen(false);
           }}
-          className="group flex items-center gap-3"
+          className="group flex min-w-0 items-center gap-3 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
           aria-label="Kroo Production home"
         >
           <span className="leading-none">
@@ -103,7 +103,7 @@ export function SiteNav() {
                 href={item.href}
                 onClick={(event) => scrollToSection(event, item.href)}
                 className={cn(
-                  "group relative text-xs font-black uppercase tracking-[0.14em] transition duration-300",
+                  "group relative rounded-full text-xs font-black uppercase tracking-[0.14em] transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black",
                   isActive ? "text-white" : "text-white/[0.64] hover:text-white",
                 )}
               >
@@ -131,7 +131,7 @@ export function SiteNav() {
         </div>
 
         <button
-          className="magnetic-target inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:border-primary/60 hover:text-primary lg:hidden"
+          className="magnetic-target inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 transition hover:border-primary/60 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black lg:hidden"
           aria-label={open ? "Close navigation" : "Open navigation"}
           aria-expanded={open}
           onClick={() => setOpen((current) => !current)}
@@ -156,7 +156,7 @@ export function SiteNav() {
                 setOpen(false);
               }}
               className={cn(
-                "block rounded-xl px-4 py-3 text-sm font-black uppercase tracking-[0.16em] transition",
+                "block rounded-xl px-4 py-3 text-sm font-black uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black",
                 active === item.href
                   ? "bg-primary/[0.12] text-white"
                   : "text-white/70 hover:bg-white/10 hover:text-white",

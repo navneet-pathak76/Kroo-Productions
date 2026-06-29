@@ -14,7 +14,6 @@ import {
   Phone,
   Play,
   Quote,
-  Send,
   Youtube,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -138,7 +137,7 @@ function HeroSection() {
    <section
     id="home"
     ref={ref}
-    className="relative min-h-screen scroll-mt-28 overflow-hidden px-5 pb-16 pt-32 sm:px-8 lg:pt-36 xl:pt-40"
+    className="relative min-h-[100svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:px-8 lg:pt-36 xl:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-16 h-[42rem] w-[42rem] rounded-full bg-primary/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
@@ -150,14 +149,16 @@ function HeroSection() {
        grid
        max-w-[1480px]
        items-center
-       gap-6
+       grid-cols-1
+       gap-10
        lg:min-h-[calc(100vh-8.5rem)]
-       grid-cols-2
+       lg:grid-cols-[minmax(0,0.98fr)_minmax(280px,0.82fr)]
+       lg:gap-6
        xl:gap-12
        "
       >
         <motion.div
-          className="relative z-10 max-w-none"
+          className="relative z-10 min-w-0 max-w-none"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
@@ -183,7 +184,7 @@ function HeroSection() {
          <motion.div
           variants={fadeUp}
           custom={6}
-          className="mt-8 grid max-w-2xl grid-cols-2 gap-3 lg:grid-cols-4"
+          className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2"
           >
             <Button size="lg" asChild>
               <a href="#work">
@@ -202,12 +203,12 @@ function HeroSection() {
           <motion.div
             variants={fadeUp}
             custom={6}
-            className="mt-6 grid max-w-2xl grid-cols-4 gap-2"
+            className="mt-6 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4"
           >
             {capabilities.map((item) => (
               <div
                 key={item.label}
-                className="cinema-panel min-h-[110px] rounded-xl p-4 text-white/70"
+                className="cinema-panel min-h-[110px] min-w-0 rounded-xl p-4 text-white/70"
               >
                 <item.icon className="mb-4 text-primary" size={20} />
                 <p className="text-xs font-bold uppercase tracking-[0.12em] break-words">
@@ -219,7 +220,7 @@ function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="relative z-10 flex items-center justify-center"
+          className="relative z-10 flex min-w-0 items-center justify-center"
           initial={{ opacity: 0, x: 48, filter: "blur(18px)" }}
           animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
           transition={{ delay: 0.32, duration: 1.08, ease: revealEase }}
@@ -237,12 +238,12 @@ function StatsSection() {
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,90,0,0.03)_55%,transparent_80%)] blur-[120px] opacity-70" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] opacity-40" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[620px] w-[1520px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-black/10 opacity-25 shadow-[inset_0_0_140px_rgba(0,0,0,0.6)]" />
-      <div className="relative mx-auto grid max-w-[1480px] gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory touch-pan-x hide-scrollbar rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl py-12 px-10 translate-y-[-40px] z-20 grid-flow-col auto-cols-[minmax(320px,1fr)] lg:grid-flow-row lg:grid-cols-4 lg:auto-cols-auto lg:overflow-visible lg:snap-none">
+      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-10 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] snap-x snap-mandatory touch-pan-x hide-scrollbar backdrop-blur-xl sm:px-8 sm:py-12 lg:grid-flow-row lg:grid-cols-4 lg:auto-cols-auto lg:overflow-visible lg:snap-none xl:px-10">
         {stats.map((stat) => (
           <div
             key={stat.label}
             data-reveal
-            className="relative min-h-40 min-w-[320px] snap-start border border-transparent bg-transparent p-7 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-orange-500"
+            className="relative min-h-40 min-w-0 snap-start border border-transparent bg-transparent p-5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-orange-500 sm:p-7"
           >
             <stat.icon className="mb-7 text-primary" size={24} />
             <p className="text-5xl font-black leading-none text-white">
@@ -283,7 +284,7 @@ function ShowreelSection() {
             </div>
           </div>
           <button
-            className="magnetic-target absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong transition duration-500 hover:scale-110 active:scale-95 sm:h-24 sm:w-24"
+            className="magnetic-target absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong transition duration-500 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:h-24 sm:w-24"
             aria-label="Play showreel"
           >
             <Play size={32} fill="currentColor" />
@@ -347,12 +348,12 @@ function FoundersSection() {
         title="Creative minds. Strategic thinkers. Storytellers."
         copy="A leadership team built around cinematic taste, production discipline, and modern distribution craft."
       />
-      <div className="mx-auto grid max-w-[1480px] gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory touch-pan-x hide-scrollbar pb-3 grid-flow-col auto-cols-[minmax(320px,1fr)] xl:grid-flow-row xl:grid-cols-4 xl:auto-cols-auto xl:overflow-visible xl:snap-none">
+      <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar xl:grid-flow-row xl:grid-cols-4 xl:auto-cols-auto xl:overflow-visible xl:snap-none">
         {founders.map((founder) => (
           <article
             key={founder.name}
             data-reveal
-            className="group cinema-panel overflow-hidden rounded-md p-3 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow min-w-[320px] snap-start"
+            className="group cinema-panel min-w-0 snap-start overflow-hidden rounded-md p-3 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow"
           >
             <div className="overflow-hidden rounded-sm">
             <div className="transition duration-700 group-hover:scale-105">
@@ -362,6 +363,7 @@ function FoundersSection() {
                 src={founder.image}
                 alt={founder.name}
                 fill
+                sizes="(max-width: 1280px) 82vw, 25vw"
                 className="object-cover"
               />
             </div>
@@ -378,10 +380,10 @@ function FoundersSection() {
                 {founder.role}
               </p>
               <div className="mt-5 flex gap-3 text-white/60">
-                <a href="#" aria-label={`${founder.name} LinkedIn`} className="transition hover:text-primary">
+                <a href="#" aria-label={`${founder.name} LinkedIn`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
                   <Linkedin size={18} />
                 </a>
-                <a href="#" aria-label={`${founder.name} email`} className="transition hover:text-primary">
+                <a href="#" aria-label={`${founder.name} email`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
                   <Mail size={18} />
                 </a>
               </div>
@@ -401,13 +403,13 @@ function ServicesSection() {
         title="End-to-end production, under one roof."
         copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
       />
-      <div className="mx-auto grid max-w-[1480px] gap-5 overflow-x-auto scroll-smooth snap-x snap-mandatory touch-pan-x hide-scrollbar pb-3 grid-flow-col auto-cols-[minmax(320px,1fr)] md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-visible md:snap-none">
+      <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-visible md:snap-none">
         {services.map((service, index) => (
           <article
             key={service.title}
             data-reveal
             className={cn(
-              "group cinema-panel min-h-72 overflow-hidden rounded-md p-7 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow min-w-[320px] snap-start",
+              "group cinema-panel min-h-72 min-w-0 snap-start overflow-hidden rounded-md p-6 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-7",
               service.span,
             )}
           >
@@ -456,11 +458,11 @@ function ProjectsSection() {
       />
 
       <div className="overflow-hidden">
-        <div className="animate-project-marquee flex gap-6 w-max pb-6">
+        <div className="animate-project-marquee flex w-max gap-4 pb-6 sm:gap-6">
           {marqueeProjects.map((project, index) => (
             <article
               key={`${project.title}-${index}`}
-              className="group relative min-w-[700px] overflow-hidden rounded-md border border-white/10 bg-black"
+              className="group relative w-[min(82vw,700px)] flex-none overflow-hidden rounded-md border border-white/10 bg-black"
             >
               <div
                 className={cn(
@@ -470,21 +472,21 @@ function ProjectsSection() {
               >
                 <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
-                <div className="absolute left-8 top-8 rounded-full border border-white/20 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-white/80">
+                <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
                   {project.category}
                 </div>
 
-                <div className="absolute bottom-8 left-8 right-8">
-                  <p className="mb-3 text-sm font-black uppercase tracking-[0.2em] text-primary">
+                <div className="absolute bottom-5 left-5 right-5 sm:bottom-8 sm:left-8 sm:right-8">
+                  <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary sm:text-sm sm:tracking-[0.2em]">
                     Case 0{(index % projects.length) + 1}
                   </p>
 
-                  <h3 className="text-5xl font-black uppercase leading-none">
+                  <h3 className="text-[clamp(2rem,7vw,3rem)] font-black uppercase leading-none">
                     {project.title}
                   </h3>
                 </div>
 
-                <p className="absolute right-8 top-8 text-4xl font-black text-white/20">
+                <p className="absolute right-5 top-16 text-2xl font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
                   {project.metric}
                 </p>
               </div>
@@ -511,7 +513,7 @@ function TestimonialsSection() {
 
   return (
     <section id="about" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:items-center">
+      <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
         <div data-reveal>
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Client response
@@ -545,7 +547,7 @@ function TestimonialsSection() {
                 aria-label={`Show testimonial ${index + 1}`}
                 onClick={() => setActive(index)}
                 className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
+                  "h-1.5 rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black",
                   active === index ? "w-12 bg-primary" : "w-5 bg-white/20",
                 )}
               />
@@ -563,21 +565,21 @@ function ContactSection() {
   return (
     <section id="contact" className="relative scroll-mt-28 px-5 py-20 sm:px-8 lg:py-24">
       <div className="absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.24),transparent_66%)]" />
-      <div className="relative mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className="relative mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <div data-reveal>
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Start project
           </p>
           <h2 className="section-title">Let the next frame begin.</h2>
           <div className="mt-10 space-y-5 text-white/70">
-            <a className="flex items-center gap-4 transition hover:text-primary" href="mailto:hello@krooproduction.com">
-              <Mail className="text-primary" /> hello@krooproduction.com
+            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:hello@krooproduction.com">
+              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">hello@krooproduction.com</span>
             </a>
-            <a className="flex items-center gap-4 transition hover:text-primary" href="tel:+919876543210">
-              <Phone className="text-primary" /> +91 98765 43210
+            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="tel:+919876543210">
+              <Phone className="shrink-0 text-primary" /> <span>+91 98765 43210</span>
             </a>
-            <p className="flex items-center gap-4">
-              <MapPin className="text-primary" /> Kolkata, India
+            <p className="flex min-w-0 items-center gap-4">
+              <MapPin className="shrink-0 text-primary" /> <span>Kolkata, India</span>
             </p>
           </div>
           <div className="mt-8 flex gap-3">
@@ -586,7 +588,7 @@ function ContactSection() {
                 key={index}
                 href="#"
                 aria-label="Kroo social channel"
-                className="magnetic-target flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow"
+                className="magnetic-target flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
               >
                 <Icon size={19} />
               </a>
@@ -611,8 +613,8 @@ function ContactSection() {
           </div>
           <Textarea className="mt-4" placeholder="Project brief" aria-label="Project brief" required />
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/70">
-              <CheckCircle2 size={16} className="text-primary" />
+            <p className="flex min-w-0 items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/70">
+              <CheckCircle2 size={16} className="shrink-0 text-primary" />
               {sent ? "Brief received. We will reply shortly." : "Response within 24 hours."}
             </p>
             <Button type="submit" size="lg" className="min-w-[240px] w-full sm:w-auto">
@@ -629,7 +631,7 @@ function ContactSection() {
 function Footer() {
   return (
     <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8">
-      <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr]">
+      <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
         <div>
           <div className="mb-5 flex items-center gap-3">
             <span className="text-4xl font-black text-primary">K</span>
@@ -645,7 +647,7 @@ function Footer() {
             Quick links
           </h3>
           {["Home", "Work", "Services", "Team", "About", "Contact"].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="block py-1 text-sm text-white/50 hover:text-primary">
+            <a key={item} href={`#${item.toLowerCase()}`} className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
               {item}
             </a>
           ))}
@@ -655,7 +657,7 @@ function Footer() {
             Services
           </h3>
           {services.map((service) => (
-            <a key={service.title} href="#services" className="block py-1 text-sm text-white/50 hover:text-primary">
+            <a key={service.title} href="#services" className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
               {service.title}
             </a>
           ))}
@@ -670,7 +672,7 @@ function Footer() {
                 key={index}
                 href="#"
                 aria-label="Social link"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
               >
                 <Icon size={17} />
               </a>

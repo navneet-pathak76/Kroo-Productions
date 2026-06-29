@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
 
   images: {
     formats: ["image/avif", "image/webp"],
+    qualities: [100],
   },
 
   eslint: {
