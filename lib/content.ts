@@ -34,6 +34,7 @@ export const founders = [
  {
     name: "Navneet Pathak",
     role: "Founder",
+    image: "/images/navneet.jpeg",
     tone: "from-zinc-300 via-stone-700 to-black",
   },
   {
@@ -44,12 +45,13 @@ export const founders = [
   {
     name: "Vivek Das",
     role: "Founder",
-    image: "/images/vivekdas.jpeg",
+    image: "/images/vicky.jpeg",
     tone: "from-zinc-200 via-neutral-700 to-black",
   },
   {
     name: "Soumojit Das",
     role: "Founder",
+    image: "/images/sj.jpeg",
     tone: "from-zinc-100 via-zinc-600 to-black",
   },
   

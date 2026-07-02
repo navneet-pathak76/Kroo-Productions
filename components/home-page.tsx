@@ -330,41 +330,60 @@ function LogoStrip() {
 
 function FounderPortrait({ tone }: { tone: string }) {
   return (
-    <div className="relative h-72 overflow-hidden rounded-sm bg-neutral-950">
+    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-sm bg-neutral-950 lg:aspect-auto lg:h-72">
       <div className={cn("absolute inset-0 bg-gradient-to-b opacity-70", tone)} />
-      <div className="absolute left-1/2 top-12 h-24 w-24 -translate-x-1/2 rounded-full bg-gradient-to-b from-white/80 to-zinc-500 shadow-[inset_0_-20px_30px_rgba(0,0,0,0.5)]" />
-      <div className="absolute left-1/2 top-28 h-44 w-40 -translate-x-1/2 rounded-t-[70px] bg-gradient-to-b from-zinc-700 to-black" />
-      <div className="absolute left-1/2 top-20 h-4 w-16 -translate-x-1/2 rounded-full bg-black/60" />
-      <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-black to-transparent" />
+      <div className="absolute left-1/2 top-[37px] h-[75px] w-[75px] -translate-x-1/2 rounded-full bg-gradient-to-b from-white/80 to-zinc-500 shadow-[inset_0_-20px_30px_rgba(0,0,0,0.5)] lg:top-12 lg:h-24 lg:w-24" />
+      <div className="absolute left-1/2 top-[87px] h-[137px] w-[125px] -translate-x-1/2 rounded-t-[55px] bg-gradient-to-b from-zinc-700 to-black lg:top-28 lg:h-44 lg:w-40 lg:rounded-t-[70px]" />
+      <div className="absolute left-1/2 top-[62px] h-3 w-12 -translate-x-1/2 rounded-full bg-black/60 lg:top-20 lg:h-4 lg:w-16" />
+      <div className="absolute inset-x-0 bottom-0 h-[88px] bg-gradient-to-t from-black to-transparent lg:h-28" />
     </div>
   );
 }
 
 function FoundersSection() {
   return (
-    <section id="team" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <SectionIntro
-        eyebrow="Meet the founders"
-        title="Creative minds. Strategic thinkers. Storytellers."
-        copy="A leadership team built around cinematic taste, production discipline, and modern distribution craft."
-      />
-      <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar xl:grid-flow-row xl:grid-cols-4 xl:auto-cols-auto xl:overflow-visible xl:snap-none">
+    <section id="team" className="flex scroll-mt-28 flex-col px-4 py-16 sm:px-8 lg:block lg:py-20">
+      <div
+        className="mx-auto mb-10 flex w-full flex-col gap-5 px-0 lg:mb-14 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-end lg:px-8"
+        style={{ maxWidth: "1480px" }}
+      >
+        <div data-reveal className="w-full lg:max-w-4xl">
+          <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+            Meet the founders
+          </p>
+          <h2 className="section-title text-balance">
+            Creative minds. Strategic thinkers. Storytellers.
+          </h2>
+        </div>
+        <p data-reveal className="w-full text-base leading-7 text-white/60 lg:max-w-md">
+          A leadership team built around cinematic taste, production discipline, and modern distribution craft.
+        </p>
+      </div>
+      <div className="mx-auto grid w-full max-w-none grid-cols-2 gap-[14px] pb-3 md:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
         {founders.map((founder) => (
           <article
             key={founder.name}
             data-reveal
-            className="group cinema-panel min-w-0 snap-start overflow-hidden rounded-md p-3 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow"
+            className="group cinema-panel aspect-[0.72] w-full overflow-hidden rounded-md p-2.5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow lg:aspect-auto lg:p-3"
+            style={{
+              width: "100%",
+              minWidth: 0,
+              maxWidth: "none",
+              height: "auto",
+              boxSizing: "border-box",
+            }}
           >
             <div className="overflow-hidden rounded-sm">
             <div className="transition duration-700 group-hover:scale-105">
                {founder.image ? (
-            <div className="relative aspect-[4/5] w-full">
+            <div className="w-full">
             <Image
                 src={founder.image}
                 alt={founder.name}
-                fill
-                sizes="(max-width: 1280px) 82vw, 25vw"
-                className="object-cover"
+                width={600}
+                height={800}
+                sizes="(max-width: 767px) 224px, (max-width: 1023px) 224px, 25vw"
+                className="aspect-[3/4] h-auto w-full object-cover"
               />
             </div>
               ) : (
@@ -372,19 +391,19 @@ function FoundersSection() {
              )}
           </div>
           </div>
-            <div className="p-4">
-              <h3 className="text-lg font-black uppercase tracking-[0.08em] text-primary">
+            <div className="p-3 lg:p-4">
+              <h3 className="text-[13px] font-black uppercase tracking-[0.08em] text-primary sm:text-base lg:text-lg">
                 {founder.name}
               </h3>
-              <p className="mt-1 text-sm font-bold uppercase tracking-[0.16em] text-white/60">
+              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/60 sm:text-xs lg:text-sm">
                 {founder.role}
               </p>
-              <div className="mt-5 flex gap-3 text-white/60">
+              <div className="mt-4 grid w-fit grid-cols-2 gap-2.5 text-white/60 lg:mt-5 lg:gap-3">
                 <a href="#" aria-label={`${founder.name} LinkedIn`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
-                  <Linkedin size={18} />
+                  <Linkedin className="size-4 lg:size-[18px]" />
                 </a>
                 <a href="#" aria-label={`${founder.name} email`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
-                  <Mail size={18} />
+                  <Mail className="size-4 lg:size-[18px]" />
                 </a>
               </div>
             </div>
@@ -572,11 +591,11 @@ function ContactSection() {
           </p>
           <h2 className="section-title">Let the next frame begin.</h2>
           <div className="mt-10 space-y-5 text-white/70">
-            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:hello@krooproduction.com">
-              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">hello@krooproduction.com</span>
+            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:team@krooproduction.com">
+              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">team@krooproduction.com</span>
             </a>
             <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="tel:+919876543210">
-              <Phone className="shrink-0 text-primary" /> <span>+91 98765 43210</span>
+              <Phone className="shrink-0 text-primary" /> <span>+91 62912 52126</span>
             </a>
             <p className="flex min-w-0 items-center gap-4">
               <MapPin className="shrink-0 text-primary" /> <span>Kolkata, India</span>
