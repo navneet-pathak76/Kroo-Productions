@@ -152,13 +152,13 @@ function HeroSection() {
        grid-cols-1
        gap-10
        lg:min-h-[calc(100vh-8.5rem)]
-       lg:grid-cols-[minmax(0,0.98fr)_minmax(280px,0.82fr)]
+       lg:grid-cols-2
        lg:gap-6
        xl:gap-12
        "
       >
         <motion.div
-          className="relative z-10 min-w-0 max-w-none"
+          className="relative z-10 min-w-0 order-2 lg:order-1"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
@@ -170,8 +170,16 @@ function HeroSection() {
           >
             We bring
           </motion.p>
-          <h1 className="headline text-balance">
-            <SplitText text="Stories to Life." />
+          <h1 className="
+              leading-[0.9]
+              font-black
+              tracking-tight
+              max-w-[650px]
+              text-[clamp(4rem,7vw,7.6rem)] ">
+              IF YOU'RE HERE TO HIRE US <span>—WELCOME.</span>
+          <br />
+          <br />
+              IF YOU'RE HERE TO COPY US <span>—GOOD LUCK.</span>
           </h1>
           <motion.p
             variants={fadeUp}
@@ -220,7 +228,7 @@ function HeroSection() {
         </motion.div>
 
         <motion.div
-          className="relative z-10 flex min-w-0 items-center justify-center"
+          className="relative z-10 flex min-w-0 items-center justify-center order-1 lg:order-2"
           initial={{ opacity: 0, x: 48, filter: "blur(18px)" }}
           animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
           transition={{ delay: 0.32, duration: 1.08, ease: revealEase }}
@@ -273,28 +281,28 @@ function ShowreelSection() {
         className="group mx-auto max-w-[1480px] overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl shadow-primary/10"
       >
         <div className="relative aspect-[16/9] min-h-[320px] overflow-hidden sm:min-h-[420px]">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_35%,rgba(255,255,255,0.2),transparent_18%),linear-gradient(115deg,rgba(255,77,18,0.86),rgba(19,19,19,0.86)_38%,rgba(0,0,0,0.97)_68%),linear-gradient(15deg,transparent_48%,rgba(255,255,255,0.2)_49%,transparent_51%)] transition duration-700 group-hover:scale-105" />
-          <div className="absolute inset-x-0 top-1/2 h-px bg-white/75 shadow-[0_0_46px_rgba(255,255,255,0.65)]" />
-          <div className="absolute left-[12%] top-[22%] h-[48%] w-[44%] rounded-md border border-white/10 bg-black/50 shadow-2xl shadow-black/80 backdrop-blur-sm sm:left-[16%] sm:w-[38%]">
-            <div className="absolute -right-16 top-1/3 h-20 w-48 rounded-full border border-white/20" />
-            <div className="absolute bottom-8 left-8 h-20 w-20 rounded-full border-[16px] border-zinc-900 shadow-inner sm:bottom-10 sm:left-10 sm:h-24 sm:w-24 sm:border-[18px]" />
-            <div className="absolute right-8 top-10 h-14 w-24 rounded bg-zinc-950 sm:h-16 sm:w-28" />
-            <div className="absolute left-8 top-8 text-3xl font-black tracking-[0.2em] text-white/20 sm:left-10 sm:text-4xl">
-              RED
-            </div>
-          </div>
-          <button
-            className="magnetic-target absolute left-1/2 top-1/2 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong transition duration-500 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black active:scale-95 sm:h-24 sm:w-24"
-            aria-label="Play showreel"
+          <video
+            controls
+            preload="metadata"
+            playsInline
+            controlsList="nodownload"
+            poster=""
+            className="h-full w-full bg-black object-cover rounded-[inherit]"
+            onClick={(event) => {
+              const video = event.currentTarget;
+
+              if (video.paused) {
+                void video.play();
+              } else {
+                video.pause();
+              }
+            }}
           >
-            <Play size={32} fill="currentColor" />
-          </button>
-          <div className="absolute inset-x-5 bottom-6 flex items-center gap-3 text-xs font-bold text-white sm:inset-x-8 sm:bottom-8 sm:gap-4 sm:text-sm">
-            <Play size={18} fill="currentColor" />
-            <span>00:00</span>
-            <div className="h-px flex-1 bg-white" />
-            <span>01:30</span>
-          </div>
+            <source
+              src="https://d3uo687t366hok.cloudfront.net/TCF_LANSCAPE_4K_30FPS.mp4"
+              type="video/mp4"
+            />
+          </video>
         </div>
       </div>
     </section>

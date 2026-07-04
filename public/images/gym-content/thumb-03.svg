@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="Trainer Brand Film thumbnail">
+  <defs>
+    <linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#020202"/>
+      <stop offset=".52" stop-color="#171717"/>
+      <stop offset="1" stop-color="#ff4d12"/>
+    </linearGradient>
+    <radialGradient id="r" cx=".62" cy=".38" r=".5">
+      <stop offset="0" stop-color="#fff" stop-opacity=".18"/>
+      <stop offset=".42" stop-color="#ff4d12" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#020202" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)"/>
+  <rect width="1280" height="720" fill="url(#r)"/>
+  <g opacity=".18" stroke="#fff">
+    <path d="M0 144h1280M0 288h1280M0 432h1280M0 576h1280"/>
+    <path d="M144 0v720M288 0v720M432 0v720M576 0v720M720 0v720M864 0v720M1008 0v720M1152 0v720"/>
+  </g>
+  <g fill="#fff" opacity=".75">
+    <circle cx="640" cy="254" r="74"/>
+    <path d="M500 582c22-124 68-206 140-206s118 82 140 206H500z"/>
+  </g>
+  <text x="76" y="118" fill="#fff" font-family="Arial, sans-serif" font-size="26" font-weight="900" letter-spacing="8">TRAINER STORY</text>
+  <text x="76" y="620" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="900">BRAND FILM</text>
+</svg>

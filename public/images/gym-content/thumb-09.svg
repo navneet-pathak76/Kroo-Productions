@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="Performance Montage thumbnail">
+  <defs>
+    <linearGradient id="g" x1="1" y1=".15" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff4d12"/>
+      <stop offset=".44" stop-color="#171717"/>
+      <stop offset="1" stop-color="#020202"/>
+    </linearGradient>
+    <radialGradient id="r" cx=".72" cy=".26" r=".58">
+      <stop offset="0" stop-color="#ff7a1a" stop-opacity=".65"/>
+      <stop offset=".55" stop-color="#ff4d12" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#020202" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)"/>
+  <rect width="1280" height="720" fill="url(#r)"/>
+  <g opacity=".2" stroke="#fff">
+    <path d="M0 90h1280M0 180h1280M0 270h1280M0 360h1280M0 450h1280M0 540h1280M0 630h1280"/>
+    <path d="M128 0v720M256 0v720M384 0v720M512 0v720M640 0v720M768 0v720M896 0v720M1024 0v720M1152 0v720"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="20" opacity=".72">
+    <path d="M352 430c120-188 196-188 316 0s196 188 316 0"/>
+    <path d="M352 300c120 188 196 188 316 0s196-188 316 0"/>
+  </g>
+  <text x="76" y="118" fill="#fff" font-family="Arial, sans-serif" font-size="26" font-weight="900" letter-spacing="8">MOVEMENT SYSTEM</text>
+  <text x="76" y="620" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="900">MONTAGE</text>
+</svg>

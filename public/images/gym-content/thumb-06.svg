@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="HIIT Launch Edit thumbnail">
+  <defs>
+    <linearGradient id="g" x1="0" y1=".5" x2="1" y2=".5">
+      <stop offset="0" stop-color="#ff4d12"/>
+      <stop offset=".3" stop-color="#171717"/>
+      <stop offset="1" stop-color="#020202"/>
+    </linearGradient>
+    <radialGradient id="r" cx=".25" cy=".58" r=".58">
+      <stop offset="0" stop-color="#ff7a1a" stop-opacity=".62"/>
+      <stop offset=".58" stop-color="#ff4d12" stop-opacity=".1"/>
+      <stop offset="1" stop-color="#020202" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)"/>
+  <rect width="1280" height="720" fill="url(#r)"/>
+  <g opacity=".2" stroke="#fff">
+    <path d="M0 120h1280M0 240h1280M0 360h1280M0 480h1280M0 600h1280"/>
+    <path d="M160 0v720M320 0v720M480 0v720M640 0v720M800 0v720M960 0v720M1120 0v720"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="24" opacity=".72">
+    <path d="M320 460l120-208 120 208M424 388h272M696 252v208M818 252v208M696 356h122"/>
+  </g>
+  <text x="76" y="118" fill="#fff" font-family="Arial, sans-serif" font-size="26" font-weight="900" letter-spacing="8">CLASS LAUNCH</text>
+  <text x="76" y="620" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="900">HIIT EDIT</text>
+</svg>

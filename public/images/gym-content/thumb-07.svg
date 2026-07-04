@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" role="img" aria-label="Apparel Training Spot thumbnail">
+  <defs>
+    <linearGradient id="g" x1=".2" y1="0" x2=".8" y2="1">
+      <stop offset="0" stop-color="#101010"/>
+      <stop offset=".5" stop-color="#020202"/>
+      <stop offset="1" stop-color="#ff4d12"/>
+    </linearGradient>
+    <radialGradient id="r" cx=".7" cy=".42" r=".56">
+      <stop offset="0" stop-color="#ff4d12" stop-opacity=".58"/>
+      <stop offset=".55" stop-color="#ff4d12" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#020202" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#g)"/>
+  <rect width="1280" height="720" fill="url(#r)"/>
+  <g opacity=".18" stroke="#fff">
+    <path d="M0 144h1280M0 288h1280M0 432h1280M0 576h1280"/>
+    <path d="M144 0v720M288 0v720M432 0v720M576 0v720M720 0v720M864 0v720M1008 0v720M1152 0v720"/>
+  </g>
+  <g fill="none" stroke="#fff" stroke-width="20" opacity=".72">
+    <path d="M500 242h280l62 98-78 44v142H516V384l-78-44 62-98z"/>
+    <path d="M584 242c12 46 100 46 112 0"/>
+  </g>
+  <text x="76" y="118" fill="#fff" font-family="Arial, sans-serif" font-size="26" font-weight="900" letter-spacing="8">PRODUCT SPOT</text>
+  <text x="76" y="620" fill="#fff" font-family="Arial, sans-serif" font-size="72" font-weight="900">APPAREL</text>
+</svg>

@@ -17,8 +17,8 @@ import {
 export const navItems = [
   { label: "Home", href: "#home" },
   { label: "Work", href: "#work" },
-  { label: "Services", href: "#services" },
   { label: "Team", href: "#team" },
+  { label: "Services", href: "#services" },
   { label: "About", href: "#about" },
   { label: "Contact", href: "#contact" },
 ];
@@ -40,12 +40,13 @@ export const founders = [
   {
     name: "Rajbir Singh",
     role: "Founder",
+    image: "/images/rajbir.png",
     tone: "from-zinc-300 via-zinc-700 to-black",
   },
   {
     name: "Vivek Das",
     role: "Founder",
-    image: "/images/vicky.jpeg",
+    image: "/images/vivekdas.jpeg",
     tone: "from-zinc-200 via-neutral-700 to-black",
   },
   {

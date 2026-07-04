@@ -11,7 +11,10 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>, href: string) {
   event.preventDefault();
 
   const target = document.querySelector<HTMLElement>(href);
-  if (!target) return;
+  if (!target) {
+    window.location.href = `${window.location.pathname}${href}`;
+    return;
+  }
 
   target.scrollIntoView({
     behavior: "smooth",
