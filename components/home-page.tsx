@@ -376,15 +376,18 @@ function FoundersSection() {
   return (
     <section id="team" className="flex scroll-mt-28 flex-col px-4 py-16 sm:px-8 lg:block lg:py-20">
       <div
-        className="mx-auto mb-10 flex w-full flex-col gap-5 px-0 lg:mb-14 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-end lg:px-8"
-        style={{ maxWidth: "1480px" }}
+        className="mx-auto mb-10 flex w-full flex-col gap-5 px-0 lg:mb-14 lg:grid lg:grid-cols-[calc(100%-320px)_320px] lg:items-end lg:px-8"
+        style={{ maxWidth: "1980px" }}
       >
-        <div data-reveal className="w-full lg:max-w-4xl">
-          <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+        <div data-reveal className="w-full lg:max-w-[1500px]">
+          <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Meet the founders
           </p>
-          <h2 className="section-title text-balance">
-            Creative minds. Strategic thinkers. Storytellers.
+          <h2 className="section-title text-[clamp(2.8rem,4vw,4.8rem)] ">
+            GOOD LUCK TO YOUR COMPETITORS.
+              <br />
+            YOU FOUND US FIRST.
+
           </h2>
         </div>
         <p data-reveal className="w-full text-base leading-7 text-white/60 lg:max-w-md">
@@ -451,8 +454,9 @@ function ServicesSection() {
     <section id="services" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
       <SectionIntro
         eyebrow="What we do"
-        title="End-to-end production, under one roof."
+        title="WE CREATE THE REASON \nPEOPLE REMEMBER YOU."
         copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
+         titleClassName="text-[clamp(2.8rem,3vw,4rem)]"
       />
       <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-visible md:snap-none">
         {services.map((service, index) => (
@@ -496,15 +500,16 @@ function ProjectsSection() {
 
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
-          FEATURED PROJECTS • MUSIC VIDEOS • COMMERCIALS • BRAND FILMS • REELS •
-          FEATURED PROJECTS • MUSIC VIDEOS • COMMERCIALS • BRAND FILMS • REELS •
-          FEATURED PROJECTS • MUSIC VIDEOS • COMMERCIALS • BRAND FILMS • REELS •
+          FEATURED PROJECTS • GYM COMMERCIALS • PRODUCT ADS • BRAND FILMS • REELS •
+          FEATURED PROJECTS • GYM COMMERCIALS • PRODUCT ADS • BRAND FILMS • REELS •
+          FEATURED PROJECTS • GYM COMMERCIALS • PRODUCT ADS • BRAND FILMS • REELS •
         </div>
       </div>
 
       <SectionIntro
         eyebrow="Featured Projects"
-        title="Campaign worlds built for attention."
+        title="SCROLL IF YOU'RE CURIOUS.
+          STOP IF YOU'RE IMPRESSED. "
         copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
       />
 
@@ -569,7 +574,7 @@ function TestimonialsSection() {
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Client response
           </p>
-          <h2 className="section-title">Trusted when the frame matters.</h2>
+          <h2 className="section-title">OUR WORK SPEAKS. <br/> THEY CONFIRM</h2>
         </div>
         <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-8 sm:p-12">
           <Quote className="mb-8 text-primary" size={42} />
@@ -612,6 +617,12 @@ function TestimonialsSection() {
 
 function ContactSection() {
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [company, setCompany] = useState("");
+  const [budget, setBudget] = useState("");
+  const [message, setMessage] = useState("");
 
   return (
     <section id="contact" className="relative scroll-mt-28 px-5 py-20 sm:px-8 lg:py-24">
@@ -621,10 +632,10 @@ function ContactSection() {
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Start project
           </p>
-          <h2 className="section-title">Let the next frame begin.</h2>
+          <h2 className="section-title">YOU'VE SEEN OUR STORIES. <br/> NOW LET'S HEAR YOURS </h2>
           <div className="mt-10 space-y-5 text-white/70">
-            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:team@krooproduction.com">
-              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">team@krooproduction.com</span>
+            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:team@krooproduction.in">
+              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">team@krooproduction.in</span>
             </a>
             <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="tel:+919876543210">
               <Phone className="shrink-0 text-primary" /> <span>+91 62912 52126</span>
@@ -649,27 +660,86 @@ function ContactSection() {
         <form
           data-reveal
           className="cinema-panel rounded-md p-5 sm:p-8"
-          onSubmit={(event) => {
-            event.preventDefault();
-            setSent(true);
-          }}
+          onSubmit={async (event) => {
+          event.preventDefault();
+          setLoading(true);
+          try {
+          const response = await fetch("/api/contact", {
+            method: "POST",
+            headers: {
+            "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+            name,
+            email,
+            company,
+            budget,
+            message,
+            }),
+            });
+          const data = await response.json();
+        if (!response.ok) {
+        throw new Error(data.error || "Failed");
+          }
+        setSent(true);
+        setName("");
+        setEmail("");
+        setCompany("");
+        setBudget("");
+        setMessage("");
+      } catch (err) {
+          alert("Failed to send project request.");
+      } finally {
+        setLoading(false);
+      }
+  }}
         >
           <div className="grid gap-4 sm:grid-cols-2">
-            <Input placeholder="Name" aria-label="Name" required />
-            <Input type="email" placeholder="Email" aria-label="Email" required />
+            <Input value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Name"
+                aria-label="Name"
+                required
+          />
+            <Input value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                placeholder="Email"
+                aria-label="Email"
+                required
+            />
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Input placeholder="Company" aria-label="Company" />
-            <Input placeholder="Budget range" aria-label="Budget range" />
+            <Input value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="Company"
+                aria-label="Company"
+            />
+            <Input value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="Budget range"
+                aria-label="Budget range"
+            />
           </div>
-          <Textarea className="mt-4" placeholder="Project brief" aria-label="Project brief" required />
+          <Textarea value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="mt-4"
+              placeholder="Project brief"
+              aria-label="Project brief"
+              required
+          />
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="flex min-w-0 items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/70">
               <CheckCircle2 size={16} className="shrink-0 text-primary" />
               {sent ? "Brief received. We will reply shortly." : "Response within 24 hours."}
             </p>
-            <Button type="submit" size="lg" className="min-w-[240px] w-full sm:w-auto">
-              START YOUR PROJECT
+            <Button
+                type="submit"
+                size="lg"
+                disabled={loading}
+                className="min-w-[240px] w-full sm:w-auto"
+              >
+                {loading ? "Sending..." : "START YOUR PROJECT"}
               <ArrowUpRight size={17} />
             </Button>
           </div>
