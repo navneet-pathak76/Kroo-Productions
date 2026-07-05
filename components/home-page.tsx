@@ -753,13 +753,12 @@ function ContactSection() {
 
 function Footer() {
   return (
-    <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8">
-      <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
-        <div>
-          <div className="mb-5 flex items-center gap-3">
-            <span className="text-4xl font-black text-primary">K</span>
-            <span className="text-lg font-black uppercase tracking-[0.12em]">Kroo</span>
-          </div>
+    <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8 lg:py-14">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+        <div className="col-span-2 md:col-span-1">
+            <div className="mb-5 flex items-center">
+             <Image src="/images/logo.png" alt="Kroo Production" width={170} height={60} priority className="h-12 w-auto" />
+        </div>
           <p className="max-w-xs text-sm leading-6 text-white/50">
             Cinematic storytelling through powerful visuals and purposeful
             execution.
@@ -789,7 +788,7 @@ function Footer() {
           <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
             Follow us
           </h3>
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {[Instagram, Youtube, Linkedin].map((Icon, index) => (
               <a
                 key={index}
