@@ -401,7 +401,7 @@ function FoundersSection() {
           <article
             key={founder.name}
             data-reveal
-            className="group cinema-panel aspect-[0.72] w-full overflow-hidden rounded-md p-2.5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow lg:aspect-auto lg:p-3"
+            className="group cinema-panel aspect-[3/4.7] w-full overflow-hidden rounded-md p-2.5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow lg:aspect-auto lg:p-3"
             style={{
               width: "100%",
               minWidth: 0,
@@ -419,7 +419,7 @@ function FoundersSection() {
                 alt={founder.name}
                 width={600}
                 height={800}
-                sizes="(max-width: 767px) 224px, (max-width: 1023px) 224px, 25vw"
+                sizes="(max-width: 768px) 100vw,(max-width: 1280px) 50vw,25vw"
                 className="aspect-[3/4] h-auto w-full object-cover"
               />
             </div>
@@ -460,8 +460,8 @@ function ServicesSection() {
         copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
          
       />
-      <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-visible md:snap-none">
-        {services.map((service, index) => (
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+         {services.map((service, index) => (
           <article
             key={service.title}
             data-reveal
