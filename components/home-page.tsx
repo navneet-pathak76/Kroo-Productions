@@ -103,10 +103,12 @@ function SectionIntro({
   eyebrow,
   title,
   copy,
+  titleClassName,
 }: {
-  eyebrow: string;
-  title: string;
-  copy: string;
+  eyebrow: string
+  title: string
+  copy: string
+  titleClassName?: string
 }) {
   return (
     <div className="mx-auto mb-10 flex max-w-[1480px] flex-col gap-5 px-5 sm:px-8 lg:mb-14 lg:flex-row lg:items-end lg:justify-between">
@@ -456,7 +458,7 @@ function ServicesSection() {
         eyebrow="What we do"
         title="WE CREATE THE REASON \nPEOPLE REMEMBER YOU."
         copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
-         titleClassName="text-[clamp(2.8rem,3vw,4rem)]"
+         
       />
       <div className="mx-auto grid max-w-[1480px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth pb-3 snap-x snap-mandatory touch-pan-x hide-scrollbar md:grid-flow-row md:grid-cols-3 md:auto-cols-auto md:overflow-visible md:snap-none">
         {services.map((service, index) => (
