@@ -1,0 +1,794 @@
+"use client";
+
+import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  Activity,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUpRight,
+  Calendar,
+  Clock3,
+  Boxes,
+  Film,
+  Layers3,
+  Play,
+  Sparkles,
+  Target,
+  UserRound,
+  X,
+  Instagram,
+  Youtube,
+  Linkedin,
+} from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Ambient } from "@/components/ambient";
+import { CursorFollower } from "@/components/cursor-follower";
+import { SiteNav } from "@/components/site-nav";
+import { Button } from "@/components/ui/button";
+import { services } from "@/lib/content";
+import { useGsapReveal } from "@/hooks/use-gsap-reveal";
+import { useLenis } from "@/hooks/use-lenis";
+import { useMagnetic } from "@/hooks/use-magnetic";
+
+const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+const fadeUp = {
+  hidden: { y: 32, opacity: 0, filter: "blur(10px)" },
+  visible: (i = 0) => ({
+    y: 0,
+    opacity: 1,
+    filter: "blur(0px)",
+    transition: {
+      delay: i * 0.08,
+      duration: 0.82,
+      ease: revealEase,
+    },
+  }),
+};
+
+type MotionGraphicsVideo = {
+  id: number;
+  title: string;
+  thumbnail: string;
+  video: string;
+  description: string;
+  duration: string;
+  category: string;
+  client: string;
+  services: string[];
+};
+
+export const motionGraphicsVideos: MotionGraphicsVideo[] = [
+  {
+    id: 1,
+    title: "Cinematic Brand Promo",
+    thumbnail: "/images/gym-content/thumb-01.svg",
+    video: "",
+    description: "Commercial launch animation for premium brand identity.",
+    duration: "1:12",
+    category: "Commercial",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Editing", "Color Grading"],
+  },
+  {
+    id: 2,
+    title: "Title Sequence Campaign",
+    thumbnail: "/images/gym-content/thumb-02.svg",
+    video: "",
+    description: "High-contrast title sequence built for paid social.",
+    duration: "0:48",
+    category: "Campaign",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Editing", "Motion Graphics"],
+  },
+  {
+    id: 3,
+    title: "3D Brand Film",
+    thumbnail: "/images/gym-content/thumb-03.svg",
+    video: "",
+    description: "Dimensional brand story focused on trust and authority.",
+    duration: "1:34",
+    category: "Brand Film",
+    client: "Brand & Motion",
+    services: ["Creative Direction", "3D Animation", "Color Grading"],
+  },
+  {
+    id: 4,
+    title: "Product Reveal Walkthrough",
+    thumbnail: "/images/gym-content/thumb-04.svg",
+    video: "",
+    description: "Premium 3D product reveal with cinematic movement.",
+    duration: "1:05",
+    category: "Showcase",
+    client: "Brand & Motion",
+    services: ["3D Animation", "Editing", "Sound Design"],
+  },
+  {
+    id: 5,
+    title: "Animated Reels",
+    thumbnail: "/images/gym-content/thumb-05.svg",
+    video: "",
+    description: "Short-form edits designed for retention and saves.",
+    duration: "0:29",
+    category: "Social",
+    client: "Brand & Motion",
+    services: ["Editing", "Color Grading", "Motion Graphics"],
+  },
+  {
+    id: 6,
+    title: "Brand Launch Edit",
+    thumbnail: "/images/gym-content/thumb-06.svg",
+    video: "",
+    description: "Fast-cut brand launch animation with aggressive rhythm.",
+    duration: "0:42",
+    category: "Launch",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Editing", "Motion Graphics"],
+  },
+  {
+    id: 7,
+    title: "Product Motion Spot",
+    thumbnail: "/images/gym-content/thumb-07.svg",
+    video: "",
+    description: "Product-focused motion film for commercial placement.",
+    duration: "0:56",
+    category: "Product",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Color Grading", "Editing"],
+  },
+  {
+    id: 8,
+    title: "Explainer Story",
+    thumbnail: "/images/gym-content/thumb-08.svg",
+    video: "",
+    description: "Narrative explainer cut with premium documentary tone.",
+    duration: "2:08",
+    category: "Story",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Editing", "Color Grading"],
+  },
+  {
+    id: 9,
+    title: "Kinetic Type Montage",
+    thumbnail: "/images/gym-content/thumb-09.svg",
+    video: "",
+    description: "Cinematic kinetic type montage for organic brand growth.",
+    duration: "1:21",
+    category: "Montage",
+    client: "Brand & Motion",
+    services: ["Motion Design", "Editing", "Sound Design"],
+  },
+];
+
+function SectionIntro({
+  eyebrow,
+  title,
+  copy,
+}: {
+  eyebrow: string;
+  title: string;
+  copy: string;
+}) {
+  return (
+    <div className="mx-auto mb-10 flex max-w-[1480px] flex-col gap-5 px-5 sm:px-8 lg:mb-14 lg:flex-row lg:items-end lg:justify-between">
+      <div data-reveal className="max-w-4xl">
+        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+          {eyebrow}
+        </p>
+        <h2 className="section-title text-balance">{title}</h2>
+      </div>
+      <p data-reveal className="max-w-md text-base leading-7 text-white/60">
+        {copy}
+      </p>
+    </div>
+  );
+}
+
+function ProjectHero() {
+  const ref = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+
+  const y = useTransform(scrollYProgress, [0, 1], [0, 82]);
+  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.965]);
+
+  return (
+    <section
+      id="home"
+      ref={ref}
+      className="relative scroll-mt-28 overflow-hidden px-5 pb-16 pt-32 sm:px-8 lg:min-h-[92svh] lg:px-5 lg:pb-20 lg:pt-40"
+    >
+      <div className="pointer-events-none absolute right-[-16rem] top-10 h-[44rem] w-[44rem] rounded-full bg-primary/20 blur-[120px]" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_68%,transparent)]" />
+
+      <div className="mx-auto grid max-w-[1480px] gap-10 lg:min-h-[calc(92vh-10rem)] lg:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.62fr)] lg:items-center">
+        <motion.div
+          className="relative z-10"
+          initial="hidden"
+          animate="visible"
+          transition={{ staggerChildren: 0.075 }}
+          style={{ y, scale }}
+        >
+          <motion.p
+            variants={fadeUp}
+            className="mb-5 text-xs font-black uppercase tracking-[0.48em] text-primary sm:text-sm"
+          >
+            Project showcase
+          </motion.p>
+          <motion.h1
+            variants={fadeUp}
+            custom={1}
+            className="headline text-balance"
+          >
+            Motion Graphics Content
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            custom={2}
+            className="mt-6 max-w-3xl text-base leading-7 text-white/70 sm:text-lg lg:mt-8 lg:text-xl lg:leading-8"
+          >
+            2D & 3D motion graphics, brand animations, title sequences and
+            digital motion design. Every edit is designed to increase
+            engagement, brand value and conversions.
+          </motion.p>
+          <motion.div
+            variants={fadeUp}
+            custom={3}
+            className="mt-8 flex flex-col gap-3 sm:flex-row"
+          >
+            <Button size="lg" asChild>
+              <a href="#work">
+                <Play size={18} fill="currentColor" />
+                Featured videos
+              </a>
+            </Button>
+            <Button size="lg" variant="outline" asChild>
+              <a href="#contact">
+                Start a project
+                <ArrowRight size={18} />
+              </a>
+            </Button>
+          </motion.div>
+        </motion.div>
+
+        <motion.div
+          className="relative z-10 mx-auto w-full max-w-[520px]"
+          initial={{ opacity: 0, x: 48, filter: "blur(18px)" }}
+          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+          transition={{ delay: 0.32, duration: 1.08, ease: revealEase }}
+        >
+          <motion.div
+            className="cinema-panel relative overflow-hidden rounded-md p-3 shadow-2xl shadow-primary/10"
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black">
+              <Image
+                src="/images/gym-content/hero-thumb.svg"
+                alt="Motion Graphics Content project thumbnail"
+                fill
+                priority
+                sizes="(max-width: 1023px) 90vw, 520px"
+                className="object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20" />
+              <div className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/80 backdrop-blur-xl">
+                2026
+              </div>
+              <div className="absolute bottom-5 left-5 right-5">
+                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong">
+                  <Boxes size={27} />
+                </div>
+                <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">
+                  Commercial Production
+                </p>
+                <h2 className="mt-3 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
+                  Motion Visual System
+                </h2>
+              </div>
+            </div>
+          </motion.div>
+          <motion.div
+            className="absolute -right-5 top-10 hidden h-24 w-24 items-center justify-center rounded-full border border-primary/30 bg-black/55 text-primary shadow-glow backdrop-blur-2xl sm:flex"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          >
+            <Activity size={32} />
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectInfo() {
+  const items = [
+    { label: "Client", value: "Brand & Motion", icon: UserRound },
+    { label: "Category", value: "Commercial Production", icon: Film },
+    {
+      label: "Services",
+      value: "Filming, Editing, Color Grading, Motion Graphics",
+      icon: Layers3,
+    },
+    { label: "Year", value: "2026", icon: Calendar },
+    { label: "Duration", value: "2 Months", icon: Clock3 },
+  ];
+
+  return (
+    <section className="relative z-10 px-5 pb-14 sm:px-8 lg:pb-20">
+      <div className="absolute left-1/2 top-1/2 -z-20 h-[420px] w-[1300px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.07)_34%,transparent_72%)] blur-[120px] opacity-80" />
+      <div className="cinema-panel mx-auto grid max-w-[1480px] gap-4 overflow-hidden rounded-[28px] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_80px_rgba(255,77,18,0.08)] sm:p-5 md:grid-cols-2 lg:grid-cols-5">
+        {items.map((item) => (
+          <div
+            key={item.label}
+            data-reveal
+            className="group min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow"
+          >
+            <item.icon
+              className="mb-6 text-white/55 transition duration-300 group-hover:text-primary"
+              size={24}
+            />
+            <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.24em] text-primary">
+              {item.label}
+            </p>
+            <p className="text-sm font-black uppercase leading-6 tracking-[0.1em] text-white sm:text-base">
+              {item.value}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function VideoCard({
+  video,
+  onOpen,
+}: {
+  video: MotionGraphicsVideo;
+  onOpen: (video: MotionGraphicsVideo) => void;
+}) {
+  return (
+    <button
+      data-reveal
+      onClick={() => onOpen(video)}
+      className="group cinema-panel min-w-0 overflow-hidden rounded-md text-left transition duration-500 hover:-translate-y-1 hover:border-primary/70 hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+      aria-label={`Open ${video.title}`}
+    >
+      <div className="relative aspect-video overflow-hidden bg-black">
+        <Image
+          src={video.thumbnail}
+          alt={`${video.title} thumbnail`}
+          fill
+          loading="lazy"
+          sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+          className="object-cover transition duration-700 group-hover:scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/84 via-black/5 to-transparent" />
+        <div className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong transition duration-500 group-hover:scale-110 group-hover:bg-orange-600">
+          <Play size={23} fill="currentColor" />
+        </div>
+        <div className="absolute bottom-4 left-4 rounded-full border border-white/15 bg-black/45 px-3 py-1.5 text-[0.66rem] font-black uppercase tracking-[0.18em] text-white/80 backdrop-blur-xl">
+          {video.category}
+        </div>
+        <div className="absolute bottom-4 right-4 text-xs font-black uppercase tracking-[0.16em] text-white">
+          {video.duration}
+        </div>
+      </div>
+      <div className="p-5 sm:p-6">
+        <h3 className="text-xl font-black uppercase leading-tight text-white sm:text-2xl">
+          {video.title}
+        </h3>
+        <p className="mt-3 line-clamp-2 text-sm leading-6 text-white/60">
+          {video.description}
+        </p>
+      </div>
+    </button>
+  );
+}
+
+function VideoModal({
+  videos,
+  selected,
+  onClose,
+  onSelect,
+}: {
+  videos: MotionGraphicsVideo[];
+  selected: MotionGraphicsVideo | null;
+  onClose: () => void;
+  onSelect: (video: MotionGraphicsVideo) => void;
+}) {
+  const selectedIndex = selected
+    ? videos.findIndex((video) => video.id === selected.id)
+    : -1;
+
+  useEffect(() => {
+    if (!selected) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+      if (event.key === "ArrowLeft") {
+        onSelect(videos[(selectedIndex - 1 + videos.length) % videos.length]);
+      }
+      if (event.key === "ArrowRight") {
+        onSelect(videos[(selectedIndex + 1) % videos.length]);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [onClose, onSelect, selected, selectedIndex, videos]);
+
+  if (!selected) return null;
+
+  const previousVideo =
+    videos[(selectedIndex - 1 + videos.length) % videos.length];
+  const nextVideo = videos[(selectedIndex + 1) % videos.length];
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        className="fixed inset-0 z-[80] flex items-center justify-center bg-black/78 p-4 backdrop-blur-2xl sm:p-6"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onMouseDown={onClose}
+      >
+        <motion.div
+          className="cinema-panel relative max-h-[92vh] w-full max-w-6xl overflow-y-auto rounded-md shadow-[0_24px_110px_rgba(0,0,0,0.78),0_0_90px_rgba(255,77,18,0.14)]"
+          initial={{ y: 32, opacity: 0, scale: 0.96, filter: "blur(12px)" }}
+          animate={{ y: 0, opacity: 1, scale: 1, filter: "blur(0px)" }}
+          exit={{ y: 18, opacity: 0, scale: 0.98, filter: "blur(10px)" }}
+          transition={{ duration: 0.38, ease: revealEase }}
+          onMouseDown={(event) => event.stopPropagation()}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${selected.title} video player`}
+        >
+          <button
+            onClick={onClose}
+            className="magnetic-target absolute right-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-black/55 text-white transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+            aria-label="Close video modal"
+          >
+            <X size={20} />
+          </button>
+
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
+            <div className="relative aspect-video min-h-[260px] overflow-hidden bg-black">
+              {selected.video ? (
+                <video
+                  key={selected.id}
+                  controls
+                  autoPlay
+                  preload="metadata"
+                  poster={selected.thumbnail}
+                  className="h-full w-full object-cover"
+                >
+                  <source src={selected.video} />
+                </video>
+              ) : (
+                <>
+                  <Image
+                    src={selected.thumbnail}
+                    alt={`${selected.title} video poster`}
+                    fill
+                    priority
+                    sizes="(max-width: 1023px) 100vw, 70vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/35" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-5 text-center">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong">
+                      <Play size={31} fill="currentColor" />
+                    </div>
+                    <p className="max-w-sm px-6 text-xs font-black uppercase tracking-[0.22em] text-white/70">
+                      CloudFront video placeholder
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <p className="mb-4 text-xs font-black uppercase tracking-[0.28em] text-primary">
+                {selected.category} / {selected.duration}
+              </p>
+              <h3 className="text-3xl font-black uppercase leading-none text-white sm:text-4xl">
+                {selected.title}
+              </h3>
+              <p className="mt-5 text-base leading-7 text-white/62">
+                {selected.description} Built as part of a cinematic motion
+                graphics content system for stronger engagement, premium
+                perception and conversion-ready campaign delivery.
+              </p>
+
+              <div className="mt-8 space-y-5 border-y border-white/10 py-6">
+                <div>
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-primary">
+                    Client
+                  </p>
+                  <p className="mt-2 font-black uppercase tracking-[0.1em] text-white">
+                    {selected.client}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[0.68rem] font-black uppercase tracking-[0.22em] text-primary">
+                    Services used
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {selected.services.map((service) => (
+                      <span
+                        key={service}
+                        className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[0.68rem] font-black uppercase tracking-[0.14em] text-white/70"
+                      >
+                        {service}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => onSelect(previousVideo)}
+                  className="px-4"
+                >
+                  <ArrowLeft size={17} />
+                  Previous
+                </Button>
+                <Button
+                  size="lg"
+                  onClick={() => onSelect(nextVideo)}
+                  className="px-4"
+                >
+                  Next
+                  <ArrowRight size={17} />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+}
+
+function VideoGallery() {
+  const [selected, setSelected] = useState<MotionGraphicsVideo | null>(null);
+
+  return (
+    <section id="work" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
+      <SectionIntro
+        eyebrow="Featured Videos"
+        title="A curated collection of our motion graphics productions."
+        copy="Brand animations, title sequences and digital motion design built with rhythm, contrast and design-led intent."
+      />
+      <div className="mx-auto grid max-w-[1480px] gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {motionGraphicsVideos.map((video) => (
+          <VideoCard key={video.id} video={video} onOpen={setSelected} />
+        ))}
+      </div>
+      <VideoModal
+        videos={motionGraphicsVideos}
+        selected={selected}
+        onClose={() => setSelected(null)}
+        onSelect={setSelected}
+      />
+    </section>
+  );
+}
+
+function AboutProject() {
+  const details = [
+    {
+      title: "Creative Direction",
+      copy: "The visual direction leans into disciplined motion, premium contrast and sharp brand recall. Each sequence is planned around the rhythm of the animation and the commercial message behind the campaign.",
+      icon: Target,
+    },
+    {
+      title: "Design And Animation",
+      copy: "Dynamic 2D and 3D motion, locked-off type frames and controlled digital lighting create a polished motion environment without losing the clarity of the brand message.",
+      icon: Film,
+    },
+    {
+      title: "Post Workflow",
+      copy: "The edit is structured for retention first: fast hooks, clean pacing, sound-led transitions, precise color separation and motion graphics that support the brand instead of overpowering it.",
+      icon: Sparkles,
+    },
+  ];
+
+  return (
+    <section id="about" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-24">
+      <div className="pointer-events-none absolute left-0 top-0 h-[34rem] w-[34rem] rounded-full bg-primary/10 blur-[120px]" />
+      <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-start">
+        <div data-reveal className="lg:sticky lg:top-32">
+          <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+            About the project
+          </p>
+          <h2 className="section-title text-balance">About This Production</h2>
+          <p className="mt-7 max-w-xl text-base leading-7 text-white/60">
+            This section will later contain final client-approved details. For
+            now, it reflects the intended production approach for a premium
+            motion graphics content system.
+          </p>
+        </div>
+
+        <div className="grid gap-5">
+          {details.map((item) => (
+            <article
+              key={item.title}
+              data-reveal
+              className="cinema-panel group rounded-md p-6 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-8"
+            >
+              <item.icon
+                className="mb-8 text-white/55 transition duration-300 group-hover:text-primary"
+                size={34}
+              />
+              <h3 className="text-3xl font-black uppercase leading-none text-white">
+                {item.title}
+              </h3>
+              <p className="mt-5 text-base leading-7 text-white/62">
+                {item.copy}
+              </p>
+            </article>
+          ))}
+
+          <article
+            data-reveal
+            className="cinema-panel overflow-hidden rounded-md p-6 sm:p-8"
+          >
+            <p className="mb-5 text-xs font-black uppercase tracking-[0.28em] text-primary">
+              Marketing goals
+            </p>
+            <p className="text-2xl font-bold leading-tight text-white sm:text-4xl">
+              Build instant credibility, make the brand feel aspirational,
+              and turn motion graphics content into a conversion asset across
+              ads, reels, website sections and sales conversations.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectCTA() {
+  return (
+    <section id="contact" className="relative scroll-mt-28 overflow-hidden px-5 py-20 sm:px-8 lg:py-28">
+      <div className="absolute inset-x-0 bottom-0 h-80 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.3),transparent_66%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_28%,black_74%,transparent)]" />
+      <div
+        data-reveal
+        className="relative mx-auto max-w-[1480px] border-y border-white/10 py-16 text-center"
+      >
+        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+          Start project
+        </p>
+        <h2 className="section-title mx-auto max-w-5xl text-balance">
+          Ready To Build Your Brand?
+        </h2>
+        <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/64 sm:text-lg">
+          Let&apos;s create cinematic content that makes your business
+          impossible to ignore.
+        </p>
+        <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
+          <Button size="lg" asChild>
+            <a href="mailto:team@krooproduction.com">
+              Start a Project
+              <ArrowUpRight size={17} />
+            </a>
+          </Button>
+          <Button size="lg" variant="outline" asChild>
+            <a href="tel:+916291252126">Book a Discovery Call</a>
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectFooter() {
+  return (
+    <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8">
+      <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+        <div>
+          <div className="mb-5 flex items-center gap-3">
+            <span className="text-4xl font-black text-primary">K</span>
+            <span className="text-lg font-black uppercase tracking-[0.12em]">
+              Kroo
+            </span>
+          </div>
+          <p className="max-w-xs text-sm leading-6 text-white/50">
+            Cinematic storytelling through powerful visuals and purposeful
+            execution.
+          </p>
+        </div>
+        <div>
+          <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
+            Quick links
+          </h3>
+          {["Home", "Work", "Team", "Services", "About", "Contact"].map(
+            (item) => (
+              <Link
+                key={item}
+                href={`/#${item.toLowerCase()}`}
+                className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+              >
+                {item}
+              </Link>
+            ),
+          )}
+        </div>
+        <div>
+          <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
+            Services
+          </h3>
+          {services.map((service) => (
+            <Link
+              key={service.title}
+              href="/#services"
+              className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+            >
+              {service.title}
+            </Link>
+          ))}
+        </div>
+        <div>
+          <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
+            Follow us
+          </h3>
+          <div className="flex gap-3">
+            {[Instagram, Youtube, Linkedin].map((Icon, index) => (
+              <a
+                key={index}
+                href="#"
+                aria-label="Social link"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+              >
+                <Icon size={17} />
+              </a>
+            ))}
+          </div>
+          <p className="mt-6 text-sm text-white/40">
+            &copy; 2026 Kroo Production. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+export default function MotionGraphicsContentPage() {
+  useLenis();
+  useGsapReveal();
+  useMagnetic();
+
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-[#020202] text-white">
+      <Ambient />
+      <CursorFollower />
+      <SiteNav />
+      <div className="relative z-10">
+        <ProjectHero />
+        <ProjectInfo />
+        <VideoGallery />
+        <AboutProject />
+        <ProjectCTA />
+        <ProjectFooter />
+      </div>
+    </main>
+  );
+}

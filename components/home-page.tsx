@@ -110,11 +110,18 @@ function SectionIntro({
 }) {
   return (
     <div className="mx-auto mb-10 flex max-w-[1480px] flex-col gap-5 px-5 sm:px-8 lg:mb-14 lg:flex-row lg:items-end lg:justify-between">
-      <div data-reveal className="max-w-4xl">
+      <div data-reveal className="max-w-md">
         <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
           {eyebrow}
         </p>
-        <h2 className="section-title text-balance">{title}</h2>
+        <h2 className="section-title">
+            {title.split("\n").map((line, index) => (
+          <span key={index}>
+            {line}
+            {index < title.split("\n").length - 1 && <br />}
+          </span>
+            ))}
+        </h2>
       </div>
       <p data-reveal className="max-w-md text-base leading-7 text-white/60">
         {copy}
@@ -137,7 +144,7 @@ function HeroSection() {
    <section
     id="home"
     ref={ref}
-    className="relative min-h-[100svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:px-8 lg:pt-36 xl:pt-40"
+    className="relative min-h-[30svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:px-8 lg:pt-36 xl:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-16 h-[42rem] w-[42rem] rounded-full bg-primary/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
@@ -147,14 +154,14 @@ function HeroSection() {
        className="
        mx-auto
        grid
-       max-w-[1480px]
+       max-w-[1640px]
        items-center
        grid-cols-1
-       gap-10
-       lg:min-h-[calc(100vh-8.5rem)]
+       gap-4
+       lg:min-h-[calc(88vh-8rem)]
        lg:grid-cols-2
-       lg:gap-6
-       xl:gap-12
+       lg:gap-2
+       xl:gap-4
        "
       >
         <motion.div
@@ -171,20 +178,26 @@ function HeroSection() {
             We bring
           </motion.p>
           <h1 className="
-              leading-[0.9]
+              leading-[0.96]
               font-black
               tracking-tight
-              max-w-[650px]
-              text-[clamp(4rem,7vw,7.6rem)] ">
-              IF YOU'RE HERE TO HIRE US <span>—WELCOME.</span>
+              max-w-[1550px]
+              text-[clamp(3rem,3vw,1rem)] ">
+            <>
+              IF YOU'RE HERE TO HIRE US
+          <br />
+          <span>—WELCOME.</span>
           <br />
           <br />
-              IF YOU'RE HERE TO COPY US <span>—GOOD LUCK.</span>
+              IF YOU'RE HERE TO COPY US
+          <br />
+          <span>—GOOD LUCK.</span>
+          </>
           </h1>
           <motion.p
             variants={fadeUp}
             custom={4}
-            className="mt-7 max-w-2xl text-base leading-7 text-white/70 sm:text-lg lg:text-xl lg:leading-8"
+            className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8"
           >
             Kroo Production crafts cinematic visuals, branded storytelling, and
             high-impact digital experiences for brands that move culture.
@@ -246,18 +259,18 @@ function StatsSection() {
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,90,0,0.03)_55%,transparent_80%)] blur-[120px] opacity-70" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] opacity-40" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[620px] w-[1520px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-black/10 opacity-25 shadow-[inset_0_0_140px_rgba(0,0,0,0.6)]" />
-      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-flow-col auto-cols-[minmax(min(82vw,320px),1fr)] gap-5 overflow-x-auto scroll-smooth rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-10 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] snap-x snap-mandatory touch-pan-x hide-scrollbar backdrop-blur-xl sm:px-8 sm:py-12 lg:grid-flow-row lg:grid-cols-4 lg:auto-cols-auto lg:overflow-visible lg:snap-none xl:px-10">
+      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-4 gap-4 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-8 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:px-8 sm:py-10 lg:grid-cols-4 xl:px-10">
         {stats.map((stat) => (
           <div
             key={stat.label}
             data-reveal
-            className="relative min-h-40 min-w-0 snap-start border border-transparent bg-transparent p-5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-orange-500 sm:p-7"
+            className="relative min-h-[96px] border border-transparent bg-transparent p-2.5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-orange-500 sm:min-h-40 sm:p-7"
           >
             <stat.icon className="mb-7 text-primary" size={24} />
-            <p className="text-5xl font-black leading-none text-white">
+            <p className="text-xl sm:text-5xl font-black leading-none text-white sm:text-5xl">
               <CountUp value={stat.value} suffix={stat.suffix} />
             </p>
-            <p className="mt-3 text-sm font-bold uppercase tracking-[0.14em] text-white/60">
+            <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/60 sm:mt-3 sm:text-sm">
               {stat.label}
             </p>
           </div>
@@ -269,18 +282,29 @@ function StatsSection() {
 
 function ShowreelSection() {
   return (
-    <section id="work" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <SectionIntro
-        eyebrow="Showreel"
-        title="A glimpse of what we do best."
-        copy="Cinematic campaign systems, high-impact launch films, and motion-led storytelling built to hold attention."
-      />
+    <section id="work" className="relative scroll-mt-48 px-2 py-6 sm:px-30 lg:py-50">
+      <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8">
+  <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
+    SHOWREEL
+  </p>
+
+  <h2 className="section-title max-w-[1500px]">
+    THIS ISN'T A SHOWREEL.
+    <br />
+    IT'S A REASON TO HIRE US.
+  </h2>
+
+  <p className="mt-6 max-w-md text-base leading-7 text-white/60">
+    Cinematic campaign systems, high-impact launch films, and motion-led
+    storytelling built to hold attention.
+  </p>
+</div>
       <div
         data-reveal
         data-scale-on-scroll
-        className="group mx-auto max-w-[1480px] overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl shadow-primary/10"
+        className="group mx-auto max-w-[1280px] overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl shadow-primary/10"
       >
-        <div className="relative aspect-[16/9] min-h-[320px] overflow-hidden sm:min-h-[420px]">
+        <div className="relative aspect-[16/9] min-h-[120px] overflow-hidden sm:min-h-[220px]">
           <video
             controls
             preload="metadata"

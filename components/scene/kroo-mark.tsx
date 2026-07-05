@@ -64,8 +64,8 @@ export function KrooMark() {
           height={1400}
           priority
           quality={100}
-          sizes="(max-width: 1024px) 72vw, (max-width: 1536px) 42vw, 520px"
-          className="aspect-square h-auto w-[clamp(14rem,52vw,28rem)] max-w-full object-contain select-none drop-shadow-[0_0_120px_rgba(255,100,0,0.20)] lg:w-[420px] lg:max-w-none"
+          sizes="(max-width: 1100px) 72vw, (max-width: 1736px) 50vw, 520px"
+          className="aspect-square h-auto w-[clamp(44rem,90vw,48rem)] max-w-full object-contain select-none drop-shadow-[0_0_120px_rgba(255,100,0,0.20)] lg:w-[5020px] lg:max-w-none"
         />
       </motion.div>
     </div>
