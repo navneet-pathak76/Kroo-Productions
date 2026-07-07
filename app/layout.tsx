@@ -100,7 +100,7 @@ export const viewport: Viewport = {
 };
 const organizationSchema = {
   "@context": "https://schema.org",
-  "@type": "Organization , ProfessionalService",
+  "@type": "ProfessionalService",
   name: "Kroo Production",
   url: "https://www.krooproduction.in",
   logo: "https://www.krooproduction.in/logo.png",
