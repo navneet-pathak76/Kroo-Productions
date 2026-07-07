@@ -5,28 +5,36 @@ import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://krooproduction.in"),
 
-  title: {
-    default: "Kroo Production | Cinematic Production House",
-    template: "%s | Kroo Production",
-  },
+ title: {
+  default: "Video Production Company in Kolkata | Kroo Production",
+  template: "%s | Kroo Production",
+},
 
-  description:
-    "Kroo Production crafts cinematic visuals, branded storytelling, commercial films, photography, motion graphics, and high-impact digital experiences for ambitious brands.",
-
+description:
+  "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
+  
   keywords: [
-    "Kroo Production",
-    "Video Production",
-    "Film Production",
-    "Commercial Films",
-    "Photography",
-    "Motion Graphics",
-    "Content Creation",
-    "Digital Marketing",
-    "Brand Storytelling",
-    "Production House Kolkata",
-    "Video Production Kolkata",
-    "Creative Agency India",
-  ],
+  "Video Production Company Kolkata",
+  "Video Production Kolkata",
+  "Production House Kolkata",
+  "Creative Agency Kolkata",
+  "Brand Films",
+  "Corporate Videos",
+  "Commercial Video Production",
+  "Product Advertisement",
+  "Social Media Content",
+  "Motion Graphics",
+  "Drone Videography",
+  "Real Estate Video Production",
+  "Gym Video Production",
+  "Restaurant Video Production",
+  "Fashion Video Production",
+  "Club Promotion Videos",
+  "Content Creation Agency",
+  "Creative Video Agency India",
+  "Cinematic Storytelling",
+  "Kroo Production",
+],
 
   applicationName: "Kroo Production",
 

@@ -98,34 +98,39 @@ export const services = [
 
 export const projects = [
   {
-    title: "Brand Commercial",
-    category: "Automotive launch film",
-    metric: "8.4M views",
-    color: "from-orange-600/90 via-red-950/70 to-black",
-  },
-  {
-    title: "Music Video",
-    category: "Performance visual system",
-    metric: "14 sets",
-    color: "from-zinc-100/50 via-orange-700/70 to-black",
-  },
-  {
-    title: "Luxury Ad Campaign",
-    category: "Fashion editorial film",
-    metric: "6 markets",
-    color: "from-amber-500/80 via-neutral-800 to-black",
-  },
-  {
-    title: "Documentary",
-    category: "Human story series",
-    metric: "42 min",
-    color: "from-neutral-400/50 via-stone-950 to-black",
-  },
-  {
-    title: "Fitness Promo",
-    category: "High-impact social cutdowns",
-    metric: "92 assets",
+    title: "Gym Content",
+    category: "Premium fitness storytelling",
+    metric: "Transformations",
     color: "from-orange-500/80 via-zinc-900 to-black",
+    href: "/gym-content",
+  },
+  {
+    title: "Clothing Content",
+    category: "Fashion & lifestyle campaigns",
+    metric: "Lookbooks",
+    color: "from-amber-500/80 via-neutral-800 to-black",
+    href: "/clothing-content",
+  },
+  {
+    title: "Clubs Content",
+    category: "Nightlife & event visuals",
+    metric: "Aftermovies",
+    color: "from-purple-700/70 via-black to-black",
+    href: "/clubs-content",
+  },
+  {
+    title: "Motion Graphics",
+    category: "2D & 3D animation",
+    metric: "Visual FX",
+    color: "from-red-700/80 via-orange-900 to-black",
+    href: "/motion-graphics-content",
+  },
+  {
+    title: "Restaurant Content",
+    category: "Hospitality brand films",
+    metric: "Food Stories",
+    color: "from-orange-600/80 via-amber-900/70 to-black",
+    href: "/restaurant-content",
   },
 ];
 
