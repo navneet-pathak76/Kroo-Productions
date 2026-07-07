@@ -336,7 +336,9 @@ function ShowreelSection() {
 }
 
 function LogoStrip() {
-  return (
+  return null;
+}
+  /*return (
     <section className="relative overflow-hidden px-5 py-12 sm:px-8">
       <div className="mx-auto max-w-[1480px]">
         <p
@@ -360,7 +362,7 @@ function LogoStrip() {
       </div>
     </section>
   );
-}
+}*/
 
 function FounderPortrait({ tone }: { tone: string }) {
   return (

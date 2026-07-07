@@ -150,8 +150,8 @@ export const testimonials = [
   },
 ];
 
-export const brandMarks = [
-  "NIKE",
+export const brandMarks = [];
+  /*"NIKE",
   "COCA-COLA",
   "SAMSUNG",
   "AIRTEL",
@@ -159,7 +159,7 @@ export const brandMarks = [
   "H&M",
   "AMAZON",
   "ADIDAS",
-];
+];*/
 
 export const capabilities = [
   { label: "Cinematic Direction", icon: Aperture },
