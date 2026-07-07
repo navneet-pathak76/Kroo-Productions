@@ -12,8 +12,12 @@ export const metadata: Metadata = {
 
 description:
   "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
-  
-  keywords: [
+
+creator: "Kroo Production",
+publisher: "Kroo Production",
+category: "Video Production",  
+
+keywords: [
   "Video Production Company Kolkata",
   "Video Production Kolkata",
   "Production House Kolkata",
@@ -94,6 +98,26 @@ export const viewport: Viewport = {
   maximumScale: 5,
   themeColor: "#020202",
 };
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization , ProfessionalService",
+  name: "Kroo Production",
+  url: "https://www.krooproduction.in",
+  logo: "https://www.krooproduction.in/logo.png",
+  email: "team@krooproduction.in",
+  telephone: "+917003087985",
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Kolkata",
+    addressRegion: "West Bengal",
+    addressCountry: "IN",
+  },
+  sameAs: [
+    "https://www.instagram.com/kroo.production",
+    "https://www.linkedin.com/company/krooproduction",
+    "https://www.youtube.com/@KrooProduction",
+  ],
+};
 
 export default function RootLayout({
   children,
@@ -102,8 +126,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationSchema),
+          }}
+        />
+      </head>
+
       <body>{children}</body>
+
       <GoogleAnalytics gaId="G-9WBJV41K0G" />
     </html>
   );
+}
 }
