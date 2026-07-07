@@ -6,6 +6,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://krooproduction.com/sitemap.xml",
+    sitemap: "https://krooproduction.in/sitemap.xml",
   };
 }
