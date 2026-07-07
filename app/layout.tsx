@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://krooproduction.in"),
+  metadataBase: new URL("https://www.krooproduction.in"),
 
  title: {
   default: "Video Production Company in Kolkata | Kroo Production",
@@ -39,31 +39,40 @@ description:
   applicationName: "Kroo Production",
 
   alternates: {
-    canonical: "https://krooproduction.in",
+    canonical: "https://www.krooproduction.in",
   },
 
   openGraph: {
-    title: "Kroo Production",
-    description:
-      "Premium cinematic production house specializing in commercials, branded storytelling, photography and motion graphics.",
+  title: "Video Production Company in Kolkata | Kroo Production",
 
-    url: "https://krooproduction.in",
+  description:
+    "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
 
-    siteName: "Kroo Production",
+  url: "https://www.krooproduction.in",
 
-    locale: "en_US",
+  siteName: "Kroo Production",
 
-    type: "website",
-  },
+  images: [
+    {
+      url: "/og-image.jpg",
+      width: 1200,
+      height: 630,
+      alt: "Kroo Production",
+    },
+  ],
+
+  locale: "en_US",
+
+  type: "website",
+},
 
   twitter: {
-    card: "summary_large_image",
-
-    title: "Kroo Production",
-
-    description:
-      "Premium cinematic production house for ambitious brands.",
-  },
+  card: "summary_large_image",
+  title: "Video Production Company in Kolkata | Kroo Production",
+  description:
+    "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
+  images: ["/og-image.jpg"],
+},
 
   robots: {
     index: true,
