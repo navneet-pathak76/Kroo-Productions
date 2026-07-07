@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.1079.0",
+    "@next/third-parties": "^16.2.10",
     "@radix-ui/react-slot": "^1.1.1",
     "@react-three/drei": "^10.0.0",
     "@react-three/fiber": "^9.0.0",
