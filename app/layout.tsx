@@ -77,7 +77,14 @@ keywords: [
     "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
   images: ["/og-image.jpg"],
 },
-
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+    },
   robots: {
     index: true,
     follow: true,
@@ -103,7 +110,7 @@ const organizationSchema = {
   "@type": "ProfessionalService",
   name: "Kroo Production",
   url: "https://www.krooproduction.in",
-  logo: "https://www.krooproduction.in/logo.png",
+  logo: "https://www.krooproduction.in/images/logo.png",
   email: "team@krooproduction.in",
   telephone: "+917003087985",
   address: {
