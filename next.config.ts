@@ -19,58 +19,57 @@ const securityHeaders = [
       "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   },
   {
-    key: "Content-Security-Policy",
-    value: `
-      default-src 'self';
-      base-uri 'self';
-      object-src 'none';
-      frame-ancestors 'self';
+  key: "Content-Security-Policy",
+  value: `
+    default-src 'self';
+    base-uri 'self';
+    object-src 'none';
+    frame-ancestors 'self';
 
-      script-src
-        'self'
-        'unsafe-inline'
-        'unsafe-eval'
-        https://www.googletagmanager.com
-        https://www.google-analytics.com;
+    script-src
+      'self'
+      https://www.googletagmanager.com
+      https://www.google-analytics.com;
 
-      style-src
-        'self'
-        'unsafe-inline';
+    style-src
+      'self'
+      'unsafe-inline';
 
-      img-src
-        'self'
-        data:
-        blob:
-        https:;
+    img-src
+      'self'
+      data:
+      blob:
+      https:;
 
-      font-src
-        'self'
-        data:
-        https:;
+    font-src
+      'self'
+      data:
+      https:;
 
-      media-src
-        'self'
-        blob:
-        https://d3uo687t366hok.cloudfront.net;
+    media-src
+      'self'
+      blob:
+      https://d3uo687t366hok.cloudfront.net;
 
-      connect-src
-        'self'
-        https://www.google-analytics.com
-        https://region1.google-analytics.com
-        https://d3uo687t366hok.cloudfront.net;
+    connect-src
+      'self'
+      https://www.google-analytics.com
+      https://region1.google-analytics.com
+      https://www.googletagmanager.com
+      https://d3uo687t366hok.cloudfront.net;
 
-      frame-src
-        'self';
+    frame-src
+      'self';
 
-      form-action
-        'self';
+    form-action
+      'self';
 
-      upgrade-insecure-requests;
-    `
-      .replace(/\n/g, "")
-      .replace(/\s{2,}/g, " ")
-      .trim(),
-  },
+    upgrade-insecure-requests;
+  `
+    .replace(/\n/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim(),
+}
 ];
 
 const nextConfig: NextConfig = {
