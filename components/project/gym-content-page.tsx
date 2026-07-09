@@ -47,120 +47,8 @@ const fadeUp = {
     },
   }),
 };
-
-type GymVideo = {
-  id: number;
-  title: string;
-  thumbnail: string;
-  video: string;
-  description: string;
-  duration: string;
-  category: string;
-  client: string;
-  services: string[];
-};
-
-export const gymVideos: GymVideo[] = [
-  {
-    id: 1,
-    title: "Cinematic Gym Promo",
-    thumbnail: "/images/gym-content/thumb-01.svg",
-    video: "",
-    description: "Commercial launch film for premium fitness branding.",
-    duration: "1:12",
-    category: "Commercial",
-    client: "Fitness Industry",
-    services: ["Filming", "Editing", "Color Grading"],
-  },
-  {
-    id: 2,
-    title: "Strength Campaign",
-    thumbnail: "/images/gym-content/thumb-02.svg",
-    video: "",
-    description: "High-contrast training sequence built for paid social.",
-    duration: "0:48",
-    category: "Campaign",
-    client: "Fitness Industry",
-    services: ["Filming", "Editing", "Motion Graphics"],
-  },
-  {
-    id: 3,
-    title: "Trainer Brand Film",
-    thumbnail: "/images/gym-content/thumb-03.svg",
-    video: "",
-    description: "Personal brand story focused on trust and authority.",
-    duration: "1:34",
-    category: "Brand Film",
-    client: "Fitness Industry",
-    services: ["Creative Direction", "Filming", "Color Grading"],
-  },
-  {
-    id: 4,
-    title: "Facility Walkthrough",
-    thumbnail: "/images/gym-content/thumb-04.svg",
-    video: "",
-    description: "Premium club walkthrough with cinematic movement.",
-    duration: "1:05",
-    category: "Showcase",
-    client: "Fitness Industry",
-    services: ["Filming", "Editing", "Sound Design"],
-  },
-  {
-    id: 5,
-    title: "Transformation Reels",
-    thumbnail: "/images/gym-content/thumb-05.svg",
-    video: "",
-    description: "Short-form edits designed for retention and saves.",
-    duration: "0:29",
-    category: "Social",
-    client: "Fitness Industry",
-    services: ["Editing", "Color Grading", "Motion Graphics"],
-  },
-  {
-    id: 6,
-    title: "HIIT Launch Edit",
-    thumbnail: "/images/gym-content/thumb-06.svg",
-    video: "",
-    description: "Fast-cut class launch film with aggressive rhythm.",
-    duration: "0:42",
-    category: "Launch",
-    client: "Fitness Industry",
-    services: ["Filming", "Editing", "Motion Graphics"],
-  },
-  {
-    id: 7,
-    title: "Apparel Training Spot",
-    thumbnail: "/images/gym-content/thumb-07.svg",
-    video: "",
-    description: "Product-focused fitness film for commercial placement.",
-    duration: "0:56",
-    category: "Product",
-    client: "Fitness Industry",
-    services: ["Filming", "Color Grading", "Editing"],
-  },
-  {
-    id: 8,
-    title: "Member Story",
-    thumbnail: "/images/gym-content/thumb-08.svg",
-    video: "",
-    description: "Emotional testimonial cut with premium documentary tone.",
-    duration: "2:08",
-    category: "Story",
-    client: "Fitness Industry",
-    services: ["Interview", "Editing", "Color Grading"],
-  },
-  {
-    id: 9,
-    title: "Performance Montage",
-    thumbnail: "/images/gym-content/thumb-09.svg",
-    video: "",
-    description: "Cinematic movement montage for organic brand growth.",
-    duration: "1:21",
-    category: "Montage",
-    client: "Fitness Industry",
-    services: ["Filming", "Editing", "Sound Design"],
-  },
-];
+import { gymVideos } from "../../lib/gym-videos";
+import type { GymVideo } from "../../lib/gym-videos";
 
 function SectionIntro({
   eyebrow,
@@ -465,17 +353,18 @@ function VideoModal({
           </button>
 
           <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
-            <div className="relative aspect-video min-h-[260px] overflow-hidden bg-black">
+            <div className="relative flex items-center justify-center min-h-[260px] bg-black overflow-hidden">
               {selected.video ? (
                 <video
                   key={selected.id}
                   controls
                   autoPlay
+                  playsInline
                   preload="metadata"
                   poster={selected.thumbnail}
-                  className="h-full w-full object-cover"
+                  className="max-w-full max-h-[80vh] w-auto h-auto rounded-xl bg-black"
                 >
-                  <source src={selected.video} />
+                  <source src={selected.video} type="video/mp4" />
                 </video>
               ) : (
                 <>

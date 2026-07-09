@@ -1,5 +1,78 @@
 import type { NextConfig } from "next";
 
+const securityHeaders = [
+  {
+    key: "X-Frame-Options",
+    value: "SAMEORIGIN",
+  },
+  {
+    key: "X-Content-Type-Options",
+    value: "nosniff",
+  },
+  {
+    key: "Referrer-Policy",
+    value: "strict-origin-when-cross-origin",
+  },
+  {
+    key: "Permissions-Policy",
+    value:
+      "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  },
+  {
+    key: "Content-Security-Policy",
+    value: `
+      default-src 'self';
+      base-uri 'self';
+      object-src 'none';
+      frame-ancestors 'self';
+
+      script-src
+        'self'
+        'unsafe-inline'
+        'unsafe-eval'
+        https://www.googletagmanager.com
+        https://www.google-analytics.com;
+
+      style-src
+        'self'
+        'unsafe-inline';
+
+      img-src
+        'self'
+        data:
+        blob:
+        https:;
+
+      font-src
+        'self'
+        data:
+        https:;
+
+      media-src
+        'self'
+        blob:
+        https://d3uo687t366hok.cloudfront.net;
+
+      connect-src
+        'self'
+        https://www.google-analytics.com
+        https://region1.google-analytics.com
+        https://d3uo687t366hok.cloudfront.net;
+
+      frame-src
+        'self';
+
+      form-action
+        'self';
+
+      upgrade-insecure-requests;
+    `
+      .replace(/\n/g, "")
+      .replace(/\s{2,}/g, " ")
+      .trim(),
+  },
+];
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 
@@ -14,6 +87,15 @@ const nextConfig: NextConfig = {
 
   eslint: {
     ignoreDuringBuilds: true,
+  },
+
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
   },
 };
 

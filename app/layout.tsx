@@ -6,12 +6,12 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.krooproduction.in"),
 
  title: {
-  default: "Video Production Company in Kolkata | Kroo Production",
+  default: "Video Production Company in India | Commercial Films & Brand Content | Kroo Production",
   template: "%s | Kroo Production",
 },
 
 description:
-  "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
+  "Kroo Production is a leading video production company in India creating commercial films, brand videos, corporate films, social media content, product photography, motion graphics and post-production services.",
 
 creator: "Kroo Production",
 publisher: "Kroo Production",
@@ -47,7 +47,7 @@ keywords: [
   },
 
   openGraph: {
-  title: "Video Production Company in Kolkata | Kroo Production",
+  title: "Video Production Company in India | Commercial Films & Brand Content | Kroo Production",
 
   description:
     "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
@@ -72,7 +72,7 @@ keywords: [
 
   twitter: {
   card: "summary_large_image",
-  title: "Video Production Company in Kolkata | Kroo Production",
+  title: "Video Production Company in India | Commercial Films & Brand Content | Kroo Production",
   description:
     "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
   images: ["/og-image.jpg"],
@@ -110,7 +110,7 @@ const organizationSchema = {
   "@type": "ProfessionalService",
   name: "Kroo Production",
   url: "https://www.krooproduction.in",
-  logo: "https://www.krooproduction.in/images/logo.png",
+  logo: "https://www.krooproduction.in/logo.png",
   email: "team@krooproduction.in",
   telephone: "+917003087985",
   address: {
