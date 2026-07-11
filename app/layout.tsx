@@ -120,10 +120,10 @@ const organizationSchema = {
     addressCountry: "IN",
   },
   sameAs: [
-    "https://www.instagram.com/kroo.production",
-    "https://www.linkedin.com/company/krooproduction",
-    "https://www.youtube.com/@KrooProduction",
-  ],
+  "https://www.instagram.com/kroo.production/",
+  "https://www.linkedin.com/company/krooproduction/",
+  "https://youtube.com/@krooproduction",
+],
 };
 
 export default function RootLayout({

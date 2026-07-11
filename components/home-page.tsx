@@ -757,88 +757,142 @@ function Footer() {
   return (
     <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8 lg:py-14">
       <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.8fr)]">
+
+        {/* Logo */}
         <div className="col-span-2 md:col-span-1">
-            <div className="mb-5 flex items-center">
-             <Image src="/images/logo.png" alt="Kroo Production" width={170} height={60} priority className="h-12 w-auto" />
-        </div>
+          <div className="mb-5 flex items-center">
+            <Image
+              src="/images/logo.png"
+              alt="Kroo Production"
+              width={170}
+              height={60}
+              priority
+              className="h-12 w-auto"
+            />
+          </div>
+
           <p className="max-w-xs text-sm leading-6 text-white/50">
             Cinematic storytelling through powerful visuals and purposeful
             execution.
           </p>
         </div>
+
+        {/* Quick Links */}
         <div>
           <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
-            Quick links
+            Quick Links
           </h3>
-          {["Home", "Work", "Services", "Team", "About", "Contact"].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
-              {item}
-            </a>
-          ))}
+
+          {["Home", "Work", "Services", "Team", "About", "Contact"].map(
+            (item) => (
+              <a
+                key={item}
+                href={`#${item.toLowerCase()}`}
+                className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+              >
+                {item}
+              </a>
+            )
+          )}
         </div>
-        <div>
-  <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
-    Legal
-  </h3>
 
-  <a
-    href="/privacy-policy"
-    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-  >
-    Privacy Policy
-  </a>
-
-  <a
-    href="/terms-of-service"
-    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-  >
-    Terms of Service
-  </a>
-
-  <a
-    href="/cookie-policy"
-    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-  >
-    Cookie Policy
-  </a>
-
-  <a
-    href="/disclaimer"
-    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-  >
-    Disclaimer
-  </a>
-</div>
+        {/* Services */}
         <div>
           <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
             Services
           </h3>
+
           {services.map((service) => (
-            <a key={service.title} href="#services" className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
+            <a
+              key={service.title}
+              href="#services"
+              className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+            >
               {service.title}
             </a>
           ))}
         </div>
+
+        {/* Legal */}
         <div>
           <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
-            Follow us
+            Legal
           </h3>
+
+          <a
+            href="/privacy-policy"
+            className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+          >
+            Privacy Policy
+          </a>
+
+          <a
+            href="/terms-of-service"
+            className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+          >
+            Terms of Service
+          </a>
+
+          <a
+            href="/cookie-policy"
+            className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+          >
+            Cookie Policy
+          </a>
+
+          <a
+            href="/disclaimer"
+            className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+          >
+            Disclaimer
+          </a>
+        </div>
+
+        {/* Follow Us */}
+        <div>
+          <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
+            Follow Us
+          </h3>
+
           <div className="flex flex-wrap gap-3">
-            {[Instagram, Youtube, Linkedin].map((Icon, index) => (
-              <a
-                key={index}
-                href="#"
-                aria-label="Social link"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-              >
-                <Icon size={17} />
-              </a>
-            ))}
+
+            <a
+              href="https://www.instagram.com/kroo.production/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary"
+            >
+              <Instagram size={17} />
+            </a>
+
+            <a
+              href="https://youtube.com/@krooproduction"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary"
+            >
+              <Youtube size={17} />
+            </a>
+
+            <a
+              href="https://www.linkedin.com/company/krooproduction/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 text-white/60 transition hover:border-primary hover:text-primary"
+            >
+              <Linkedin size={17} />
+            </a>
+
           </div>
+
           <p className="mt-6 text-sm text-white/40">
             &copy; 2026 Kroo Production. All rights reserved.
           </p>
         </div>
+
       </div>
     </footer>
   );
