@@ -756,7 +756,7 @@ function ContactSection() {
 function Footer() {
   return (
     <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8 lg:py-14">
-      <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.8fr)]">
         <div className="col-span-2 md:col-span-1">
             <div className="mb-5 flex items-center">
              <Image src="/images/logo.png" alt="Kroo Production" width={170} height={60} priority className="h-12 w-auto" />
@@ -776,6 +776,39 @@ function Footer() {
             </a>
           ))}
         </div>
+        <div>
+  <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
+    Legal
+  </h3>
+
+  <a
+    href="/privacy-policy"
+    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    Privacy Policy
+  </a>
+
+  <a
+    href="/terms-of-service"
+    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    Terms of Service
+  </a>
+
+  <a
+    href="/cookie-policy"
+    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    Cookie Policy
+  </a>
+
+  <a
+    href="/disclaimer"
+    className="block rounded-sm py-1 text-sm text-white/50 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    Disclaimer
+  </a>
+</div>
         <div>
           <h3 className="mb-4 text-sm font-black uppercase tracking-[0.18em] text-white">
             Services
