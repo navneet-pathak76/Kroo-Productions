@@ -7,3 +7,4 @@ dist
 *.log
 *.tsbuildinfo
 ses-mailer_accessKeys.csv
+.DS_Store
