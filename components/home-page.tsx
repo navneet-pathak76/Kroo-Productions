@@ -16,7 +16,6 @@ import {
   Quote,
   Youtube,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
 import { Ambient } from "@/components/ambient";
 import { CursorFollower } from "@/components/cursor-follower";
 import { Loader } from "@/components/loader";
@@ -187,8 +186,7 @@ function HeroSection() {
             We bring
           </motion.p>
           <h1
-  className="
-    leading-[0.96]
+  className="leading-[0.96]
     font-black
     tracking-tight
     max-w-[1550px]
@@ -511,7 +509,7 @@ function ProjectsSection() {
   const x = useMotionValue(0);
 
 const isDragging = useRef(false);
-const animationFrame = useRef<number>();
+const animationFrame = useRef<number>(0);
 
 useEffect(() => {
   const CARD_WIDTH = 716; // approximate card width + gap
