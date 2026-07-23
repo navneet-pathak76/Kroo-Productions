@@ -99,39 +99,37 @@ function CountUp({ value, suffix }: { value: number; suffix: string }) {
   );
 }
 
+import type { ReactNode } from "react";
+
 function SectionIntro({
   eyebrow,
   title,
   copy,
   titleClassName,
 }: {
-  eyebrow: string
-  title: string
-  copy: string
-  titleClassName?: string
+  eyebrow: string;
+  title: ReactNode;
+  copy: string;
+  titleClassName?: string;
 }) {
   return (
-    <div className="mx-auto mb-10 flex max-w-[1480px] flex-col gap-5 px-5 sm:px-8 lg:mb-14 lg:flex-row lg:items-end lg:justify-between">
-      <div data-reveal className="max-w-md">
+    <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8 lg:mb-14">
+      <div data-reveal>
         <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
           {eyebrow}
         </p>
-        <h2 className="section-title">
-            {title.split("\n").map((line, index) => (
-          <span key={index}>
-            {line}
-            {index < title.split("\n").length - 1 && <br />}
-          </span>
-            ))}
+
+        <h2 className={cn("section-title max-w-[1200px]", titleClassName)}>
+          {title}
         </h2>
+
+        <p className="mt-6 max-w-xl text-base leading-7 text-white/60">
+          {copy}
+        </p>
       </div>
-      <p data-reveal className="max-w-md text-base leading-7 text-white/60">
-        {copy}
-      </p>
     </div>
   );
 }
-
 function HeroSection() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -379,24 +377,20 @@ function FounderPortrait({ tone }: { tone: string }) {
 function FoundersSection() {
   return (
     <section id="team" className="flex scroll-mt-28 flex-col px-4 py-16 sm:px-8 lg:block lg:py-20">
-      <div
-        className="mx-auto mb-10 flex w-full flex-col gap-5 px-0 lg:mb-14 lg:grid lg:grid-cols-[calc(100%-320px)_320px] lg:items-end lg:px-8"
-        style={{ maxWidth: "1980px" }}
-      >
-        <div data-reveal className="w-full lg:max-w-[1500px]">
-          <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
-            Meet the founders
-          </p>
-          <h2 className="section-title text-[clamp(2.8rem,4vw,4.8rem)] ">
-            GOOD LUCK TO YOUR COMPETITORS.
-              <br />
-            YOU FOUND US FIRST.
-
-          </h2>
-        </div>
-        <p data-reveal className="w-full text-base leading-7 text-white/60 lg:max-w-md">
-          A leadership team built around cinematic taste, production discipline, and modern distribution craft.
+     <div className="mx-auto mb-10 w-full px-0 lg:mb-14 lg:px-8" style={{ maxWidth: "1980px" }}>
+      <div data-reveal>
+        <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
+          Meet the founders
         </p>
+        <h2 className="section-title max-w-[1200px] text-[clamp(2.8rem,4vw,4.8rem)]">
+            GOOD LUCK TO YOUR COMPETITORS.
+        <br />
+            YOU FOUND US FIRST.
+        </h2>
+        <p className="mt-6 max-w-xl text-base leading-7 text-white/60">
+            A leadership team built around cinematic taste, production discipline, and modern distribution craft.
+        </p>
+        </div>
       </div>
       <div className="mx-auto grid w-full max-w-none grid-cols-2 gap-[14px] pb-3 md:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
         {founders.map((founder) => (
@@ -456,14 +450,20 @@ function FoundersSection() {
 function ServicesSection() {
   return (
     <section id="services" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <SectionIntro
-        eyebrow="What we do"
-        title="WE CREATE THE REASON \nPEOPLE REMEMBER YOU."
-        copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
-         
-      />
+{/* ServicesSection */}
+    <SectionIntro
+      eyebrow="What we do"
+      title={
+        <>
+        WE CREATE THE REASON
+        <br />
+        PEOPLE REMEMBER YOU.
+      </>
+    }
+  copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
+/>
       <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-         {services.map((service, index) => (
+        {services.map((service, index) => (
           <article
             key={service.title}
             data-reveal
@@ -489,7 +489,6 @@ function ServicesSection() {
     </section>
   );
 }
-
 function ProjectsSection() {
   const marqueeProjects = [
     ...projects,
@@ -510,13 +509,18 @@ function ProjectsSection() {
         </div>
       </div>
 
+    {/* ProjectsSection */}
       <SectionIntro
         eyebrow="Featured Projects"
-        title="SCROLL IF YOU'RE CURIOUS.
-          STOP IF YOU'RE IMPRESSED. "
-        copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
-      />
-
+        title={
+        <>
+        SCROLL IF YOU'RE CURIOUS.
+        <br />
+        STOP IF YOU'RE IMPRESSED.
+      </>
+    }
+      copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
+    />
       <div className="overflow-hidden">
         <div className="animate-project-marquee flex w-max gap-4 pb-6 sm:gap-6">
           {marqueeProjects.map((project, index) => (
@@ -573,14 +577,20 @@ function TestimonialsSection() {
 
   return (
     <section id="about" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
-        <div data-reveal>
-          <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
-            Client response
-          </p>
-          <h2 className="section-title">OUR WORK SPEAKS. <br/> THEY CONFIRM</h2>
-        </div>
-        <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-8 sm:p-12">
+      <div className="mx-auto max-w-[1480px]">
+        <div data-reveal className="mb-10 lg:mb-14">
+        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+         Client response
+        </p>
+        <h2 className="section-title max-w-[1200px]">
+          OUR WORK SPEAKS.
+        <br />
+          THEY CONFIRM.
+        </h2>
+      </div>
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
+    <div /> {/* keeps card aligned right if you want the two-col ratio preserved below the heading, or delete this div and let the card span full width */}
+    <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-8 sm:p-12">
           <Quote className="mb-8 text-primary" size={42} />
           <motion.p
             key={testimonial.quote}
@@ -615,6 +625,7 @@ function TestimonialsSection() {
           </div>
         </div>
       </div>
+      </div> 
     </section>
   );
 }
@@ -631,123 +642,165 @@ function ContactSection() {
   return (
     <section id="contact" className="relative scroll-mt-28 px-5 py-20 sm:px-8 lg:py-24">
       <div className="absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.24),transparent_66%)]" />
-      <div className="relative mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
-        <div data-reveal>
+      <div className="relative mx-auto max-w-[1480px]">
+        <div data-reveal className="mb-10 lg:mb-14">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Start project
           </p>
-          <h2 className="section-title">YOU'VE SEEN OUR STORIES. <br/> NOW LET'S HEAR YOURS </h2>
-          <div className="mt-10 space-y-5 text-white/70">
-            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="mailto:team@krooproduction.in">
-              <Mail className="shrink-0 text-primary" /> <span className="min-w-0 break-words">team@krooproduction.in</span>
-            </a>
-            <a className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black" href="tel:+919876543210">
-              <Phone className="shrink-0 text-primary" /> <span>+91 62912 52126</span>
-            </a>
-            <p className="flex min-w-0 items-center gap-4">
-              <MapPin className="shrink-0 text-primary" /> <span>Kolkata, India</span>
-            </p>
-          </div>
-          <div className="mt-8 flex gap-3">
-            {[Instagram, Youtube, Facebook, Linkedin].map((Icon, index) => (
-              <a
-                key={index}
-                href="#"
-                aria-label="Kroo social channel"
-                className="magnetic-target flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-              >
-                <Icon size={19} />
-              </a>
-            ))}
-          </div>
+          <h2 className="section-title max-w-[1200px]">
+            YOU'VE SEEN OUR STORIES.
+            <br />
+            NOW LET'S HEAR YOURS.
+          </h2>
         </div>
-        <form
-          data-reveal
-          className="cinema-panel rounded-md p-5 sm:p-8"
-          onSubmit={async (event) => {
-          event.preventDefault();
-          setLoading(true);
-          try {
-          const response = await fetch("/api/contact", {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-            name,
-            email,
-            company,
-            budget,
-            message,
-            }),
-            });
-          const data = await response.json();
-        if (!response.ok) {
-        throw new Error(data.error || "Failed");
-          }
-        setSent(true);
-        setName("");
-        setEmail("");
-        setCompany("");
-        setBudget("");
-        setMessage("");
-      } catch (err) {
-          alert("Failed to send project request.");
-      } finally {
-        setLoading(false);
-      }
-  }}
-        >
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input value={name}
+
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+          <div data-reveal>
+            <div className="space-y-5 text-white/70">
+  <a
+    href="mailto:team@krooproduction.in"
+    className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    <Mail className="shrink-0 text-primary" />
+    <span className="min-w-0 break-words">
+      team@krooproduction.in
+    </span>
+  </a>
+
+  <a
+    href="tel:+916291252126"
+    className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+  >
+    <Phone className="shrink-0 text-primary" />
+    <span>+91 62912 52126</span>
+  </a>
+
+  <p className="flex min-w-0 items-center gap-4">
+    <MapPin className="shrink-0 text-primary" />
+    <span>Kolkata, India</span>
+  </p>
+</div>
+
+           <div className="mt-8 flex gap-3">
+  {[
+    {
+      icon: Instagram,
+      href: "https://www.instagram.com/kroo.production/",
+    },
+    {
+      icon: Youtube,
+      href: "https://youtube.com/@krooproduction",
+    },
+    {
+      icon: Facebook,
+      href: "https://facebook.com/",
+    },
+    {
+      icon: Linkedin,
+      href: "https://www.linkedin.com/company/krooproduction/",
+    },
+  ].map(({ icon: Icon, href }, index) => (
+    <a
+      key={index}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Kroo social channel"
+      className="magnetic-target flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+    >
+      <Icon size={19} />
+    </a>
+  ))}
+</div>
+</div> 
+          <form
+            data-reveal
+            className="cinema-panel rounded-md p-5 sm:p-8"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              setLoading(true);
+              try {
+                const response = await fetch("/api/contact", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    name,
+                    email,
+                    company,
+                    budget,
+                    message,
+                  }),
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                  throw new Error(data.error || "Failed");
+                }
+                setSent(true);
+                setName("");
+                setEmail("");
+                setCompany("");
+                setBudget("");
+                setMessage("");
+              } catch (err) {
+                alert("Failed to send project request.");
+              } finally {
+                setLoading(false);
+              }
+            }}
+          >
+            <div className="grid grid-cols-3 gap-6">
+              <Input
+                value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Name"
                 aria-label="Name"
                 required
-          />
-            <Input value={email}
+              />
+              <Input
+                value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 type="email"
                 placeholder="Email"
                 aria-label="Email"
                 required
-            />
-          </div>
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <Input value={company}
+              />
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Input
+                value={company}
                 onChange={(e) => setCompany(e.target.value)}
                 placeholder="Company"
                 aria-label="Company"
-            />
-            <Input value={budget}
+              />
+              <Input
+                value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="Budget range"
                 aria-label="Budget range"
-            />
-          </div>
-          <Textarea value={message}
+              />
+            </div>
+            <Textarea
+              value={message}
               onChange={(e) => setMessage(e.target.value)}
               className="mt-4"
               placeholder="Project brief"
               aria-label="Project brief"
               required
-          />
-          <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="flex min-w-0 items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/70">
-              <CheckCircle2 size={16} className="shrink-0 text-primary" />
-              {sent ? "Brief received. We will reply shortly." : "Response within 24 hours."}
-            </p>
-            <Button
-                type="submit"
-                size="lg"
-                disabled={loading}
-                className="min-w-[240px] w-full sm:w-auto"
-              >
+            />
+            <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex min-w-0 items-center gap-2 text-sm font-bold uppercase tracking-[0.14em] text-white/70">
+                <CheckCircle2 size={16} className="shrink-0 text-primary" />
+                {sent ? "Brief received. We will reply shortly." : "Response within 24 hours."}
+              </p>
+              <Button type="submit" size="lg" disabled={loading} className="min-w-[240px] w-full sm:w-auto">
                 {loading ? "Sending..." : "START YOUR PROJECT"}
-              <ArrowUpRight size={17} />
-            </Button>
-          </div>
-        </form>
+                <ArrowUpRight size={17} />
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
     </section>
   );

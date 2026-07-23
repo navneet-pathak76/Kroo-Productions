@@ -64,40 +64,40 @@ export const services = [
     description:
       "Commercial films, social launches, event stories, and performance-ready brand assets.",
     icon: Clapperboard,
-    span: "md:col-span-2",
+    span: "lg:col-span-2",
   },
   {
     title: "Film Production",
     description:
       "Concept development, casting, crews, studio planning, lighting, and on-set direction.",
     icon: Camera,
-    span: "md:col-span-1",
+    span: "lg:col-span-1",
   },
   {
     title: "Post Production",
     description:
       "Editing, color, motion graphics, sound design, VFX supervision, and delivery masters.",
     icon: MonitorPlay,
-    span: "md:col-span-1",
+    span: "lg:col-span-1",
   },
   {
     title: "Digital Marketing",
     description:
       "Campaign strategy, cutdown systems, paid creative, creator content, and launch analytics.",
     icon: Megaphone,
-    span: "md:col-span-2",
+    span: "lg:col-span-2",
   },
   {
     title: "Aerial Cinematography",
     description:
       "Licensed drone crews, cinematic flight planning, tracking shots, and landscape reveals.",
     icon: PlaneTakeoff,
-    span: "md:col-span-3",
+    span: "lg:col-span-2",
   },
 ];
 
 export const projects = [
-  {
+  { 
     title: "Gym Content",
     category: "Premium fitness storytelling",
     metric: "Transformations",
