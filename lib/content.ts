@@ -97,11 +97,12 @@ export const services = [
 ];
 
 export const projects = [
-  { 
+  {
     title: "Gym Content",
     category: "Premium fitness storytelling",
     metric: "Transformations",
     color: "from-orange-500/80 via-zinc-900 to-black",
+    image: "/images/gym-content.jpg",
     href: "/gym-content",
   },
   {
@@ -109,6 +110,7 @@ export const projects = [
     category: "Fashion & lifestyle campaigns",
     metric: "Lookbooks",
     color: "from-amber-500/80 via-neutral-800 to-black",
+    image: "/images/clothing-content.jpg",
     href: "/clothing-content",
   },
   {
@@ -116,6 +118,7 @@ export const projects = [
     category: "Nightlife & event visuals",
     metric: "Aftermovies",
     color: "from-purple-700/70 via-black to-black",
+    image: "/images/clubs-content.jpg",
     href: "/clubs-content",
   },
   {
@@ -123,6 +126,7 @@ export const projects = [
     category: "2D & 3D animation",
     metric: "Visual FX",
     color: "from-red-700/80 via-orange-900 to-black",
+    image: "/images/motion-graphics.jpg",
     href: "/motion-graphics-content",
   },
   {
@@ -130,6 +134,7 @@ export const projects = [
     category: "Hospitality brand films",
     metric: "Food Stories",
     color: "from-orange-600/80 via-amber-900/70 to-black",
+    image: "/images/restaurant-content.jpg",
     href: "/restaurant-content",
   },
 ];

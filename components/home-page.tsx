@@ -528,12 +528,16 @@ function ProjectsSection() {
               key={`${project.title}-${index}`}
               className="group relative w-[min(82vw,700px)] flex-none overflow-hidden rounded-md border border-white/10 bg-black"
             >
-              <div
-                className={cn(
-                  "relative aspect-[1.15] overflow-hidden bg-gradient-to-br transition duration-700 group-hover:scale-[1.025]",
-                  project.color
-                )}
-              >
+              <div className="relative aspect-[1.15] overflow-hidden">
+                <Image
+                src={project.image}
+                alt={project.title}
+                fill
+                className="object-cover transition duration-700 group-hover:scale-105"
+              sizes="(max-width:768px) 100vw, 700px"
+            />
+
+  <div className="absolute inset-0 bg-black/35" />
                 <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
                 <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
