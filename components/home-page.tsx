@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useInView, useScroll, useTransform } from "framer-motion";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -25,6 +25,15 @@ import { SiteNav } from "@/components/site-nav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import {
+  motion,
+  useMotionValue,
+  useScroll,
+  useTransform,
+  useSpring,
+  useInView,
+} from "framer-motion";
 import {
   brandMarks,
   capabilities,
@@ -99,7 +108,7 @@ function CountUp({ value, suffix }: { value: number; suffix: string }) {
   );
 }
 
-import type { ReactNode } from "react";
+
 
 function SectionIntro({
   eyebrow,
@@ -192,7 +201,7 @@ function HeroSection() {
               IF YOU'RE HERE TO COPY US
           <br />
           <span>—GOOD LUCK.</span>
-          </>
+          
           </h1>
           <motion.p
             variants={fadeUp}
@@ -483,7 +492,9 @@ function ServicesSection() {
             <p className="relative mt-5 max-w-xl text-base leading-7 text-white/60">
               {service.description}
             </p>
+            
           </article>
+          
         ))}
       </div>
     </section>
@@ -496,11 +507,43 @@ function ProjectsSection() {
     ...projects,
   ];
 
+  const x = useMotionValue(0);
+
+const isDragging = useRef(false);
+const animationFrame = useRef<number>();
+
+useEffect(() => {
+  const CARD_WIDTH = 716; // approximate card width + gap
+  const LOOP_WIDTH = CARD_WIDTH * projects.length;
+
+  const SPEED = 0.6; // pixels per frame
+
+  const animate = () => {
+    if (!isDragging.current) {
+      let next = x.get() - SPEED;
+
+      if (Math.abs(next) >= LOOP_WIDTH) {
+        next = 0;
+      }
+
+      x.set(next);
+    }
+
+    animationFrame.current = requestAnimationFrame(animate);
+  };
+
+  animationFrame.current = requestAnimationFrame(animate);
+
+  return () => {
+    if (animationFrame.current) {
+      cancelAnimationFrame(animationFrame.current);
+    }
+  };
+}, [x]);
+
   return (
     <section className="scroll-mt-28 overflow-hidden py-20">
-
       {/* Top Marquee */}
-
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
           FEATURED PROJECTS • GYM COMMERCIALS • PRODUCT ADS • BRAND FILMS • REELS •
@@ -509,35 +552,50 @@ function ProjectsSection() {
         </div>
       </div>
 
-    {/* ProjectsSection */}
       <SectionIntro
         eyebrow="Featured Projects"
         title={
-        <>
-        SCROLL IF YOU'RE CURIOUS.
-        <br />
-        STOP IF YOU'RE IMPRESSED.
-      </>
-    }
-      copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
-    />
+          <>
+            SCROLL IF YOU'RE CURIOUS.
+            <br />
+            STOP IF YOU'RE IMPRESSED.
+          </>
+        }
+        copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
+      />
+
       <div className="overflow-hidden">
-        <div className="animate-project-marquee flex w-max gap-4 pb-6 sm:gap-6">
+        <motion.div
+  style={{ x }}
+  drag="x"
+  dragMomentum={false}
+  dragElastic={0}
+  whileTap={{ cursor: "grabbing" }}
+  onDragStart={() => {
+    isDragging.current = true;
+  }}
+  onDragEnd={() => {
+    isDragging.current = false;
+  }}
+  className="flex w-max cursor-grab gap-4 pb-6 sm:gap-6"
+>
           {marqueeProjects.map((project, index) => (
-            <article
+            <Link
               key={`${project.title}-${index}`}
+              href={project.href}
               className="group relative w-[min(82vw,700px)] flex-none overflow-hidden rounded-md border border-white/10 bg-black"
             >
               <div className="relative aspect-[1.15] overflow-hidden">
                 <Image
-                src={project.image}
-                alt={project.title}
-                fill
-                className="object-cover transition duration-700 group-hover:scale-105"
-              sizes="(max-width:768px) 100vw, 700px"
-            />
+                  src={project.image}
+                  alt={project.title}
+                  fill
+                  sizes="(max-width:768px) 100vw, 700px"
+                  className="object-cover transition duration-700 group-hover:scale-105"
+                />
 
-  <div className="absolute inset-0 bg-black/35" />
+                <div className="absolute inset-0 bg-black/35" />
+
                 <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
                 <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
@@ -552,15 +610,22 @@ function ProjectsSection() {
                   <h3 className="text-[clamp(2rem,7vw,3rem)] font-black uppercase leading-none">
                     {project.title}
                   </h3>
+
+                  <div className="mt-6">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary/10 px-5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black">
+                      View Project
+                      <ArrowRight size={16} />
+                    </span>
+                  </div>
                 </div>
 
                 <p className="absolute right-5 top-16 text-2xl font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
                   {project.metric}
                 </p>
               </div>
-            </article>
+            </Link>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
@@ -581,19 +646,20 @@ function TestimonialsSection() {
 
   return (
     <section id="about" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <div className="mx-auto max-w-[1480px]">
-        <div data-reveal className="mb-10 lg:mb-14">
-        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
-         Client response
-        </p>
-        <h2 className="section-title max-w-[1200px]">
-          OUR WORK SPEAKS.
-        <br />
-          THEY CONFIRM.
-        </h2>
-      </div>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:items-center">
-    <div /> {/* keeps card aligned right if you want the two-col ratio preserved below the heading, or delete this div and let the card span full width */}
+      <div className="mx-auto grid max-w-[1480px] gap-16 lg:grid-cols-2 lg:items-center">
+  <div data-reveal>
+    <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+      Client response
+    </p>
+
+    <h2 className="section-title max-w-[700px]">
+      OUR WORK SPEAKS.
+      <br />
+      THEY CONFIRM.
+    </h2>
+  </div>
+
+  
     <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-8 sm:p-12">
           <Quote className="mb-8 text-primary" size={42} />
           <motion.p
@@ -629,7 +695,7 @@ function TestimonialsSection() {
           </div>
         </div>
       </div>
-      </div> 
+      
     </section>
   );
 }
