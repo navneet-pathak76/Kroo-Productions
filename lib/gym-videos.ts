@@ -16,7 +16,7 @@ export const gymVideos: GymVideo[] = [
   {
     id: 1,
     title: "Before After Phone",
-    thumbnail: "https://d3uo687t366hok.cloudfront.net/thumbnails/gym/before-after-phone.jpg"
+    thumbnail: "https://d3uo687t366hok.cloudfront.net/thumbnails/gym/before-after-phone.jpg",
     video: `${BASE}/Before%20After%20Phone.mp4`,
     description: "Premium transformation showcase filmed for social media campaigns.",
     duration: "00:30",
