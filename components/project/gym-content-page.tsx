@@ -1,5 +1,5 @@
 "use client";
-
+import { cn } from "@/lib/utils";
 import { AnimatePresence, motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
@@ -54,23 +54,29 @@ function SectionIntro({
   eyebrow,
   title,
   copy,
+  titleClassName,
 }: {
   eyebrow: string;
-  title: string;
+  title: React.ReactNode;
   copy: string;
+  titleClassName?: string;
 }) {
   return (
-    <div className="mx-auto mb-10 flex max-w-[1480px] flex-col gap-5 px-5 sm:px-8 lg:mb-14 lg:flex-row lg:items-end lg:justify-between">
-      <div data-reveal className="max-w-4xl">
-        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
-          {eyebrow}
-        </p>
-        <h2 className="section-title text-balance">{title}</h2>
-      </div>
-      <p data-reveal className="max-w-md text-base leading-7 text-white/60">
-        {copy}
-      </p>
-    </div>
+    <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8 lg:mb-14">
+  <div data-reveal className="max-w-[1100px]">
+    <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+      {eyebrow}
+    </p>
+
+    <h2 className={`section-title ${titleClassName ?? ""}`}>
+      {title}
+    </h2>
+
+    <p className="mt-8 max-w-[760px] text-base leading-7 text-white/60">
+      {copy}
+    </p>
+  </div>
+</div>
   );
 }
 
@@ -459,12 +465,19 @@ function VideoGallery() {
   const [selected, setSelected] = useState<GymVideo | null>(null);
 
   return (
-    <section id="work" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <SectionIntro
-        eyebrow="Featured Videos"
-        title="A curated collection of our cinematic gym productions."
-        copy="Commercial films, social edits and brand stories built with rhythm, contrast and performance-led intent."
-      />
+    <section id="work" className="relative scroll-mt-28 px-2 py-16 sm:px-8 lg:py-20">
+     <SectionIntro
+      eyebrow="Featured Videos"
+      title={
+      <>
+      A CURATED COLLECTION OF OUR
+      <br />
+      CINEMATIC GYM PRODUCTIONS
+      </>
+      }
+  titleClassName="max-w-[1100px] text-[clamp(2.4rem,3.6vw,4.2rem)] leading-[0.92]"
+  copy="Commercial films, social edits and brand stories built with rhythm, contrast and performance-led intent."
+/>
       <div className="mx-auto grid max-w-[1480px] gap-5 md:grid-cols-2 lg:grid-cols-3">
         {gymVideos.map((video) => (
           <VideoCard key={video.id} video={video} onOpen={setSelected} />
@@ -502,52 +515,56 @@ function AboutProject() {
   return (
     <section id="about" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-24">
       <div className="pointer-events-none absolute left-0 top-0 h-[34rem] w-[34rem] rounded-full bg-primary/10 blur-[120px]" />
-      <div className="mx-auto grid max-w-[1480px] gap-10 lg:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)] lg:items-start">
-        <div data-reveal className="lg:sticky lg:top-32">
+      <div className="mx-auto max-w-[1480px]">
+        <div data-reveal className="max-w-[1660px]">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             About the project
           </p>
-          <h2 className="section-title text-balance">About This Production</h2>
-          <p className="mt-7 max-w-xl text-base leading-7 text-white/60">
-            This section will later contain final client-approved details. For
-            now, it reflects the intended production approach for a premium gym
-            content system.
+          <h2 className="text-[clamp(3.6rem,4.8vw,5rem)] font-black uppercase leading-[0.92] tracking-tight">About This Production</h2>
+          <p className="mt-7 max-w-[700px] text-base leading-7 text-white/60">
+           A cinematic content system designed to position the brand as a premium
+            fitness destination through strategic storytelling, disciplined
+            production, and high-impact visual execution.
           </p>
         </div>
 
-        <div className="grid gap-5">
+        <div className="mt-14 border-t border-white/10 pt-16">
+          <div className="grid gap-6 lg:grid-cols-3">
           {details.map((item) => (
-            <article
-              key={item.title}
-              data-reveal
-              className="cinema-panel group rounded-md p-6 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-8"
-            >
+            <div className="mt-20 border-t border-white/10 pt-16">
+              <article
+                data-reveal
+                className="cinema-panel flex min-h-[300px] flex-col rounded-md p-8"
+              >
               <item.icon
                 className="mb-8 text-white/55 transition duration-300 group-hover:text-primary"
                 size={34}
               />
-              <h3 className="text-3xl font-black uppercase leading-none text-white">
+             <h3 className="text-3xl font-black uppercase leading-none">
                 {item.title}
               </h3>
-              <p className="mt-5 text-base leading-7 text-white/62">
+
+              <p className="mt-auto pt-6 text-base leading-7 text-white/62">
                 {item.copy}
               </p>
             </article>
+            </div>
           ))}
 
           <article
             data-reveal
-            className="cinema-panel overflow-hidden rounded-md p-6 sm:p-8"
-          >
+            className="cinema-panel lg:col-span-3 rounded-md p-10 py-7">
             <p className="mb-5 text-xs font-black uppercase tracking-[0.28em] text-primary">
               Marketing goals
             </p>
-            <p className="text-2xl font-bold leading-tight text-white sm:text-4xl">
+            <p className="max-w-full text-[clamp(1.9rem,2.6vw,2.8rem)] font-black leading-[1.12] tracking-tight text-white">
               Build instant credibility, make the facility feel aspirational,
-              and turn fitness content into a conversion asset across ads,
-              reels, website sections and sales conversations.
+            <br />
+              and turn fitness content into a conversion asset across ads, reels,
+              website sections and sales conversations.
             </p>
           </article>
+        </div>
         </div>
       </div>
     </section>
@@ -561,12 +578,12 @@ function ProjectCTA() {
       <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_28%,black_74%,transparent)]" />
       <div
         data-reveal
-        className="relative mx-auto max-w-[1480px] border-y border-white/10 py-16 text-center"
+        className="relative mx-auto max-w-[1320px] border-y border-white/10 py-16 text-center"
       >
         <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
           Start project
         </p>
-        <h2 className="section-title mx-auto max-w-5xl text-balance">
+        <h2 className="section-title max-w-none whitespace-nowrap">
           Ready To Build Your Brand?
         </h2>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/64 sm:text-lg">

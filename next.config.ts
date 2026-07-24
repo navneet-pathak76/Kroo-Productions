@@ -97,10 +97,16 @@ const nextConfig: NextConfig = {
   },
 
   images: {
-    formats: ["image/avif", "image/webp"],
-    qualities: [100],
-  },
+  formats: ["image/avif", "image/webp"],
+  qualities: [100],
 
+  remotePatterns: [
+    {
+      protocol: "https",
+      hostname: "d3uo687t366hok.cloudfront.net",
+    },
+  ],
+},
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -25,9 +25,9 @@ export const navItems = [
 
 export const stats = [
   { value: 200, suffix: "+", label: "Projects Delivered", icon: Film },
-  { value: 150, suffix: "+", label: "Happy Clients", icon: Users },
+  { value: 50, suffix: "+", label: "Happy Clients", icon: Users },
   { value: 20, suffix: "M+", label: "Views Generated", icon: Play },
-  { value: 8, suffix: "+", label: "Years Experience", icon: Star },
+  { value: 5, suffix: "+", label: "Years Experience", icon: Star },
 ];
 
 export const founders = [
