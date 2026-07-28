@@ -1,5 +1,5 @@
 "use client";
-
+import { FounderCard } from "@/components/founder-card";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
@@ -402,54 +402,9 @@ function FoundersSection() {
       </div>
       <div className="mx-auto grid w-full max-w-none grid-cols-2 gap-[14px] pb-3 md:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
         {founders.map((founder) => (
-          <article
-            key={founder.name}
-            data-reveal
-            className="group cinema-panel aspect-[3/4.7] w-full overflow-hidden rounded-md p-2.5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow lg:aspect-auto lg:p-3"
-            style={{
-              width: "100%",
-              minWidth: 0,
-              maxWidth: "none",
-              height: "auto",
-              boxSizing: "border-box",
-            }}
-          >
-            <div className="overflow-hidden rounded-sm">
-            <div className="transition duration-700 group-hover:scale-105">
-               {founder.image ? (
-            <div className="w-full">
-            <Image
-                src={founder.image}
-                alt={founder.name}
-                width={600}
-                height={800}
-                sizes="(max-width: 768px) 100vw,(max-width: 1280px) 50vw,25vw"
-                className="aspect-[3/4] h-auto w-full object-cover"
-              />
-            </div>
-              ) : (
-            <FounderPortrait tone={founder.tone} />
-             )}
-          </div>
-          </div>
-            <div className="p-3 lg:p-4">
-              <h3 className="text-[13px] font-black uppercase tracking-[0.08em] text-primary sm:text-base lg:text-lg">
-                {founder.name}
-              </h3>
-              <p className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/60 sm:text-xs lg:text-sm">
-                {founder.role}
-              </p>
-              <div className="mt-4 grid w-fit grid-cols-2 gap-2.5 text-white/60 lg:mt-5 lg:gap-3">
-                <a href="#" aria-label={`${founder.name} LinkedIn`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
-                  <Linkedin className="size-4 lg:size-[18px]" />
-                </a>
-                <a href="#" aria-label={`${founder.name} email`} className="rounded-full transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black">
-                  <Mail className="size-4 lg:size-[18px]" />
-                </a>
-              </div>
-            </div>
-          </article>
-        ))}
+        <FounderCard key={founder.name} founder={founder} /> ))}
+           
+      
       </div>
     </section>
   );
