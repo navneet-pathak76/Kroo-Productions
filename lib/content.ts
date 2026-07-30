@@ -2,12 +2,12 @@ import {
   Aperture,
   BadgeCheck,
   BarChart3,
+  Bot,
   Camera,
   Clapperboard,
   Film,
   Megaphone,
   MonitorPlay,
-  PlaneTakeoff,
   Play,
   Sparkles,
   Star,
@@ -88,12 +88,12 @@ export const services = [
     span: "lg:col-span-2",
   },
   {
-    title: "Aerial Cinematography",
-    description:
-      "Licensed drone crews, cinematic flight planning, tracking shots, and landscape reveals.",
-    icon: PlaneTakeoff,
-    span: "lg:col-span-2",
-  },
+  title: "AI Content Production",
+  description:
+    "AI-powered commercials, cinematic visuals, product renders, virtual models, AI avatars, and branded content engineered for speed without compromising cinematic quality.",
+  icon: Bot,
+  span: "lg:col-span-2",
+},
 ];
 
 export const projects = [

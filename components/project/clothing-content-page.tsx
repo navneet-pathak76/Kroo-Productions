@@ -160,7 +160,7 @@ export const clothingVideos: ClothingVideo[] = [
     client: "Fashion Industry",
     services: ["Filming", "Editing", "Sound Design"],
   },
-];
+]; 
 
 function SectionIntro({
   eyebrow,

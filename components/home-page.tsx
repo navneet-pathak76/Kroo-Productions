@@ -1,6 +1,6 @@
 "use client";
 import { FounderCard } from "@/components/founder-card";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from "react";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -63,20 +63,6 @@ const fadeUp = {
   }),
 };
 
-function SplitText({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(" ").map((word, index) => (
-        <span className="word-mask mr-[0.18em]" key={`${word}-${index}`}>
-          <motion.span variants={fadeUp} custom={index}>
-            {word}
-          </motion.span>
-        </span>
-      ))}
-    </>
-  );
-}
-
 function CountUp({ value, suffix }: { value: number; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-12%" });
@@ -138,6 +124,135 @@ function SectionIntro({
     </div>
   );
 }
+const cardEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
+
+function CapabilityCard({ item }: { item: (typeof capabilities)[number] }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const orbX = useSpring(mouseX, { stiffness: 150, damping: 20, mass: 0.4 });
+  const orbY = useSpring(mouseY, { stiffness: 150, damping: 20, mass: 0.4 });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
+    if (reducedMotion || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width - 0.5;
+    const relY = (e.clientY - rect.top) / rect.height - 0.5;
+    mouseX.set(relX * 20);
+    mouseY.set(relY * 20);
+  };
+
+  const handleMouseLeave = () => {
+    mouseX.set(0);
+    mouseY.set(0);
+  };
+
+  const cardVariants = {
+    rest: {
+      y: 0,
+      borderColor: "rgba(255,255,255,0.1)",
+      boxShadow: "0 0 0px rgba(255,102,0,0)",
+      transition: { duration: 0.45, ease: cardEase },
+    },
+    hover: {
+      y: -6,
+      borderColor: "rgba(255,102,0,0.3)",
+      boxShadow: "0 0 40px rgba(255,102,0,0.18)",
+      transition: { duration: 0.45, ease: cardEase },
+    },
+  };
+
+  const sweepVariants = {
+    rest: { x: "-20%", opacity: 0 },
+    hover: {
+      x: "260%",
+      opacity: [0, 1, 0],
+      transition: { duration: 0.8, ease: "linear" },
+    },
+  };
+
+  const orbVariants = {
+    rest: { opacity: 0, scale: 1, transition: { duration: 0.45, ease: cardEase } },
+    hover: { opacity: 0.5, scale: 1.4, transition: { duration: 0.45, ease: cardEase } },
+  };
+
+  const iconVariants = {
+    rest: { rotate: 0, scale: 1, y: 0, filter: "drop-shadow(0 0 0px rgba(255,102,0,0))", transition: { duration: 0.45, ease: cardEase } },
+    hover: { rotate: 8, scale: 1.12, y: -3, filter: "drop-shadow(0 0 8px rgba(255,102,0,0.6))", transition: { duration: 0.45, ease: cardEase } },
+  };
+
+  const labelVariants = {
+    rest: { x: 0, opacity: 0.85, transition: { duration: 0.45, ease: cardEase } },
+    hover: { x: 6, opacity: 1, transition: { duration: 0.45, ease: cardEase } },
+  };
+
+  const accentVariants = {
+    rest: { width: "0%", transition: { duration: 0.6, ease: cardEase } },
+    hover: { width: "100%", transition: { duration: 0.6, ease: cardEase } },
+  };
+
+  return (
+    <motion.div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      initial="rest"
+      animate="rest"
+      whileHover={reducedMotion ? undefined : "hover"}
+      variants={cardVariants}
+      className="cinema-panel relative min-h-[110px] min-w-0 overflow-hidden rounded-xl border p-4 text-white/70 [will-change:transform]"
+    >
+      {!reducedMotion && (
+        <>
+          <motion.span
+            aria-hidden
+            variants={sweepVariants}
+            className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-[linear-gradient(100deg,transparent,rgba(255,102,0,0.16),transparent)] blur-md"
+          />
+          <motion.span
+            aria-hidden
+            variants={orbVariants}
+            style={{ x: orbX, y: orbY }}
+            className="pointer-events-none absolute left-4 top-4 h-16 w-16 rounded-full bg-primary/60 blur-2xl"
+          />
+        </>
+      )}
+
+      <motion.div
+        variants={iconVariants}
+        className="relative z-10 mb-4 inline-block text-primary"
+      >
+        <item.icon size={20} />
+      </motion.div>
+
+      <motion.p
+        variants={labelVariants}
+        className="relative z-10 text-xs font-bold uppercase tracking-[0.12em] break-words"
+      >
+        {item.label}
+      </motion.p>
+
+      {!reducedMotion && (
+        <motion.span
+          aria-hidden
+          variants={accentVariants}
+          className="pointer-events-none absolute bottom-0 left-0 h-[2px] bg-primary"
+        />
+      )}
+    </motion.div>
+  );
+}
+
 function HeroSection() {
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
@@ -152,7 +267,7 @@ function HeroSection() {
    <section
     id="home"
     ref={ref}
-    className="relative min-h-[30svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:px-8 lg:pt-36 xl:pt-40"
+    className="relative min-h-[85svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:min-h-[90svh] sm:px-8 lg:min-h-0 lg:pt-36 xl:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-16 h-[42rem] w-[42rem] rounded-full bg-primary/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
@@ -173,7 +288,7 @@ function HeroSection() {
        "
       >
         <motion.div
-          className="relative z-10 min-w-0 order-2 lg:order-1"
+          className="relative z-10 min-w-0 order-2 [container-type:inline-size] lg:order-1"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
@@ -185,12 +300,12 @@ function HeroSection() {
           >
             We bring
           </motion.p>
-          <h1
+<h1
   className="leading-[0.96]
     font-black
     tracking-tight
     max-w-[1550px]
-    text-[clamp(3rem,3vw,1rem)]
+    text-[clamp(1.15rem,6.8cqw,3.4rem)]
   "
 >
   IF YOU'RE HERE TO HIRE US
@@ -235,15 +350,7 @@ function HeroSection() {
             className="mt-6 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4"
           >
             {capabilities.map((item) => (
-              <div
-                key={item.label}
-                className="cinema-panel min-h-[110px] min-w-0 rounded-xl p-4 text-white/70"
-              >
-                <item.icon className="mb-4 text-primary" size={20} />
-                <p className="text-xs font-bold uppercase tracking-[0.12em] break-words">
-                  {item.label}
-                </p>
-              </div>
+              <CapabilityCard key={item.label} item={item} />
             ))}
           </motion.div>
         </motion.div>
@@ -264,17 +371,16 @@ function HeroSection() {
 function StatsSection() {
   return (
     <section className="relative z-10 scroll-mt-28 px-5 py-12 sm:px-8 lg:py-16">
-      <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,90,0,0.03)_55%,transparent_80%)] blur-[120px] opacity-70" />
-      <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(255,255,255,0))] opacity-40" />
+      <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,255,255,0.015)_55%,transparent_80%)] blur-[120px] opacity-70" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[620px] w-[1520px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-black/10 opacity-25 shadow-[inset_0_0_140px_rgba(0,0,0,0.6)]" />
-      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-4 gap-4 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-8 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:px-8 sm:py-10 lg:grid-cols-4 xl:px-10">
+      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-2 gap-4 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-8 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:grid-cols-4 sm:px-8 sm:py-10 xl:px-10">
         {stats.map((stat) => (
           <div
             key={stat.label}
             data-reveal
-            className="relative min-h-[96px] border border-transparent bg-transparent p-2.5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 hover:border-orange-500 sm:min-h-40 sm:p-7"
-          >
-            <stat.icon className="mb-7 text-primary" size={24} />
+            className="relative min-h-[96px] border border-transparent bg-transparent p-2.5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 sm:min-h-40 sm:p-7"
+            >
+              <stat.icon className="mb-7 text-primary" size={24} />
             <p className="text-xl sm:text-5xl font-black leading-none text-white sm:text-5xl">
               <CountUp value={stat.value} suffix={stat.suffix} />
             </p>
@@ -290,7 +396,7 @@ function StatsSection() {
 
 function ShowreelSection() {
   return (
-    <section id="work" className="relative scroll-mt-48 px-2 py-6 sm:px-30 lg:py-50">
+    <section id="work" className="relative scroll-mt-28 px-2 py-6 sm:px-16 lg:px-24 lg:py-32">
       <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8">
   <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
     SHOWREEL
@@ -314,12 +420,11 @@ function ShowreelSection() {
       >
         <div className="relative aspect-[16/9] min-h-[120px] overflow-hidden sm:min-h-[220px]">
           <video
-            controls
-            preload="metadata"
-            playsInline
-            controlsList="nodownload"
-            poster=""
-            className="h-full w-full bg-black object-cover rounded-[inherit]"
+  controls
+  preload="metadata"
+  playsInline
+  controlsList="nodownload"
+  className="h-full w-full bg-black object-cover rounded-[inherit]"
             onClick={(event) => {
               const video = event.currentTarget;
 
@@ -344,43 +449,6 @@ function ShowreelSection() {
 function LogoStrip() {
   return null;
 }
-  /*return (
-    <section className="relative overflow-hidden px-5 py-12 sm:px-8">
-      <div className="mx-auto max-w-[1480px]">
-        <p
-          data-reveal
-          className="mb-6 text-sm font-black uppercase tracking-[0.18em] text-white/80"
-        >
-          Trusted by brands that inspire
-        </p>
-        <div className="relative overflow-hidden border-y border-white/10 py-4">
-          <div className="flex w-max animate-marquee gap-4">
-            {[...brandMarks, ...brandMarks].map((logo, index) => (
-              <div
-                key={`${logo}-${index}`}
-                className="flex h-24 w-44 items-center justify-center rounded-md border border-white/10 bg-white/[0.025] text-xl font-black tracking-[0.12em] text-white/40 grayscale transition duration-300 hover:border-primary/60 hover:text-white hover:shadow-glow"
-              >
-                {logo}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}*/
-
-function FounderPortrait({ tone }: { tone: string }) {
-  return (
-    <div className="relative aspect-[3/4] w-full overflow-hidden rounded-sm bg-neutral-950 lg:aspect-auto lg:h-72">
-      <div className={cn("absolute inset-0 bg-gradient-to-b opacity-70", tone)} />
-      <div className="absolute left-1/2 top-[37px] h-[75px] w-[75px] -translate-x-1/2 rounded-full bg-gradient-to-b from-white/80 to-zinc-500 shadow-[inset_0_-20px_30px_rgba(0,0,0,0.5)] lg:top-12 lg:h-24 lg:w-24" />
-      <div className="absolute left-1/2 top-[87px] h-[137px] w-[125px] -translate-x-1/2 rounded-t-[55px] bg-gradient-to-b from-zinc-700 to-black lg:top-28 lg:h-44 lg:w-40 lg:rounded-t-[70px]" />
-      <div className="absolute left-1/2 top-[62px] h-3 w-12 -translate-x-1/2 rounded-full bg-black/60 lg:top-20 lg:h-4 lg:w-16" />
-      <div className="absolute inset-x-0 bottom-0 h-[88px] bg-gradient-to-t from-black to-transparent lg:h-28" />
-    </div>
-  );
-}
 
 function FoundersSection() {
   return (
@@ -390,7 +458,7 @@ function FoundersSection() {
         <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
           Meet the founders
         </p>
-        <h2 className="section-title max-w-[1200px] text-[clamp(2.8rem,4vw,4.8rem)]">
+        <h2 className="section-title max-w-[1200px] text-[clamp(1.8rem,3.4vw,3.75rem)]">
             GOOD LUCK TO YOUR COMPETITORS.
         <br />
             YOU FOUND US FIRST.
@@ -400,7 +468,7 @@ function FoundersSection() {
         </p>
         </div>
       </div>
-      <div className="mx-auto grid w-full max-w-none grid-cols-2 gap-[14px] pb-3 md:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
+      <div className="mx-auto grid w-full max-w-none grid-cols-1 gap-4 pb-3 sm:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
         {founders.map((founder) => (
         <FounderCard key={founder.name} founder={founder} /> ))}
            
@@ -431,7 +499,7 @@ function ServicesSection() {
             key={service.title}
             data-reveal
             className={cn(
-              "group cinema-panel min-h-72 min-w-0 snap-start overflow-hidden rounded-md p-6 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-7",
+              "group cinema-panel relative min-h-72 min-w-0 snap-start overflow-hidden rounded-md p-6 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-7",
               service.span,
             )}
           >
@@ -465,18 +533,21 @@ function ProjectsSection() {
 
 const isDragging = useRef(false);
 const animationFrame = useRef<number>(0);
+const trackRef = useRef<HTMLDivElement>(null);
 
 useEffect(() => {
-  const CARD_WIDTH = 716; // approximate card width + gap
-  const LOOP_WIDTH = CARD_WIDTH * projects.length;
-
   const SPEED = 0.6; // pixels per frame
+  const FALLBACK_CARD_WIDTH = 716; // used only if measurement isn't ready yet
 
   const animate = () => {
     if (!isDragging.current) {
+      const firstCard = trackRef.current?.firstElementChild as HTMLElement | undefined;
+      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : FALLBACK_CARD_WIDTH; // + gap-4
+      const loopWidth = cardWidth * projects.length;
+
       let next = x.get() - SPEED;
 
-      if (Math.abs(next) >= LOOP_WIDTH) {
+      if (Math.abs(next) >= loopWidth) {
         next = 0;
       }
 
@@ -520,6 +591,7 @@ useEffect(() => {
 
       <div className="overflow-hidden">
         <motion.div
+  ref={trackRef}
   style={{ x }}
   drag="x"
   dragMomentum={false}
@@ -600,13 +672,13 @@ function TestimonialsSection() {
 
   return (
     <section id="about" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
-      <div className="mx-auto grid max-w-[1480px] gap-16 lg:grid-cols-2 lg:items-center">
-  <div data-reveal>
+      <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
+  <div data-reveal className="[container-type:inline-size]">
     <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
       Client response
     </p>
 
-    <h2 className="section-title max-w-[700px]">
+    <h2 className="section-title max-w-[700px] text-[clamp(1.6rem,7.2cqw,3.25rem)]">
       OUR WORK SPEAKS.
       <br />
       THEY CONFIRM.
@@ -774,7 +846,7 @@ function ContactSection() {
               }
             }}
           >
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid gap-4 sm:grid-cols-2 sm:gap-6">
               <Input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
