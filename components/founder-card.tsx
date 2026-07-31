@@ -83,14 +83,14 @@ const founderContent: Record<string, FounderContent> = {
     portraitScale: 1.03,
   },
 };
-const founderSocials: Record<
-  string,
-  {
-    instagram?: string;
-    whatsapp?: string;
-    linkedin?: string;
-  }
-> = {
+
+type FounderSocials = {
+  instagram?: string;
+  whatsapp?: string;
+  linkedin?: string;
+};
+
+const founderSocials: Record<string, FounderSocials> = {
   "Navneet Pathak": {
     instagram: "https://www.instagram.com/theunrealatable.monk/",
     whatsapp: "https://wa.me/919088564713",
@@ -115,6 +115,7 @@ const founderSocials: Record<
     linkedin: "https://www.linkedin.com/in/rajbir-singh-4639b5324/",
   },
 };
+
 const fallbackContent: FounderContent = {
   keyword: "Create",
   philosophy: ["Craft", "over", "everything."],
@@ -166,26 +167,24 @@ function CursorSpotlight() {
   );
 }
 
-
-
 export function FounderCard({ founder }: FounderCardProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const [isTouch, setIsTouch] = useState(false);
 
   const content = founderContent[founder.name] ?? fallbackContent;
   const socials =
-  founderSocials[founder.name] ?? {
-    instagram: "#",
-    whatsapp: "#",
-    linkedin: "#",
-  };  
+    founderSocials[founder.name] ?? {
+      instagram: "#",
+      whatsapp: "#",
+      linkedin: "#",
+    };
+
   // Raw mouse-driven tilt, smoothed through a spring so the tilt "smoothly
   // influences" rotation rather than snapping frame to frame.
   const rawTiltX = useMotionValue(0);
   const rawTiltY = useMotionValue(0);
   const tiltX = useSpring(rawTiltX, { stiffness: 220, damping: 22, mass: 0.4 });
   const tiltY = useSpring(rawTiltY, { stiffness: 220, damping: 22, mass: 0.4 });
- 
 
   useEffect(() => {
     const mq = window.matchMedia("(hover: none), (pointer: coarse)");
@@ -252,7 +251,13 @@ export function FounderCard({ founder }: FounderCardProps) {
         }}
         whileHover={{ y: -10, scale: 1.02 }}
         transition={cardTransition}
-        className="relative aspect-[3/4.7] h-full w-full [transform:translateZ(0)]"
+        className="
+relative
+w-full
+aspect-[3/5.25]
+sm:aspect-[3/4.7]
+[transform:translateZ(0)]
+"
       >
         <div className={`${glassShell} bg-[#0b0b0b]`}>
           <div className="relative h-full">
@@ -263,7 +268,11 @@ export function FounderCard({ founder }: FounderCardProps) {
                   src={founder.image}
                   alt={founder.name}
                   fill
-                  className="object-cover object-top contrast-[1.08] transition-transform duration-[450ms] ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.03]"
+                  style={{
+                    objectPosition: content.portraitPosition,
+                    transform: `scale(${content.portraitScale})`,
+                  }}
+                  className="object-cover transition-transform duration-[450ms] group-hover:scale-[1.03]"
                 />
               </div>
             ) : (
@@ -301,7 +310,7 @@ export function FounderCard({ founder }: FounderCardProps) {
 
             {/* name + label + badge */}
             <div className="absolute left-5 right-14 top-5 z-10">
-              <h3 className="flex items-start text-[28px] font-bold leading-none text-white">
+              <h3 className="flex items-start text-[16px] sm:text-[28px] font-bold leading-none text-white">
                 {founder.name}
                 <span
                   className="ml-1 mt-1 h-2 w-2 shrink-0 rounded-full"
@@ -309,7 +318,7 @@ export function FounderCard({ founder }: FounderCardProps) {
                 />
               </h3>
               <p
-                className="mt-2 text-[13px] font-black uppercase tracking-[0.28em]"
+                className="mt-2 text-[10px] sm:text-[13px] font-black uppercase tracking-[0.28em]"
                 style={{ color: "var(--accent)" }}
               >
                 Founder
@@ -335,56 +344,86 @@ export function FounderCard({ founder }: FounderCardProps) {
             </button>
 
             {/* floating glass dock */}
-            <div className="absolute inset-x-4 bottom-4 z-10 flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_18px_40px_-12px_rgba(0,0,0,0.7)] [backdrop-filter:blur(26px)] [-webkit-backdrop-filter:blur(26px)]">
-              <div className="relative flex-1">
-                {/* glow — static shadow value, only its opacity animates */}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-[450ms] ease-out group-hover:opacity-100"
-                  style={{ boxShadow: `0 0 22px ${content.accent}66` }}
-                />
-                <button
-                  type="button"
-                  className="relative w-full rounded-full border border-white/10 bg-white/[0.05] py-3 text-center text-[12px] font-black uppercase tracking-[0.16em] text-white"
-                >
-                  Connect Us
-                </button>
-              </div>
-  <div className="flex shrink-0 items-center gap-2">
-  <a
-    href={socials.instagram}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
-    style={{ color: "var(--accent)" }}
-  >
-    <Instagram size={15} />
-  </a>
+           {/* floating glass dock */}
+<div className="absolute left-2 right-2 bottom-2 z-10 flex flex-col gap-1.5 rounded-[26px] border border-white/15 bg-white/[0.07] p-1.5 sm:inset-x-4 sm:bottom-4 sm:flex-row sm:items-center sm:gap-2 sm:rounded-full sm:p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_18px_40px_-12px_rgba(0,0,0,0.7)] [backdrop-filter:blur(26px)] [-webkit-backdrop-filter:blur(26px)]">
+  <div className="relative w-full sm:w-auto sm:min-w-0 sm:flex-1">
+    {/* glow — static shadow value, only its opacity animates */}
+    <span
+      aria-hidden
+      className="pointer-events-none absolute inset-0 rounded-full opacity-0 transition-opacity duration-[450ms] ease-out group-hover:opacity-100"
+      style={{ boxShadow: `0 0 22px ${content.accent}66` }}
+    />
+    <button
+      type="button"
+      className="
+        relative
+        w-full
+        min-w-0
+        rounded-full
+        border
+        border-white/10
+        bg-white/[0.05]
+        py-2.5
+        sm:py-3
+        px-4
+        sm:px-3
+        text-center
+        text-[11px]
+        sm:text-[12px]
+        font-black
+        uppercase
+        tracking-[0.16em]
+        sm:tracking-[0.18em]
+        whitespace-nowrap
+        text-white
+      "
+    >
+      CONNECT&nbsp;US
+    </button>
+  </div>
 
-  <a
-    href={socials.whatsapp}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
-    style={{ color: "var(--accent)" }}
-  >
-    <FaWhatsapp size={15} />
-  </a>
+  <div className="flex w-full items-center justify-center gap-3 sm:w-auto sm:flex-none sm:justify-start sm:gap-1">
+              <a
 
-  <a
-    href={socials.linkedin}
-    target="_blank"
-    rel="noopener noreferrer"
-    className="flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
-    style={{ color: "var(--accent)" }}
-  >
-    <Linkedin size={15} />
-  </a>
+      href={socials.instagram}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
+      style={{ color: "var(--accent)" }}
+    >
+      <Instagram
+        className="h-[13px] w-[13px] sm:h-[15px] sm:w-[15px]"
+        strokeWidth={2.3}
+      />
+    </a>
+
+     <a
+      href={socials.whatsapp}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
+      style={{ color: "var(--accent)" }}
+    >
+      <FaWhatsapp className="h-[13px] w-[13px] sm:h-[15px] sm:w-[15px]" />
+    </a>
+
+     <a
+      href={socials.linkedin}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full border border-white/15 bg-white/[0.04] opacity-80 transition-all duration-300 hover:scale-110 hover:opacity-100"
+      style={{ color: "var(--accent)" }}
+    >
+      <Linkedin
+        className="h-[13px] w-[13px] sm:h-[15px] sm:w-[15px]"
+        strokeWidth={2.3}
+      />
+    </a>
+  </div>
 </div>
             </div>
-          </div>
+        
 
-          
           <CursorSpotlight />
           <Grain />
         </div>

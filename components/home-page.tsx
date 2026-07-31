@@ -468,7 +468,20 @@ function FoundersSection() {
         </p>
         </div>
       </div>
-      <div className="mx-auto grid w-full max-w-none grid-cols-1 gap-4 pb-3 sm:grid-cols-2 lg:max-w-[1480px] lg:grid-cols-4 lg:gap-5">
+      <div className="
+    mx-auto
+    grid
+    w-full
+    max-w-none
+    grid-cols-2
+    gap-3
+    px-2
+    sm:grid-cols-2
+    lg:max-w-[1480px]
+    lg:grid-cols-4
+    lg:gap-5
+  "
+>
         {founders.map((founder) => (
         <FounderCard key={founder.name} founder={founder} /> ))}
            

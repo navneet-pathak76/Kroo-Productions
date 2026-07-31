@@ -9,7 +9,7 @@ import {
   ArrowUpRight,
   Calendar,
   Clock3,
-  Dumbbell,
+  PenTool,
   Film,
   Layers3,
   Play,
@@ -45,8 +45,8 @@ const fadeUp = {
     },
   }),
 };
-import { gymVideos } from "../../lib/gym-videos";
-import type { GymVideo } from "../../lib/gym-videos";
+import { logoGraphicsVideos } from "../../lib/logo-graphics-videos";
+import type { LogoGraphicsVideo } from "../../lib/logo-graphics-videos";
 
 function SectionIntro({
   eyebrow,
@@ -117,16 +117,16 @@ function ProjectHero() {
             custom={1}
             className="headline text-balance"
           >
-            Gym Content
+            Logo & Graphics
           </motion.h1>
           <motion.p
             variants={fadeUp}
             custom={2}
             className="mt-6 max-w-3xl text-base leading-7 text-white/70 sm:text-lg lg:mt-8 lg:text-xl lg:leading-8"
           >
-            Premium cinematic fitness content created for gyms, fitness brands,
-            trainers and commercial campaigns. Every edit is designed to
-            increase engagement, brand value and conversions.
+            Premium motion graphics and logo animation content created for
+            brands, agencies and product launches. Every reveal is designed to
+            increase engagement, brand value and recall.
           </motion.p>
           <motion.div
             variants={fadeUp}
@@ -161,8 +161,8 @@ function ProjectHero() {
           >
             <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black">
               <Image
-                src="/images/gym-content/hero-thumb.svg"
-                alt="Gym Content project thumbnail"
+                src="/images/logo-graphics/hero-thumb.svg"
+                alt="Logo & Graphics project thumbnail"
                 fill
                 priority
                 sizes="(max-width: 1023px) 90vw, 520px"
@@ -174,13 +174,13 @@ function ProjectHero() {
               </div>
               <div className="absolute bottom-5 left-5 right-5">
                 <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong">
-                  <Dumbbell size={27} />
+                  <PenTool size={27} />
                 </div>
                 <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">
-                  Commercial Production
+                  Motion Production
                 </p>
                 <h2 className="mt-3 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
-                  Fitness Visual System
+                  Brand Visual System
                 </h2>
               </div>
             </div>
@@ -200,11 +200,11 @@ function ProjectHero() {
 
 function ProjectInfo() {
   const items = [
-    { label: "Client", value: "Fitness Industry", icon: UserRound },
-    { label: "Category", value: "Commercial Production", icon: Film },
+    { label: "Client", value: "Emerging Brands", icon: UserRound },
+    { label: "Category", value: "Motion Production", icon: Film },
     {
       label: "Services",
-      value: "Filming, Editing, Color Grading, Motion Graphics",
+      value: "Design, Animation, Editing, Sound Design",
       icon: Layers3,
     },
     { label: "Year", value: "2026", icon: Calendar },
@@ -243,9 +243,9 @@ function VideoCard({
   isActive,
   onSelect,
 }: {
-  video: GymVideo;
+  video: LogoGraphicsVideo;
   isActive: boolean;
-  onSelect: (video: GymVideo | null) => void;
+  onSelect: (video: LogoGraphicsVideo | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -342,7 +342,7 @@ function VideoCard({
 }
 
 function VideoGallery() {
-  const [selected, setSelected] = useState<GymVideo | null>(null);
+  const [selected, setSelected] = useState<LogoGraphicsVideo | null>(null);
 
   return (
     <section id="work" className="relative scroll-mt-28 px-2 py-16 sm:px-8 lg:py-20">
@@ -352,14 +352,14 @@ function VideoGallery() {
       <>
       A CURATED COLLECTION OF OUR
       <br />
-      CINEMATIC GYM PRODUCTIONS
+      CINEMATIC MOTION PRODUCTIONS
       </>
       }
   titleClassName="max-w-[1100px] text-[clamp(2.4rem,3.6vw,4.2rem)] leading-[0.92]"
-  copy="Commercial films, social edits and brand stories built with rhythm, contrast and performance-led intent."
+  copy="Logo reveals, brand identity animations and motion graphics reels built with rhythm, contrast and performance-led intent."
 />
       <div className="mx-auto grid max-w-[1480px] grid-cols-3 gap-3 sm:gap-4 lg:grid-cols-4 lg:gap-5">
-        {gymVideos.map((video) => (
+        {logoGraphicsVideos.map((video) => (
           <VideoCard
             key={video.id}
             video={video}
@@ -376,12 +376,12 @@ function AboutProject() {
   const details = [
     {
       title: "Creative Direction",
-      copy: "The visual direction leans into disciplined movement, premium contrast and sharp brand recall. Each sequence is planned around the energy of the athlete and the commercial message behind the campaign.",
+      copy: "The visual direction leans into disciplined typography, premium contrast and sharp brand recall. Each sequence is planned around the mark and the commercial message behind the brand.",
       icon: Target,
     },
     {
       title: "Camera And Lighting",
-      copy: "Dynamic gimbal movement, locked-off strength frames and controlled practical lighting create a polished fitness environment without losing the grit of real training.",
+      copy: "Dynamic camera moves, locked-off reveal frames and controlled lighting create a polished motion graphics piece without losing the precision of the design.",
       icon: Film,
     },
     {
@@ -402,7 +402,7 @@ function AboutProject() {
           <h2 className="text-[clamp(3.6rem,4.8vw,5rem)] font-black uppercase leading-[0.92] tracking-tight">About This Production</h2>
           <p className="mt-7 max-w-[700px] text-base leading-7 text-white/60">
            A cinematic content system designed to position the brand as a premium
-            fitness destination through strategic storytelling, disciplined
+            visual identity through strategic storytelling, disciplined
             production, and high-impact visual execution.
           </p>
         </div>
@@ -437,9 +437,9 @@ function AboutProject() {
               Marketing goals
             </p>
             <p className="max-w-full text-[clamp(1.9rem,2.6vw,2.8rem)] font-black leading-[1.12] tracking-tight text-white">
-              Build instant credibility, make the facility feel aspirational,
+              Build instant credibility, make every reveal feel aspirational,
             <br />
-              and turn fitness content into a conversion asset across ads, reels,
+              and turn brand content into a conversion asset across ads, reels,
               website sections and sales conversations.
             </p>
           </article>
@@ -556,7 +556,7 @@ function ProjectFooter() {
   );
 }
 
-export default function GymContentPage() {
+export default function LogoGraphicsContentPage() {
   useLenis();
   useGsapReveal();
   useMagnetic();
