@@ -1,6 +1,14 @@
 "use client";
 import { FounderCard } from "@/components/founder-card";
-import { useEffect, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
 import Image from "next/image";
 import {
   ArrowRight,
@@ -32,6 +40,8 @@ import {
   useTransform,
   useSpring,
   useInView,
+  animate,
+  type MotionValue,
 } from "framer-motion";
 import {
   brandMarks,
@@ -62,6 +72,814 @@ const fadeUp = {
     },
   }),
 };
+/* ============================================================
+   SPATIAL CARD STACK — CONFIGURATION
+   All geometry, camera, and stage values live here. Nothing in
+   SpatialCard/SpatialCardStack computes slot numbers inline —
+   everything reads from these tables. Values below are chosen
+   to reproduce the CURRENT visual output exactly (same numbers
+   as the old magnitude-based formula), just centralized instead
+   of computed inline, so they're editable without touching logic.
+   ============================================================ */
+
+type SlotOffset = -3 | -2 | -1 | 0 | 1 | 2 | 3;
+type SlotMagnitude = 0 | 1 | 2 | 3;
+
+interface SlotConfigEntry {
+  /** x/z/rotateY are expressed as a MULTIPLE of `spread` (unitless),
+   *  so they still scale responsively with viewport width. */
+  xFactor: number;
+  zFactor: number;
+  rotateYDeg: number; // base angle in degrees, before the spread-based angleMult
+  scale: number;
+  opacity: number;
+  blurPx: number;
+  zIndex: number;
+}
+
+/**
+ * One entry per unsigned distance from the active card (0..3).
+ * This is the single source of truth for slot geometry. To change
+ * how far/deep/rotated/faded a slot is, edit ONLY this table —
+ * nothing else in the component computes these numbers.
+ */
+/**
+ * Geometry is derived from a circular orbit (x = R·sinθ, z = -Rz·(1-cosθ))
+ * with the per-slot angle θ increasing by a SHRINKING step (22°, 16°, 12°)
+ * as slots get further out — the same way points spaced along a circle's
+ * arc foreshorten toward the silhouette. That's what keeps x/z/rotation
+ * increasing smoothly with no abrupt jump between any two slots, keeps
+ * the far cards from going edge-on/thin, and makes the whole stack read
+ * as one continuous curved orbit instead of a flat fan that stretches.
+ * Scale and opacity taper on their own gentle, evenly-stepped curves so
+ * every slot — including ±3 — stays clearly readable.
+ */
+const SLOT_CONFIG = {
+  0: {
+    xFactor: 0,
+    zFactor: 0,
+    rotateYDeg: 0,
+    scale: 1,
+    opacity: 1,
+    blurPx: 0,
+    zIndex: 100,
+  },
+
+  1: {
+    xFactor: 0.75, // R·sin(22°), R = 2
+    zFactor: -0.11, // -Rz·(1-cos22°), Rz = 1.5
+    rotateYDeg: 22,
+    scale: 0.93,
+    opacity: 0.86,
+    blurPx: 0,
+    zIndex: 90,
+  },
+
+  2: {
+    xFactor: 1.23, // R·sin(38°)
+    zFactor: -0.32, // -Rz·(1-cos38°)
+    rotateYDeg: 38,
+    scale: 0.86,
+    opacity: 0.68,
+    blurPx: 0,
+    zIndex: 80,
+  },
+
+  3: {
+    xFactor: 1.53, // R·sin(50°)
+    zFactor: -0.54, // -Rz·(1-cos50°)
+    rotateYDeg: 50,
+    scale: 0.79,
+    opacity: 0.5,
+    blurPx: 0,
+    zIndex: 70,
+  },
+};
+
+/** Cards beyond this magnitude are not rendered at all. */
+const MAX_VISIBLE_OFFSET = 3;
+
+/** Far-edge cards (magnitude === MAX_VISIBLE_OFFSET) get an extra opacity cap
+ *  so they don't pop in too strongly right at the edge of visibility. Set
+ *  just above SLOT_CONFIG[3].opacity so it's a safety ceiling, not a second
+ *  dimming pass stacked on top of an already-tapered value. */
+const FAR_EDGE_OPACITY_CAP = 0.5;
+
+const CAROUSEL_CONFIG = {
+  autoplayMs: 5000,
+  inactivityResumeMs: 3200,
+  velocityThreshold: 350,
+  spring: { stiffness: 220, damping: 30, mass: 0.9 },
+  reducedMotionSpring: { stiffness: 400, damping: 40 },
+  dragSpring: { stiffness: 800, damping: 50, mass: 0.5 },
+};
+const SPREAD_CONFIG = {
+  ratio: 0.17,
+  min: 170,
+  max: 360,
+  base: 220,
+};
+
+function computeSpread(viewportWidth: number): number {
+  return Math.max(
+    SPREAD_CONFIG.min,
+    Math.min(SPREAD_CONFIG.max, viewportWidth * SPREAD_CONFIG.ratio),
+  );
+}
+
+const CAMERA_CONFIG = {
+  /** Perspective (camera distance) expressed as a multiple of spread.
+   *  NOTE: this used to be defined here but the render code below
+   *  ignored it and hardcoded `spread * 5` — a camera far too close
+   *  for the geometry, which is what made the far cards distort so
+   *  hard. Now actually wired through, and retuned (13x, vs the old
+   *  broken 5x / the old comment's stale 21x) to match the new,
+   *  more compact SLOT_CONFIG: enough distance for a flat, premium
+   *  falloff without the outer cards collapsing into slivers. */
+  perspectiveFactor: 13,
+  perspectiveOrigin: "50% 50%",
+};
+
+const STAGE_CONFIG = {
+  maxWidthClassName: "max-w-[1800px] mx-auto",
+  heightClassName: "h-[720px]",
+  overflowClassName: "overflow-visible",
+};
+
+interface SlotStyle {
+  x: number;
+  z: number;
+  rotateY: number;
+  scale: number;
+  opacity: number;
+  blur: number;
+  zIndex: number;
+}
+
+/**
+ * Derives a slot's full style from SLOT_CONFIG. Sign is applied ONLY to
+ * x and rotateY (the two properties that differ between left/right);
+ * z/scale/opacity/blur/zIndex come straight from the magnitude entry,
+ * so slot(-n) and slot(+n) are guaranteed identical apart from sign —
+ * there is no way to edit one side without editing both, by construction.
+ */
+function getSlotStyle(offset: SlotOffset, spread: number): SlotStyle {
+  const magnitude = Math.abs(offset) as SlotMagnitude;
+  const sign = Math.sign(offset);
+  const entry = SLOT_CONFIG[magnitude];
+
+  const angleMult = 0.75 + 0.25 * (spread / SPREAD_CONFIG.base);
+
+  return {
+    x: sign * entry.xFactor * spread,
+    z: entry.zFactor * spread,
+    rotateY: sign * entry.rotateYDeg * angleMult,
+    scale: entry.scale,
+    opacity: entry.opacity,
+    blur: entry.blurPx,
+    zIndex: entry.zIndex,
+  };
+}
+
+function normalizeOffset(rawOffset: number, total: number): number {
+  let o = rawOffset % total;
+  if (o > total / 2) o -= total;
+  if (o < -total / 2) o += total;
+  return o;
+}
+
+interface SpatialCardStackProps<T> {
+  items: T[];
+  renderCard: (item: T, index: number) => ReactNode;
+  getKey: (item: T, index: number) => string;
+  className?: string;
+  cardWidthClassName?: string;
+}
+
+function SpatialCardStack<T>({
+  items,
+  renderCard,
+  getKey,
+  className,
+  cardWidthClassName = "w-[min(82vw,700px)]",
+}: SpatialCardStackProps<T>) {
+  const total = items.length;
+  const [active, setActive] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [spread, setSpread] = useState<number>(() =>
+    typeof window === "undefined" ? SPREAD_CONFIG.base : computeSpread(window.innerWidth),
+  );
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const autoplayTimer = useRef<number | null>(null);
+  const inactivityTimer = useRef<number | null>(null);
+  const reducedMotionRef = useRef(reducedMotion);
+  const spreadRef = useRef(spread);
+  reducedMotionRef.current = reducedMotion;
+  spreadRef.current = spread;
+
+  const wheelCooldown = useRef(false);
+  const wheelAccum = useRef(0);
+
+  const dragStartX = useRef(0);
+  const dragLastX = useRef(0);
+  const dragLastT = useRef(0);
+  const dragVelocity = useRef(0);
+  const isDragging = useRef(false);
+
+  /**
+   * SINGLE SOURCE OF TRUTH.
+   * carouselOffset = signed, continuous, fractional distance (in
+   * card-widths) between the active card and where the carousel is
+   * currently rendered. It is the ONLY motion value that ever moves
+   * a card horizontally at runtime. Card drag, timeline drag, wheel,
+   * keyboard, autoplay, and goTo() ALL funnel through this one value
+   * (either by writing to it directly during a continuous gesture, or
+   * by leaving it at 0 and changing `active` for a discrete jump).
+   * There is no second/parallel position state anywhere else.
+   */
+  const carouselOffset = useMotionValue(0);
+  const carouselOffsetSpring = useSpring(carouselOffset, CAROUSEL_CONFIG.dragSpring);
+
+  const parallaxX = useMotionValue(0);
+  const parallaxY = useMotionValue(0);
+  useSpring(parallaxY, { stiffness: 60, damping: 18, mass: 0.6 });
+  useSpring(parallaxX, { stiffness: 60, damping: 18, mass: 0.6 });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    setReducedMotion(mq.matches);
+    const handler = () => setReducedMotion(mq.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  useEffect(() => {
+    let raf = 0;
+    const onResize = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => setSpread(computeSpread(window.innerWidth)));
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
+  const advance = useCallback(
+    (direction: 1 | -1) => {
+      if (isAnimating || total === 0) return;
+      setIsAnimating(true);
+      setActive((prev) => (prev + direction + total) % total);
+      window.setTimeout(() => setIsAnimating(false), 620);
+    },
+    [isAnimating, total],
+  );
+
+  const goTo = useCallback(
+    (index: number) => {
+      if (total === 0) return;
+      const next = ((index % total) + total) % total;
+      setIsAnimating(true);
+      setActive(next);
+      window.setTimeout(() => setIsAnimating(false), 620);
+    },
+    [total],
+  );
+
+  const pauseAutoplay = useCallback(() => {
+    if (autoplayTimer.current) {
+      window.clearInterval(autoplayTimer.current);
+      autoplayTimer.current = null;
+    }
+    if (inactivityTimer.current) {
+      window.clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = null;
+    }
+  }, []);
+
+  const startAutoplay = useCallback(() => {
+    if (autoplayTimer.current) window.clearInterval(autoplayTimer.current);
+    autoplayTimer.current = window.setInterval(() => advance(1), CAROUSEL_CONFIG.autoplayMs);
+  }, [advance]);
+
+  const scheduleResume = useCallback(
+    (delay = CAROUSEL_CONFIG.inactivityResumeMs) => {
+      if (inactivityTimer.current) window.clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = window.setTimeout(() => {
+        inactivityTimer.current = null;
+        if (!reducedMotionRef.current) startAutoplay();
+      }, delay);
+    },
+    [startAutoplay],
+  );
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    startAutoplay();
+    return () => {
+      if (autoplayTimer.current) window.clearInterval(autoplayTimer.current);
+      if (inactivityTimer.current) window.clearTimeout(inactivityTimer.current);
+    };
+  }, [startAutoplay, reducedMotion]);
+
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      if (wheelCooldown.current) return;
+
+      const dx = e.deltaX;
+      const dy = e.deltaY;
+      const horizontal = e.shiftKey || Math.abs(dx) > Math.abs(dy);
+      wheelAccum.current += horizontal
+        ? Math.abs(dx) > Math.abs(dy)
+          ? dx
+          : dy
+        : dy;
+
+      const THRESHOLD = 18;
+      if (Math.abs(wheelAccum.current) < THRESHOLD) return;
+
+      const direction = wheelAccum.current > 0 ? 1 : -1;
+      wheelAccum.current = 0;
+      wheelCooldown.current = true;
+      advance(direction);
+      window.setTimeout(() => {
+        wheelCooldown.current = false;
+      }, 600);
+    };
+
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [advance]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      advance(-1);
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      advance(1);
+    } else if (e.key === "Home") {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === "End") {
+      e.preventDefault();
+      goTo(total - 1);
+    }
+  };
+
+  // ---- Card drag: writes carouselOffset in CARD-WIDTH units (not px) ----
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    isDragging.current = true;
+    pauseAutoplay();
+    dragStartX.current = e.clientX;
+    dragLastX.current = e.clientX;
+    dragLastT.current = performance.now();
+    dragVelocity.current = 0;
+    carouselOffset.set(0);
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging.current) return;
+    const now = performance.now();
+    const dt = Math.max(now - dragLastT.current, 1);
+    const dx = e.clientX - dragLastX.current;
+    dragVelocity.current = (dx / dt) * 1000;
+    dragLastX.current = e.clientX;
+    dragLastT.current = now;
+
+    const totalDeltaPx = e.clientX - dragStartX.current;
+    const spreadNow = spreadRef.current;
+    const clampedPx = Math.max(
+      -spreadNow * 1.5,
+      Math.min(spreadNow * 1.5, totalDeltaPx * 0.8),
+    );
+    // Convert px -> card-width units, sign-flipped: dragging right (+px)
+    // reveals the PREVIOUS card, i.e. moves the carousel backward.
+    carouselOffset.set(-clampedPx / spreadNow);
+  };
+
+  const endDrag = () => {
+    if (!isDragging.current) return;
+    isDragging.current = false;
+
+    const velocity = dragVelocity.current;
+    const currentOffset = carouselOffset.get();
+
+    let delta = 0;
+    if (Math.abs(velocity) > CAROUSEL_CONFIG.velocityThreshold) {
+      delta = velocity < 0 ? 1 : -1;
+    } else {
+      const snapped = Math.round(currentOffset);
+      if (snapped !== 0) delta = snapped;
+    }
+
+    carouselOffset.set(0);
+    if (delta !== 0) setActive((prev) => (prev + delta + total) % total);
+    scheduleResume();
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (reducedMotion || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const relX = (e.clientX - rect.left) / rect.width - 0.5;
+    const relY = (e.clientY - rect.top) / rect.height - 0.5;
+    parallaxX.set(relX * 6);
+    parallaxY.set(relY * -6);
+  };
+
+  const handleMouseEnter = () => {
+    pauseAutoplay();
+  };
+
+  const handleMouseLeave = () => {
+    parallaxX.set(0);
+    parallaxY.set(0);
+    scheduleResume(1200);
+  };
+
+  // ---- Timeline scrub: writes the SAME carouselOffset, in the SAME
+  // card-width units, as card drag above. No separate pipeline. ----
+  const handleTimelineScrubStart = useCallback(() => {
+    pauseAutoplay();
+  }, [pauseAutoplay]);
+
+  const handleTimelineScrubMove = useCallback(
+    (fractionalDeltaFromActive: number) => {
+      carouselOffset.set(fractionalDeltaFromActive);
+    },
+    [carouselOffset],
+  );
+
+  const handleTimelineScrubEnd = useCallback(
+    (fractionalDeltaFromActive: number) => {
+      const nearest = Math.round(fractionalDeltaFromActive);
+      carouselOffset.set(0);
+      if (nearest !== 0) {
+        setActive((prev) => (prev + nearest + total) % total);
+      }
+      scheduleResume();
+    },
+    [carouselOffset, total, scheduleResume],
+  );
+
+  const visibleEntries = useMemo(() => {
+    const entries: { item: T; index: number; offset: number }[] = [];
+    if (total === 0) return entries;
+
+    const span = Math.min(MAX_VISIBLE_OFFSET, Math.floor((total - 1) / 2) || 0);
+    for (let d = -span; d <= span; d++) {
+      const index = ((active + d) % total + total) % total;
+      const offset = normalizeOffset(d, total);
+      entries.push({ item: items[index], index, offset });
+    }
+    return entries;
+  }, [active, items, total]);
+
+const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
+
+  return (
+    <div className={className}>
+      <div
+        ref={containerRef}
+        role="region"
+        aria-roledescription="carousel"
+        aria-label="Featured projects"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "relative mx-auto touch-pan-y select-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-black",
+          STAGE_CONFIG.heightClassName,
+          "w-full",
+          STAGE_CONFIG.maxWidthClassName,
+          STAGE_CONFIG.overflowClassName,
+        )}
+        style={{ perspective: `${perspective}px`, perspectiveOrigin: CAMERA_CONFIG.perspectiveOrigin }}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+      >
+        <motion.div
+          className="relative h-full w-full overflow-visible"
+          style={{ transformStyle: "preserve-3d" }}
+        >
+          {visibleEntries.map(({ item, index, offset }) => (
+            <SpatialCard
+              key={getKey(item, index)}
+              offset={offset}
+              isActive={offset === 0}
+              cardWidthClassName={cardWidthClassName}
+              reducedMotion={reducedMotion}
+              carouselOffsetSpring={carouselOffsetSpring}
+              spread={spread}
+            >
+              {renderCard(item, index)}
+            </SpatialCard>
+          ))}
+        </motion.div>
+      </div>
+
+      <CarouselTimeline
+        total={total}
+        active={active}
+        reducedMotion={reducedMotion}
+        onSelect={goTo}
+        onScrubStart={handleTimelineScrubStart}
+        onScrubMove={handleTimelineScrubMove}
+        onScrubEnd={handleTimelineScrubEnd}
+        sharedOffset={carouselOffsetSpring}
+      />
+    </div>
+  );
+}
+
+function SpatialCard({
+  offset,
+  isActive,
+  children,
+  cardWidthClassName,
+  reducedMotion,
+  carouselOffsetSpring,
+  spread,
+}: {
+  offset: number;
+  isActive: boolean;
+  children: ReactNode;
+  cardWidthClassName: string;
+  reducedMotion: boolean;
+  carouselOffsetSpring: MotionValue<number>;
+  spread: number;
+}) {
+  const clampedOffset = Math.max(-3, Math.min(3, offset)) as SlotOffset;
+  const style = getSlotStyle(clampedOffset, spread);
+  const isFarEdge = Math.abs(offset) >= MAX_VISIBLE_OFFSET;
+
+  const springConfig = reducedMotion
+    ? CAROUSEL_CONFIG.reducedMotionSpring
+    : CAROUSEL_CONFIG.spring;
+
+  // Base resting x for this slot (eases toward its target when `offset`
+  // changes, e.g. on keyboard/wheel/autoplay/goTo).
+  const restingX = useMotionValue(style.x);
+  useEffect(() => {
+    restingX.set(style.x);
+  }, [style.x, restingX]);
+  const restingXSpring = useSpring(restingX, springConfig);
+
+  // Final x = resting slot position + this card's share of the live,
+  // continuous carouselOffsetSpring (card-width units -> px via spread).
+  // Every card reads the SAME shared motion value; a positive shared
+  // offset shifts every card's x by the same +spread*offset px amount,
+  // which is exactly what "the whole stack rotates continuously" means.
+  const x = useTransform<number, string>(
+    [restingXSpring, carouselOffsetSpring],
+    ([restX, sharedOffset]) => `calc(-50% + ${(restX ?? 0) + (sharedOffset ?? 0) * spread}px)`,
+  );
+
+  return (
+    <motion.div
+      className={`absolute left-1/2 top-1/2 flex-none ${cardWidthClassName}`}
+      style={{
+        transformStyle: "preserve-3d",
+        willChange: "transform, filter, opacity",
+        zIndex: style.zIndex,
+        filter: style.blur ? `blur(${style.blur}px)` : "none",
+        pointerEvents: isActive ? "auto" : "none",
+        x: reducedMotion ? undefined : x,
+      }}
+      initial={false}
+      animate={
+        reducedMotion
+          ? { opacity: isActive ? 1 : 0, x: "-50%", y: "-50%" }
+          : {
+              y: "-50%",
+              z: style.z,
+              rotateY: style.rotateY,
+              scale: style.scale,
+              opacity: isFarEdge ? Math.min(style.opacity, FAR_EDGE_OPACITY_CAP) : style.opacity,
+            }
+      }
+      transition={
+        reducedMotion
+          ? { duration: 0.01 }
+          : { type: "spring", ...CAROUSEL_CONFIG.spring }
+      }
+    >
+      <motion.div
+        animate={
+          isActive && !reducedMotion
+            ? {
+                scale: [1, 1.015, 1],
+                boxShadow: [
+                  "0 30px 80px rgba(0,0,0,0.55)",
+                  "0 40px 110px rgba(0,0,0,0.65)",
+                  "0 30px 80px rgba(0,0,0,0.55)",
+                ],
+              }
+            : {
+                boxShadow: isActive
+                  ? "0 30px 80px rgba(0,0,0,0.55)"
+                  : `0 ${14 - Math.abs(offset) * 3}px ${40 - Math.abs(offset) * 6}px rgba(0,0,0,0.35)`,
+              }
+        }
+        transition={
+          isActive && !reducedMotion
+            ? { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
+            : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+        }
+        style={{
+          borderRadius: "inherit",
+          filter: isActive ? "brightness(1)" : `brightness(${1 - Math.abs(offset) * 0.08})`,
+        }}
+      >
+        {children}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function CarouselTimeline({
+  total,
+  active,
+  reducedMotion,
+  onSelect,
+  onScrubStart,
+  onScrubMove,
+  onScrubEnd,
+  sharedOffset,
+}: {
+  total: number;
+  active: number;
+  reducedMotion: boolean;
+  onSelect: (index: number) => void;
+  onScrubStart: () => void;
+  onScrubMove: (fractionalDeltaFromActive: number) => void;
+  onScrubEnd: (fractionalDeltaFromActive: number) => void;
+  /** The SAME motion value driving every card's x position. */
+  sharedOffset: MotionValue<number>;
+}) {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const scrubbing = useRef(false);
+  const hasMoved = useRef(false);
+  const baseActive = useRef(active);
+  const denom = Math.max(total - 1, 1);
+
+  /**
+   * SINGLE SHARED MOTION VALUE for the knob + progress fill, built from
+   * exactly the same two ingredients that place the cards:
+   *   1. `activeIndex` — mirrors the discrete `active` index, but instead
+   *      of jumping, animates to each new value with the SAME spring
+   *      physics as SpatialCard's restingXSpring (CAROUSEL_CONFIG.spring).
+   *      This is what the old code was missing: it sprang the *progress
+   *      percentage* through its own separate, differently-tuned spring
+   *      (timelineSpring), which is why the knob always felt a beat off
+   *      from the cards. Springing the index with the cards' own physics
+   *      keeps them moving in lockstep on every advance/goTo/autoplay step.
+   *   2. `sharedOffset` — the exact MotionValue that also shifts every
+   *      card during a drag/scrub. Adding it straight through (no extra
+   *      spring layer) means live dragging has zero added lag: the knob
+   *      moves in the same frame, by the same amount, as the cards.
+   * displayIndex = activeIndex + sharedOffset is then the one continuous
+   * number both the fill width and the knob position read from.
+   */
+  const activeIndex = useMotionValue(active);
+  const prevActiveRef = useRef(active);
+  useEffect(() => {
+    if (prevActiveRef.current === active) return;
+    prevActiveRef.current = active;
+    const controls = animate(
+      activeIndex,
+      active,
+      reducedMotion ? CAROUSEL_CONFIG.reducedMotionSpring : CAROUSEL_CONFIG.spring,
+    );
+    return () => controls.stop();
+  }, [active, reducedMotion, activeIndex]);
+
+  const displayIndex = useTransform<number, number>(
+    [activeIndex, sharedOffset],
+    ([a, offsetUnits]) => a + offsetUnits,
+  );
+  const progress = useTransform<number, number>(
+    displayIndex,
+    (idx) => (idx / denom) * 100,
+  );
+
+  const percentFromClientX = (clientX: number) => {
+    const rect = trackRef.current?.getBoundingClientRect();
+    if (!rect || rect.width === 0) return (active / denom) * 100;
+    const frac = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return frac * 100;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    scrubbing.current = true;
+    hasMoved.current = false;
+    baseActive.current = active;
+    onScrubStart();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!scrubbing.current) return;
+    hasMoved.current = true;
+    const percent = percentFromClientX(e.clientX);
+    const fractionalIndex = (percent / 100) * denom;
+    onScrubMove(fractionalIndex - baseActive.current); // continuous, unrounded
+  };
+
+  const handlePointerEnd = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!scrubbing.current) return;
+    scrubbing.current = false;
+
+    if (!hasMoved.current) {
+      const percent = percentFromClientX(e.clientX);
+      onSelect(Math.round((percent / 100) * denom));
+      onScrubEnd(0);
+      return;
+    }
+
+    const percent = percentFromClientX(e.clientX);
+    const fractionalIndex = (percent / 100) * denom;
+    onScrubEnd(fractionalIndex - baseActive.current); // snap happens here, on release
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    let next: number | null = null;
+    if (e.key === "ArrowLeft") next = active - 1;
+    else if (e.key === "ArrowRight") next = active + 1;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = total - 1;
+    if (next === null) return;
+    e.preventDefault();
+    e.stopPropagation();
+    onSelect(Math.min(total - 1, Math.max(0, next)));
+  };
+
+  return (
+    <div className="relative mx-auto mt-10 w-full max-w-[560px] px-6">
+      <div className="mb-3 flex items-center justify-between">
+        <span
+          aria-live="polite"
+          className="font-mono text-xs font-black tracking-[0.2em] text-primary"
+        >
+          {String(active + 1).padStart(2, "0")}
+        </span>
+        <span className="font-mono text-xs font-black tracking-[0.2em] text-white/30">
+          {String(total).padStart(2, "0")}
+        </span>
+      </div>
+
+      <div
+        ref={trackRef}
+        role="slider"
+        aria-label="Project carousel position"
+        aria-valuemin={0}
+        aria-valuemax={total - 1}
+        aria-valuenow={active}
+        aria-valuetext={`Project ${active + 1} of ${total}`}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerEnd}
+        onPointerCancel={handlePointerEnd}
+        className="relative flex h-8 cursor-pointer touch-none items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+      >
+        <div className="h-px w-full bg-white/15" />
+        <motion.div
+          aria-hidden
+          className="absolute left-0 h-px bg-primary shadow-[0_0_8px_rgba(255,102,0,0.6)]"
+          style={{ width: progress }}
+        />
+        {Array.from({ length: total }).map((_, i) => (
+          <span
+            key={i}
+            aria-hidden
+            className="absolute h-1 w-1 -translate-x-1/2 rounded-full bg-white/25"
+            style={{ left: `${(i / denom) * 100}%` }}
+          />
+        ))}
+        <motion.div
+          aria-hidden
+          className="absolute h-3.5 w-3.5 rounded-full border-2 border-black bg-primary shadow-[0_0_14px_rgba(255,102,0,0.9)]"
+          style={{ left: progress, x: "-50%" }}
+        />
+      </div>
+    </div>
+  );
+}
 
 function CountUp({ value, suffix }: { value: number; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -536,51 +1354,8 @@ function ServicesSection() {
   );
 }
 function ProjectsSection() {
-  const marqueeProjects = [
-    ...projects,
-    ...projects,
-    ...projects,
-  ];
-
-  const x = useMotionValue(0);
-
-const isDragging = useRef(false);
-const animationFrame = useRef<number>(0);
-const trackRef = useRef<HTMLDivElement>(null);
-
-useEffect(() => {
-  const SPEED = 0.6; // pixels per frame
-  const FALLBACK_CARD_WIDTH = 716; // used only if measurement isn't ready yet
-
-  const animate = () => {
-    if (!isDragging.current) {
-      const firstCard = trackRef.current?.firstElementChild as HTMLElement | undefined;
-      const cardWidth = firstCard ? firstCard.offsetWidth + 16 : FALLBACK_CARD_WIDTH; // + gap-4
-      const loopWidth = cardWidth * projects.length;
-
-      let next = x.get() - SPEED;
-
-      if (Math.abs(next) >= loopWidth) {
-        next = 0;
-      }
-
-      x.set(next);
-    }
-
-    animationFrame.current = requestAnimationFrame(animate);
-  };
-
-  animationFrame.current = requestAnimationFrame(animate);
-
-  return () => {
-    if (animationFrame.current) {
-      cancelAnimationFrame(animationFrame.current);
-    }
-  };
-}, [x]);
-
   return (
-    <section className="scroll-mt-28 overflow-hidden py-20">
+    <section className="scroll-mt-28 overflow-visible py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
@@ -602,70 +1377,56 @@ useEffect(() => {
         copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
       />
 
-      <div className="overflow-hidden">
-        <motion.div
-  ref={trackRef}
-  style={{ x }}
-  drag="x"
-  dragMomentum={false}
-  dragElastic={0}
-  whileTap={{ cursor: "grabbing" }}
-  onDragStart={() => {
-    isDragging.current = true;
-  }}
-  onDragEnd={() => {
-    isDragging.current = false;
-  }}
-  className="flex w-max cursor-grab gap-4 pb-6 sm:gap-6"
->
-          {marqueeProjects.map((project, index) => (
-            <Link
-              key={`${project.title}-${index}`}
-              href={project.href}
-              className="group relative w-[min(82vw,700px)] flex-none overflow-hidden rounded-md border border-white/10 bg-black"
-            >
-              <div className="relative aspect-[1.15] overflow-hidden">
-                <Image
-                  src={project.image}
-                  alt={project.title}
-                  fill
-                  sizes="(max-width:768px) 100vw, 700px"
-                  className="object-cover transition duration-700 group-hover:scale-105"
-                />
+      <SpatialCardStack
+        items={projects}
+        getKey={(project, index) => `${project.title}-${index}`}
+        cardWidthClassName="w-[clamp(520px,36vw,640px)]"
+        renderCard={(project, index) => (
+          <Link
+            href={project.href}
+            className="group relative block w-full overflow-hidden rounded-md border border-white/10 bg-black"
+          >
+            <div className="relative aspect-[1.15] overflow-hidden">
+              <Image
+                src={project.image}
+                alt={project.title}
+                fill
+                sizes="(max-width:768px) 100vw, 700px"
+                className="object-cover transition duration-700 group-hover:scale-105"
+              />
 
-                <div className="absolute inset-0 bg-black/35" />
+              <div className="absolute inset-0 bg-black/35" />
 
-                <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
+              <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
-                <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
-                  {project.category}
-                </div>
-
-                <div className="absolute bottom-5 left-5 right-5 sm:bottom-8 sm:left-8 sm:right-8">
-                  <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary sm:text-sm sm:tracking-[0.2em]">
-                    Case 0{(index % projects.length) + 1}
-                  </p>
-
-                  <h3 className="text-[clamp(2rem,7vw,3rem)] font-black uppercase leading-none">
-                    {project.title}
-                  </h3>
-
-                  <div className="mt-6">
-                    <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary/10 px-5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black">
-                      View Project
-                      <ArrowRight size={16} />
-                    </span>
-                  </div>
-                </div>
-
-                <p className="absolute right-5 top-16 text-2xl font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
-                  {project.metric}
-                </p>
+              <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
+                {project.category}
               </div>
-            </Link>
-          ))}
-        </motion.div>
-      </div>
+
+              <div className="absolute bottom-5 left-5 right-5 sm:bottom-8 sm:left-8 sm:right-8">
+                <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary sm:text-sm sm:tracking-[0.2em]">
+                  Case 0{(index % projects.length) + 1}
+                </p>
+
+                <h3 className="text-[clamp(2rem,7vw,3rem)] font-black uppercase leading-none">
+                  {project.title}
+                </h3>
+
+                <div className="mt-6">
+                  <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary/10 px-5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black">
+                    View Project
+                    <ArrowRight size={16} />
+                  </span>
+                </div>
+              </div>
+
+              <p className="absolute right-5 top-16 text-2xl font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
+                {project.metric}
+              </p>
+            </div>
+          </Link>
+        )}
+      />
     </section>
   );
 }

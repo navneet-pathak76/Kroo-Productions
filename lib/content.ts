@@ -94,6 +94,7 @@ export const services = [
   icon: Bot,
   span: "lg:col-span-2",
 },
+
 ];
 
 export const projects = [
@@ -136,6 +137,45 @@ export const projects = [
     color: "from-orange-600/80 via-amber-900/70 to-black",
     image: "/images/restaurant-content.jpg",
     href: "/restaurant-content",
+  },
+  {
+    title: "REAL ESTATE",
+    category: "Luxury Properties",
+    metric: "06",
+    image: "/images/projects/real-estate.jpg",
+    href: "/projects/real-estate-content",
+  },
+
+  {
+    title: "PRODUCT ADS",
+    category: "Commercial",
+    metric: "07",
+    image: "/images/projects/products.jpg",
+    href: "/projects/product-content",
+  },
+
+  {
+    title: "AI VIDEOS",
+    category: "AI Production",
+    metric: "08",
+    image: "/images/projects/ai-videos.jpg",
+    href: "/projects/ai-video-content",
+  },
+
+  {
+    title: "DIGITAL MARKETING",
+    category: "Performance Marketing",
+    metric: "09",
+    image: "/images/projects/digital-marketing.jpg",
+    href: "/projects/digital-marketing-content",
+  },
+
+  {
+    title: "LOGO & GRAPHICS",
+    category: "Brand Identity",
+    metric: "10",
+    image: "/images/projects/logo-graphics.jpg",
+    href: "/projects/logo-graphics-content",
   },
 ];
 
