@@ -6,7 +6,6 @@ import { useMotionValue, useSpring, useTransform, motion } from "framer-motion";
 import {
   Linkedin,
   Instagram,
-  MoreVertical,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 
@@ -31,11 +30,18 @@ type FounderContent = {
   cta: string;
   socials: SocialKey[];
   accent: string;
-  /** CSS object-position for the cutout — crop/framing only, never a layout change */
-  portraitPosition: string;
-  /** 0.95–1.1 — subtle scale variance only */
-  portraitScale: number;
 };
+
+/**
+ * Every portrait uses this exact same crop/position/scale. Previously each
+ * founder had a slightly different portraitPosition/portraitScale, which is
+ * why portraits didn't line up with each other — that per-founder variance
+ * is gone; this is now the single source of truth for portrait framing.
+ */
+const PORTRAIT_FRAME = {
+  objectPosition: "50% 15%",
+  scale: 1,
+} as const;
 
 const founderContent: Record<string, FounderContent> = {
   "Soumojit Das": {
@@ -46,8 +52,6 @@ const founderContent: Record<string, FounderContent> = {
     cta: "View Work",
     socials: ["linkedin", "instagram", "email"],
     accent: "#FF4D12",
-    portraitPosition: "50% 15%",
-    portraitScale: 1,
   },
   "Rajbir Singh": {
     keyword: "Lead",
@@ -57,8 +61,6 @@ const founderContent: Record<string, FounderContent> = {
     cta: "View Work",
     socials: ["linkedin", "instagram", "email"],
     accent: "#D4A017",
-    portraitPosition: "50% 12%",
-    portraitScale: 1.05,
   },
   "Vivek Das": {
     keyword: "Focus",
@@ -68,8 +70,6 @@ const founderContent: Record<string, FounderContent> = {
     cta: "View Work",
     socials: ["linkedin", "instagram", "email"],
     accent: "#F5A623",
-    portraitPosition: "50% 18%",
-    portraitScale: 0.97,
   },
   "Navneet Pathak": {
     keyword: "Build",
@@ -79,8 +79,6 @@ const founderContent: Record<string, FounderContent> = {
     cta: "View Work",
     socials: ["linkedin", "email"],
     accent: "#B87333",
-    portraitPosition: "50% 14%",
-    portraitScale: 1.03,
   },
 };
 
@@ -124,8 +122,6 @@ const fallbackContent: FounderContent = {
   cta: "View Work",
   socials: ["linkedin", "email"],
   accent: "#FF4D12",
-  portraitPosition: "50% 15%",
-  portraitScale: 1,
 };
 
 /** Premium-glass shell — unchanged from the approved design. */
@@ -269,8 +265,8 @@ sm:aspect-[3/4.7]
                   alt={founder.name}
                   fill
                   style={{
-                    objectPosition: content.portraitPosition,
-                    transform: `scale(${content.portraitScale})`,
+                    objectPosition: PORTRAIT_FRAME.objectPosition,
+                    transform: `scale(${PORTRAIT_FRAME.scale})`,
                   }}
                   className="object-cover transition-transform duration-[450ms] group-hover:scale-[1.03]"
                 />
@@ -308,7 +304,7 @@ sm:aspect-[3/4.7]
               className="pointer-events-none absolute inset-0 bg-white opacity-0 mix-blend-overlay transition-opacity duration-[450ms] ease-out group-hover:opacity-[0.08]"
             />
 
-            {/* name + label + badge */}
+            {/* name + role */}
             <div className="absolute left-5 right-14 top-5 z-10">
               <h3 className="flex items-start text-[16px] sm:text-[28px] font-bold leading-none text-white">
                 {founder.name}
@@ -321,31 +317,12 @@ sm:aspect-[3/4.7]
                 className="mt-2 text-[10px] sm:text-[13px] font-black uppercase tracking-[0.28em]"
                 style={{ color: "var(--accent)" }}
               >
-                Founder
+                {founder.role}
               </p>
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/40 px-3 py-1.5 [backdrop-filter:blur(12px)] [-webkit-backdrop-filter:blur(12px)]">
-                <span
-                  className="h-1.5 w-1.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: "var(--accent)" }}
-                />
-                <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/85">
-                  {founder.role}
-                </span>
-              </div>
             </div>
 
-            {/* three-dot menu */}
-            <button
-              type="button"
-              aria-label="More options"
-              className="absolute right-4 top-5 z-10 text-white/50 transition-opacity duration-[450ms] hover:text-white"
-            >
-              <MoreVertical size={18} />
-            </button>
-
-            {/* floating glass dock */}
-           {/* floating glass dock */}
-<div className="absolute left-2 right-2 bottom-2 z-10 flex flex-col gap-1.5 rounded-[26px] border border-white/15 bg-white/[0.07] p-1.5 sm:inset-x-4 sm:bottom-4 sm:flex-row sm:items-center sm:gap-2 sm:rounded-full sm:p-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_18px_40px_-12px_rgba(0,0,0,0.7)] [backdrop-filter:blur(26px)] [-webkit-backdrop-filter:blur(26px)]">
+            {/* bottom action row — no panel behind it, buttons sit directly on the portrait */}
+<div className="absolute left-2 right-2 bottom-2 z-10 flex flex-col gap-1.5 p-1.5 sm:inset-x-4 sm:bottom-4 sm:flex-row sm:items-center sm:gap-2 sm:p-2">
   <div className="relative w-full sm:w-auto sm:min-w-0 sm:flex-1">
     {/* glow — static shadow value, only its opacity animates */}
     <span

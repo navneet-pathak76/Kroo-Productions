@@ -86,84 +86,44 @@ type SlotOffset = -3 | -2 | -1 | 0 | 1 | 2 | 3;
 type SlotMagnitude = 0 | 1 | 2 | 3;
 
 interface SlotConfigEntry {
-  /** x/z/rotateY are expressed as a MULTIPLE of `spread` (unitless),
-   *  so they still scale responsively with viewport width. */
+  /** x/z are expressed as a MULTIPLE of `spread` (unitless), so they
+   *  still scale responsively with viewport width. rotateY is a literal
+   *  degree value, constant across breakpoints. */
   xFactor: number;
   zFactor: number;
-  rotateYDeg: number; // base angle in degrees, before the spread-based angleMult
+  rotateYDeg: number;
   scale: number;
   opacity: number;
-  blurPx: number;
   zIndex: number;
 }
 
 /**
- * One entry per unsigned distance from the active card (0..3).
- * This is the single source of truth for slot geometry. To change
- * how far/deep/rotated/faded a slot is, edit ONLY this table —
- * nothing else in the component computes these numbers.
- */
-/**
- * Geometry is derived from a circular orbit (x = R·sinθ, z = -Rz·(1-cosθ))
- * with the per-slot angle θ increasing by a SHRINKING step (22°, 16°, 12°)
- * as slots get further out — the same way points spaced along a circle's
- * arc foreshorten toward the silhouette. That's what keeps x/z/rotation
- * increasing smoothly with no abrupt jump between any two slots, keeps
- * the far cards from going edge-on/thin, and makes the whole stack read
- * as one continuous curved orbit instead of a flat fan that stretches.
- * Scale and opacity taper on their own gentle, evenly-stepped curves so
- * every slot — including ±3 — stays clearly readable.
+ * Rebuilt from scratch as a proper orbit projection instead of a table of
+ * hand-picked pixel offsets. Every slot's x/z position is DERIVED from its
+ * rotateY angle and two constants (ORBIT_CONFIG below) — there is no
+ * per-tier magic number for position left in this file. Only rotateY,
+ * scale, and opacity are set directly (opacity carried over unchanged
+ * from the approved design — it was never flagged as wrong).
+ *
+ *   CENTER      scale 1.00  rotateY  0°   opacity 1.00
+ *   L1 / R1     scale 0.88  rotateY ±25°  opacity 0.72
+ *   L2 / R2     scale 0.76  rotateY ±42°  opacity 0.38
+ *   L3 / R3     scale 0.64  rotateY ±55°  opacity 0.18
+ *
+ * Left cards get POSITIVE rotateY, right cards get NEGATIVE rotateY (the
+ * two sides are exact mirror images of each other by construction, so
+ * "L1↔CENTER equals CENTER↔R1" etc. can't drift out of sync — there is
+ * no second place that could disagree with this table).
  */
 const SLOT_CONFIG = {
-  0: {
-    xFactor: 0,
-    zFactor: 0,
-    rotateYDeg: 0,
-    scale: 1,
-    opacity: 1,
-    blurPx: 0,
-    zIndex: 100,
-  },
-
-  1: {
-    xFactor: 0.75, // R·sin(22°), R = 2
-    zFactor: -0.11, // -Rz·(1-cos22°), Rz = 1.5
-    rotateYDeg: 22,
-    scale: 0.93,
-    opacity: 0.86,
-    blurPx: 0,
-    zIndex: 90,
-  },
-
-  2: {
-    xFactor: 1.23, // R·sin(38°)
-    zFactor: -0.32, // -Rz·(1-cos38°)
-    rotateYDeg: 38,
-    scale: 0.86,
-    opacity: 0.68,
-    blurPx: 0,
-    zIndex: 80,
-  },
-
-  3: {
-    xFactor: 1.53, // R·sin(50°)
-    zFactor: -0.54, // -Rz·(1-cos50°)
-    rotateYDeg: 50,
-    scale: 0.79,
-    opacity: 0.5,
-    blurPx: 0,
-    zIndex: 70,
-  },
+  0: { rotateYDeg: 0, scale: 1, opacity: 1, zIndex: 100 },
+  1: { rotateYDeg: 25, scale: 0.88, opacity: 0.72, zIndex: 90 },
+  2: { rotateYDeg: 42, scale: 0.76, opacity: 0.38, zIndex: 80 },
+  3: { rotateYDeg: 55, scale: 0.64, opacity: 0.18, zIndex: 70 },
 };
 
-/** Cards beyond this magnitude are not rendered at all. */
+/** Cards beyond this magnitude are not rendered — hidden, not just faded. */
 const MAX_VISIBLE_OFFSET = 3;
-
-/** Far-edge cards (magnitude === MAX_VISIBLE_OFFSET) get an extra opacity cap
- *  so they don't pop in too strongly right at the edge of visibility. Set
- *  just above SLOT_CONFIG[3].opacity so it's a safety ceiling, not a second
- *  dimming pass stacked on top of an already-tapered value. */
-const FAR_EDGE_OPACITY_CAP = 0.5;
 
 const CAROUSEL_CONFIG = {
   autoplayMs: 5000,
@@ -187,22 +147,75 @@ function computeSpread(viewportWidth: number): number {
   );
 }
 
+/**
+ * CARD WIDTH — derived from `spread`, the SAME viewport-driven number
+ * that produces every slot's x offset (see ORBIT_CONFIG below). This is
+ * the fix for the Bug 2/3 ROOT CAUSE: card width previously came from an
+ * independent, vw-based clamp (`clamp(280px, 82vw, 640px)`) with no
+ * fixed relationship to `spread`'s own vw-based clamp (min 170 / max 360
+ * / ratio 0.17). Because the two formulas hit their floors and ceilings
+ * at different viewport widths, the ratio between "how wide a card is"
+ * and "how far apart cards sit" drifted across breakpoints — as high as
+ * ~3.76 (card nearly 4x wider than the gap to its neighbor) at mid-size
+ * viewports. That drift is what produced the bleed/overlap in Bug 2 and
+ * the uneven-feeling spacing in Bug 3 — it was never the orbit math
+ * itself, which was already symmetric by construction.
+ *
+ * The L1<->CENTER offset is offset₁ = spread · xRadius · sin(25°) ≈
+ * 1.521·spread (from ORBIT_CONFIG/getSlotStyle below). Requiring that
+ * offset be >= the sum of the CENTER and L1 half-widths —
+ *   0.5·(widthFactor·spread) + 0.5·(widthFactor·spread·0.88) <= 1.521·spread
+ * — solves to widthFactor <= 1.692. `widthFactor: 1.5` keeps ~13%
+ * clearance at every viewport width, calculated rather than eyeballed,
+ * instead of drifting between ~1.78 and ~3.76 as the old two-formula
+ * setup did. minPx/maxPx are only a sanity clamp, not the driving
+ * mechanism — spread × widthFactor is.
+ */
+const CARD_WIDTH_CONFIG = {
+  widthFactor: 1.5,
+  minPx: 240,
+  maxPx: 620,
+};
+
+function computeCardWidth(spread: number): number {
+  return Math.max(
+    CARD_WIDTH_CONFIG.minPx,
+    Math.min(CARD_WIDTH_CONFIG.maxPx, spread * CARD_WIDTH_CONFIG.widthFactor),
+  );
+}
+
+/**
+ * ORBIT_CONFIG is the ONLY place x/z distance comes from. Every slot sits
+ * on a circle of radius `xRadius` (lateral) / `zRadius` (depth), read off
+ * at its own rotateY angle — x = xRadius·sin(θ), z = -zRadius·(1-cos(θ)).
+ * That's what "recalculate the entire positioning system" / "no random
+ * offsets" means in practice: change ONE number here and every slot's
+ * spacing updates together, still perfectly mirrored, instead of hand-
+ * tuning seven independent pixel values that can silently drift apart.
+ * Both radii are expressed as multiples of `spread`, so the whole orbit
+ * — not just individual offsets — scales down continuously on mobile.
+ */
+const ORBIT_CONFIG = {
+  xRadius: 3.6,
+  zRadius: 2.2,
+};
+
 const CAMERA_CONFIG = {
   /** Perspective (camera distance) expressed as a multiple of spread.
-   *  NOTE: this used to be defined here but the render code below
-   *  ignored it and hardcoded `spread * 5` — a camera far too close
-   *  for the geometry, which is what made the far cards distort so
-   *  hard. Now actually wired through, and retuned (13x, vs the old
-   *  broken 5x / the old comment's stale 21x) to match the new,
-   *  more compact SLOT_CONFIG: enough distance for a flat, premium
-   *  falloff without the outer cards collapsing into slivers. */
-  perspectiveFactor: 13,
+   *  Lower = more dramatic/wide-angle falloff, higher = flatter. Tuned
+   *  down from 13 to 10 for more visible depth now that the far tiers
+   *  (up to 55°) sit further into the scene via ORBIT_CONFIG. */
+  perspectiveFactor: 10,
   perspectiveOrigin: "50% 50%",
 };
 
 const STAGE_CONFIG = {
   maxWidthClassName: "max-w-[1800px] mx-auto",
-  heightClassName: "h-[720px]",
+  // Fixed h-[720px] was identical on a 320px phone and a 1920px display,
+  // which is what made mobile read as oversized: the card could shrink,
+  // but the stage around it never did. clamp() scales the stage down
+  // with the viewport too, capping at the original 720px on desktop.
+  heightClassName: "h-[clamp(340px,92vw,720px)]",
   overflowClassName: "overflow-visible",
 };
 
@@ -212,31 +225,33 @@ interface SlotStyle {
   rotateY: number;
   scale: number;
   opacity: number;
-  blur: number;
   zIndex: number;
 }
 
 /**
- * Derives a slot's full style from SLOT_CONFIG. Sign is applied ONLY to
- * x and rotateY (the two properties that differ between left/right);
- * z/scale/opacity/blur/zIndex come straight from the magnitude entry,
- * so slot(-n) and slot(+n) are guaranteed identical apart from sign —
- * there is no way to edit one side without editing both, by construction.
+ * Derives a slot's full style from SLOT_CONFIG + ORBIT_CONFIG. Sign is
+ * applied to rotateY as LEFT = positive, RIGHT = negative (per spec); x
+ * and z fall out of that same signed angle via the orbit formula, so a
+ * slot's position and its rotation can never disagree with each other —
+ * there's only one angle, used for both. Magnitude (scale/opacity/zIndex)
+ * comes straight from the table, so slot(-n) and slot(+n) are identical
+ * apart from sign, by construction — no way to edit one side without the
+ * other. x/z scale with the responsive `spread` value (viewport-driven).
  */
 function getSlotStyle(offset: SlotOffset, spread: number): SlotStyle {
   const magnitude = Math.abs(offset) as SlotMagnitude;
-  const sign = Math.sign(offset);
   const entry = SLOT_CONFIG[magnitude];
-
-  const angleMult = 0.75 + 0.25 * (spread / SPREAD_CONFIG.base);
+  // offset > 0 renders to the right of center, so RIGHT = negative rotateY.
+  const sign = Math.sign(offset);
+  const rotateY = -sign * entry.rotateYDeg;
+  const theta = (entry.rotateYDeg * Math.PI) / 180;
 
   return {
-    x: sign * entry.xFactor * spread,
-    z: entry.zFactor * spread,
-    rotateY: sign * entry.rotateYDeg * angleMult,
+    x: sign * ORBIT_CONFIG.xRadius * Math.sin(theta) * spread,
+    z: -ORBIT_CONFIG.zRadius * (1 - Math.cos(theta)) * spread,
+    rotateY,
     scale: entry.scale,
     opacity: entry.opacity,
-    blur: entry.blurPx,
     zIndex: entry.zIndex,
   };
 }
@@ -253,7 +268,6 @@ interface SpatialCardStackProps<T> {
   renderCard: (item: T, index: number) => ReactNode;
   getKey: (item: T, index: number) => string;
   className?: string;
-  cardWidthClassName?: string;
 }
 
 function SpatialCardStack<T>({
@@ -261,7 +275,6 @@ function SpatialCardStack<T>({
   renderCard,
   getKey,
   className,
-  cardWidthClassName = "w-[min(82vw,700px)]",
 }: SpatialCardStackProps<T>) {
   const total = items.length;
   const [active, setActive] = useState(0);
@@ -545,6 +558,7 @@ function SpatialCardStack<T>({
   }, [active, items, total]);
 
 const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
+  const cardWidth = computeCardWidth(spread);
 
   return (
     <div className={className}>
@@ -580,7 +594,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               key={getKey(item, index)}
               offset={offset}
               isActive={offset === 0}
-              cardWidthClassName={cardWidthClassName}
+              cardWidth={cardWidth}
               reducedMotion={reducedMotion}
               carouselOffsetSpring={carouselOffsetSpring}
               spread={spread}
@@ -609,7 +623,7 @@ function SpatialCard({
   offset,
   isActive,
   children,
-  cardWidthClassName,
+  cardWidth,
   reducedMotion,
   carouselOffsetSpring,
   spread,
@@ -617,14 +631,16 @@ function SpatialCard({
   offset: number;
   isActive: boolean;
   children: ReactNode;
-  cardWidthClassName: string;
+  cardWidth: number;
   reducedMotion: boolean;
   carouselOffsetSpring: MotionValue<number>;
   spread: number;
 }) {
   const clampedOffset = Math.max(-3, Math.min(3, offset)) as SlotOffset;
-  const style = getSlotStyle(clampedOffset, spread);
-  const isFarEdge = Math.abs(offset) >= MAX_VISIBLE_OFFSET;
+  const style = useMemo(
+    () => getSlotStyle(clampedOffset, spread),
+    [clampedOffset, spread],
+  );
 
   const springConfig = reducedMotion
     ? CAROUSEL_CONFIG.reducedMotionSpring
@@ -650,12 +666,12 @@ function SpatialCard({
 
   return (
     <motion.div
-      className={`absolute left-1/2 top-1/2 flex-none ${cardWidthClassName}`}
+      className="absolute left-1/2 top-1/2 flex-none"
       style={{
+        width: `${cardWidth}px`,
         transformStyle: "preserve-3d",
-        willChange: "transform, filter, opacity",
+        willChange: "transform, opacity",
         zIndex: style.zIndex,
-        filter: style.blur ? `blur(${style.blur}px)` : "none",
         pointerEvents: isActive ? "auto" : "none",
         x: reducedMotion ? undefined : x,
       }}
@@ -668,7 +684,7 @@ function SpatialCard({
               z: style.z,
               rotateY: style.rotateY,
               scale: style.scale,
-              opacity: isFarEdge ? Math.min(style.opacity, FAR_EDGE_OPACITY_CAP) : style.opacity,
+              opacity: style.opacity,
             }
       }
       transition={
@@ -737,22 +753,21 @@ function CarouselTimeline({
   const denom = Math.max(total - 1, 1);
 
   /**
-   * SINGLE SHARED MOTION VALUE for the knob + progress fill, built from
-   * exactly the same two ingredients that place the cards:
+   * SINGLE SHARED MOTION VALUE for the active number + active dot, built
+   * from exactly the same two ingredients that place the cards:
    *   1. `activeIndex` — mirrors the discrete `active` index, but instead
    *      of jumping, animates to each new value with the SAME spring
-   *      physics as SpatialCard's restingXSpring (CAROUSEL_CONFIG.spring).
-   *      This is what the old code was missing: it sprang the *progress
-   *      percentage* through its own separate, differently-tuned spring
-   *      (timelineSpring), which is why the knob always felt a beat off
-   *      from the cards. Springing the index with the cards' own physics
-   *      keeps them moving in lockstep on every advance/goTo/autoplay step.
+   *      physics as SpatialCard's restingXSpring (CAROUSEL_CONFIG.spring),
+   *      so the knob moves in lockstep with the cards on every
+   *      advance/goTo/autoplay step instead of trailing a beat behind.
    *   2. `sharedOffset` — the exact MotionValue that also shifts every
    *      card during a drag/scrub. Adding it straight through (no extra
    *      spring layer) means live dragging has zero added lag: the knob
    *      moves in the same frame, by the same amount, as the cards.
-   * displayIndex = activeIndex + sharedOffset is then the one continuous
-   * number both the fill width and the knob position read from.
+   * displayIndex = activeIndex + sharedOffset is the one continuous number
+   * that positions the number+dot unit. There is no separate progress/fill
+   * value anymore — the line itself never changes, only this one position
+   * along it, per spec ("only the orange dot slides").
    */
   const activeIndex = useMotionValue(active);
   const prevActiveRef = useRef(active);
@@ -771,9 +786,12 @@ function CarouselTimeline({
     [activeIndex, sharedOffset],
     ([a, offsetUnits]) => a + offsetUnits,
   );
-  const progress = useTransform<number, number>(
+  // The ONLY thing that moves. Both the active number and the active dot
+  // read their horizontal position from this single value, so they can
+  // never drift apart or be positioned by two different formulas.
+  const knobLeft = useTransform<number, string>(
     displayIndex,
-    (idx) => (idx / denom) * 100,
+    (idx) => `${(idx / denom) * 100}%`,
   );
 
   const percentFromClientX = (clientX: number) => {
@@ -828,19 +846,7 @@ function CarouselTimeline({
   };
 
   return (
-    <div className="relative mx-auto mt-10 w-full max-w-[560px] px-6">
-      <div className="mb-3 flex items-center justify-between">
-        <span
-          aria-live="polite"
-          className="font-mono text-xs font-black tracking-[0.2em] text-primary"
-        >
-          {String(active + 1).padStart(2, "0")}
-        </span>
-        <span className="font-mono text-xs font-black tracking-[0.2em] text-white/30">
-          {String(total).padStart(2, "0")}
-        </span>
-      </div>
-
+    <div className="relative mx-auto mt-14 w-full max-w-[560px] px-6">
       <div
         ref={trackRef}
         role="slider"
@@ -857,25 +863,43 @@ function CarouselTimeline({
         onPointerCancel={handlePointerEnd}
         className="relative flex h-8 cursor-pointer touch-none items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
-        <div className="h-px w-full bg-white/15" />
-        <motion.div
-          aria-hidden
-          className="absolute left-0 h-px bg-primary shadow-[0_0_8px_rgba(255,102,0,0.6)]"
-          style={{ width: progress }}
-        />
+        {/* The ONE line. Never changes — no fill, no progress width. */}
+        <div className="pointer-events-none absolute left-0 right-0 top-1/2 h-px -translate-y-1/2 bg-white/15" />
+
+        {/* Evenly spaced, neutral, static dots — every one of them,
+            including the active slot, so the line never appears to
+            have a gap or a stray mark where the knob currently isn't. */}
         {Array.from({ length: total }).map((_, i) => (
           <span
             key={i}
             aria-hidden
-            className="absolute h-1 w-1 -translate-x-1/2 rounded-full bg-white/25"
+            className="absolute top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white/25"
             style={{ left: `${(i / denom) * 100}%` }}
           />
         ))}
+
+        {/* Active number + active dot: ONE unit, ONE position source
+            (knobLeft), so they can never be out of sync with each other
+            or with the cards. Only this unit ever moves. */}
         <motion.div
           aria-hidden
-          className="absolute h-3.5 w-3.5 rounded-full border-2 border-black bg-primary shadow-[0_0_14px_rgba(255,102,0,0.9)]"
-          style={{ left: progress, x: "-50%" }}
-        />
+          className="pointer-events-none absolute top-1/2 -translate-x-1/2 -translate-y-1/2"
+          style={{ left: knobLeft }}
+        >
+          <span
+            aria-live="polite"
+            className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap font-mono text-xs font-black tracking-[0.2em] text-primary"
+          >
+            {String(active + 1).padStart(2, "0")}
+          </span>
+          <span className="block h-3.5 w-3.5 rounded-full border-2 border-black bg-primary shadow-[0_0_14px_rgba(255,102,0,0.9)]" />
+        </motion.div>
+      </div>
+
+      <div className="mt-3 flex justify-end">
+        <span className="font-mono text-xs font-black tracking-[0.2em] text-white/30">
+          {String(total).padStart(2, "0")}
+        </span>
       </div>
     </div>
   );
@@ -1291,7 +1315,7 @@ function FoundersSection() {
     grid
     w-full
     max-w-none
-    grid-cols-2
+    grid-cols-1
     gap-3
     px-2
     sm:grid-cols-2
@@ -1377,10 +1401,15 @@ function ProjectsSection() {
         copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
       />
 
+      {/*
+        Card width is no longer set here — SpatialCardStack derives it
+        from `spread` (see CARD_WIDTH_CONFIG), the same viewport-driven
+        value that produces the slot offsets, so width and spacing can
+        never drift out of ratio with each other across breakpoints.
+      */}
       <SpatialCardStack
         items={projects}
         getKey={(project, index) => `${project.title}-${index}`}
-        cardWidthClassName="w-[clamp(520px,36vw,640px)]"
         renderCard={(project, index) => (
           <Link
             href={project.href}
@@ -1408,7 +1437,7 @@ function ProjectsSection() {
                   Case 0{(index % projects.length) + 1}
                 </p>
 
-                <h3 className="text-[clamp(2rem,7vw,3rem)] font-black uppercase leading-none">
+                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-3xl font-black uppercase leading-[1.05] sm:text-4xl lg:text-5xl">
                   {project.title}
                 </h3>
 
