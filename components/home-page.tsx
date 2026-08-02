@@ -140,47 +140,46 @@ const SPREAD_CONFIG = {
   base: 220,
 };
 
+/**
+ * ORIGINAL desktop formula, restored exactly. A previous pass split this
+ * by breakpoint to independently tune mobile card width — that changed
+ * desktop's own spacing as a side effect and is reverted here. Desktop
+ * (and every other width) reads from this ONE formula again.
+ */
 function computeSpread(viewportWidth: number): number {
+  // Original formula, unchanged, for every viewport >= 530px (tablet and
+  // desktop render identically to before). The 170px floor was tuned for
+  // tablet-class widths; on a ~360-390px phone it's disproportionately
+  // large and pushes the side cards past the screen edge. This adds a
+  // lower floor ONLY below 530px so phones get a tighter, non-overflowing
+  // stack, without touching the desktop numbers.
+  const min = viewportWidth < 530 ? 90 : SPREAD_CONFIG.min;
   return Math.max(
-    SPREAD_CONFIG.min,
+    min,
     Math.min(SPREAD_CONFIG.max, viewportWidth * SPREAD_CONFIG.ratio),
   );
 }
 
 /**
- * CARD WIDTH — derived from `spread`, the SAME viewport-driven number
- * that produces every slot's x offset (see ORBIT_CONFIG below). This is
- * the fix for the Bug 2/3 ROOT CAUSE: card width previously came from an
- * independent, vw-based clamp (`clamp(280px, 82vw, 640px)`) with no
- * fixed relationship to `spread`'s own vw-based clamp (min 170 / max 360
- * / ratio 0.17). Because the two formulas hit their floors and ceilings
- * at different viewport widths, the ratio between "how wide a card is"
- * and "how far apart cards sit" drifted across breakpoints — as high as
- * ~3.76 (card nearly 4x wider than the gap to its neighbor) at mid-size
- * viewports. That drift is what produced the bleed/overlap in Bug 2 and
- * the uneven-feeling spacing in Bug 3 — it was never the orbit math
- * itself, which was already symmetric by construction.
- *
- * The L1<->CENTER offset is offset₁ = spread · xRadius · sin(25°) ≈
- * 1.521·spread (from ORBIT_CONFIG/getSlotStyle below). Requiring that
- * offset be >= the sum of the CENTER and L1 half-widths —
- *   0.5·(widthFactor·spread) + 0.5·(widthFactor·spread·0.88) <= 1.521·spread
- * — solves to widthFactor <= 1.692. `widthFactor: 1.5` keeps ~13%
- * clearance at every viewport width, calculated rather than eyeballed,
- * instead of drifting between ~1.78 and ~3.76 as the old two-formula
- * setup did. minPx/maxPx are only a sanity clamp, not the driving
- * mechanism — spread × widthFactor is.
+ * ORIGINAL card width formula, restored exactly: `clamp(280px, 82vw,
+ * 640px)`, computed here in JS (instead of a Tailwind arbitrary class)
+ * so it can feed the same width value used elsewhere. A previous pass
+ * replaced this with a spread-derived width to avoid overlap at certain
+ * viewport widths — that wasn't asked for here and changed desktop's own
+ * card size, so it's reverted. Because this formula is vw-based, mobile
+ * already shrinks proportionally on its own (82vw), exactly like the
+ * original — no separate mobile system needed.
  */
 const CARD_WIDTH_CONFIG = {
-  widthFactor: 1.5,
-  minPx: 240,
-  maxPx: 620,
+  minPx: 280,
+  vwPercent: 0.82,
+  maxPx: 640,
 };
 
-function computeCardWidth(spread: number): number {
+function computeCardWidth(viewportWidth: number): number {
   return Math.max(
     CARD_WIDTH_CONFIG.minPx,
-    Math.min(CARD_WIDTH_CONFIG.maxPx, spread * CARD_WIDTH_CONFIG.widthFactor),
+    Math.min(CARD_WIDTH_CONFIG.maxPx, viewportWidth * CARD_WIDTH_CONFIG.vwPercent),
   );
 }
 
@@ -283,6 +282,9 @@ function SpatialCardStack<T>({
   const [spread, setSpread] = useState<number>(() =>
     typeof window === "undefined" ? SPREAD_CONFIG.base : computeSpread(window.innerWidth),
   );
+  const [viewportWidth, setViewportWidth] = useState<number>(() =>
+    typeof window === "undefined" ? 1440 : window.innerWidth,
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const autoplayTimer = useRef<number | null>(null);
@@ -332,7 +334,10 @@ function SpatialCardStack<T>({
     let raf = 0;
     const onResize = () => {
       cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => setSpread(computeSpread(window.innerWidth)));
+      raf = requestAnimationFrame(() => {
+        setSpread(computeSpread(window.innerWidth));
+        setViewportWidth(window.innerWidth);
+      });
     };
     window.addEventListener("resize", onResize);
     return () => {
@@ -558,7 +563,7 @@ function SpatialCardStack<T>({
   }, [active, items, total]);
 
 const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
-  const cardWidth = computeCardWidth(spread);
+  const cardWidth = computeCardWidth(viewportWidth);
 
   return (
     <div className={className}>
@@ -949,13 +954,18 @@ function SectionIntro({
   titleClassName?: string;
 }) {
   return (
-    <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8 lg:mb-14">
+    <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:px-8 sm:mb-10 lg:mb-14">
       <div data-reveal>
         <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
           {eyebrow}
         </p>
 
-        <h2 className={cn("section-title max-w-[1200px]", titleClassName)}>
+        <h2
+          className={cn(
+            "section-title max-w-[1200px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]",
+            titleClassName,
+          )}
+        >
           {title}
         </h2>
 
@@ -1212,7 +1222,7 @@ function HeroSection() {
 
 function StatsSection() {
   return (
-    <section className="relative z-10 scroll-mt-28 px-5 py-12 sm:px-8 lg:py-16">
+    <section className="relative z-10 scroll-mt-28 px-5 py-8 sm:px-8 sm:py-12 lg:py-16">
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,255,255,0.015)_55%,transparent_80%)] blur-[120px] opacity-70" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[620px] w-[1520px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-black/10 opacity-25 shadow-[inset_0_0_140px_rgba(0,0,0,0.6)]" />
       <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-2 gap-4 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-8 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:grid-cols-4 sm:px-8 sm:py-10 xl:px-10">
@@ -1239,12 +1249,12 @@ function StatsSection() {
 function ShowreelSection() {
   return (
     <section id="work" className="relative scroll-mt-28 px-2 py-6 sm:px-16 lg:px-24 lg:py-32">
-      <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8">
+      <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:mb-10 sm:px-8">
   <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
     SHOWREEL
   </p>
 
-  <h2 className="section-title max-w-[1500px]">
+  <h2 className="section-title max-w-[1500px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]">
     THIS ISN'T A SHOWREEL.
     <br />
     IT'S A REASON TO HIRE US.
@@ -1294,13 +1304,13 @@ function LogoStrip() {
 
 function FoundersSection() {
   return (
-    <section id="team" className="flex scroll-mt-28 flex-col px-4 py-16 sm:px-8 lg:block lg:py-20">
-     <div className="mx-auto mb-10 w-full px-0 lg:mb-14 lg:px-8" style={{ maxWidth: "1980px" }}>
+    <section id="team" className="flex scroll-mt-28 flex-col px-4 py-10 sm:px-8 sm:py-16 lg:block lg:py-20">
+     <div className="mx-auto mb-6 w-full px-0 sm:mb-10 lg:mb-14 lg:px-8" style={{ maxWidth: "1980px" }}>
       <div data-reveal>
         <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
           Meet the founders
         </p>
-        <h2 className="section-title max-w-[1200px] text-[clamp(1.8rem,3.4vw,3.75rem)]">
+        <h2 className="section-title max-w-[1200px] text-[clamp(1.5rem,4.4vw,3.75rem)] leading-[1.1]">
             GOOD LUCK TO YOUR COMPETITORS.
         <br />
             YOU FOUND US FIRST.
@@ -1335,7 +1345,7 @@ function FoundersSection() {
 
 function ServicesSection() {
   return (
-    <section id="services" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
+    <section id="services" className="scroll-mt-28 px-5 py-10 sm:px-8 sm:py-16 lg:py-20">
 {/* ServicesSection */}
     <SectionIntro
       eyebrow="What we do"
@@ -1348,25 +1358,28 @@ function ServicesSection() {
     }
   copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
 />
-      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-5">
         {services.map((service, index) => (
           <article
             key={service.title}
             data-reveal
             className={cn(
-              "group cinema-panel relative min-h-72 min-w-0 snap-start overflow-hidden rounded-md p-6 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:p-7",
+              "group cinema-panel relative min-h-44 min-w-0 snap-start overflow-hidden rounded-md p-4 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:min-h-60 sm:p-5 lg:min-h-72 lg:p-7",
               service.span,
             )}
           >
             <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/0 blur-3xl transition duration-500 group-hover:bg-primary/20" />
-            <service.icon className="relative mb-10 text-white/70 transition duration-300 group-hover:text-primary" size={42} />
+            <service.icon
+              className="relative mb-4 h-8 w-8 text-white/70 transition duration-300 group-hover:text-primary sm:mb-6 sm:h-9 sm:w-9 lg:mb-10 lg:h-[42px] lg:w-[42px]"
+              size={42}
+            />
             <p className="relative mb-3 text-xs font-black uppercase tracking-[0.24em] text-primary">
               0{index + 1}
             </p>
-            <h3 className="relative text-3xl font-black uppercase">
+            <h3 className="relative text-xl font-black uppercase sm:text-2xl lg:text-3xl">
               {service.title}
             </h3>
-            <p className="relative mt-5 max-w-xl text-base leading-7 text-white/60">
+            <p className="relative mt-2 max-w-xl text-base leading-7 text-white/60 sm:mt-3 lg:mt-5">
               {service.description}
             </p>
             
@@ -1379,7 +1392,7 @@ function ServicesSection() {
 }
 function ProjectsSection() {
   return (
-    <section className="scroll-mt-28 overflow-visible py-20">
+    <section className="scroll-mt-28 overflow-visible py-12 sm:py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
@@ -1402,10 +1415,10 @@ function ProjectsSection() {
       />
 
       {/*
-        Card width is no longer set here — SpatialCardStack derives it
-        from `spread` (see CARD_WIDTH_CONFIG), the same viewport-driven
-        value that produces the slot offsets, so width and spacing can
-        never drift out of ratio with each other across breakpoints.
+        Card width is computed inside SpatialCardStack from viewport
+        width directly — clamp(280px, 82vw, 640px), same as the original
+        desktop design. Mobile shrinks proportionally on its own because
+        the formula is vw-based; no separate mobile system.
       */}
       <SpatialCardStack
         items={projects}
@@ -1437,7 +1450,7 @@ function ProjectsSection() {
                   Case 0{(index % projects.length) + 1}
                 </p>
 
-                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-3xl font-black uppercase leading-[1.05] sm:text-4xl lg:text-5xl">
+                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-2xl font-black uppercase leading-[1.05] sm:text-4xl lg:text-5xl">
                   {project.title}
                 </h3>
 
@@ -1474,14 +1487,14 @@ function TestimonialsSection() {
   const testimonial = testimonials[active];
 
   return (
-    <section id="about" className="scroll-mt-28 px-5 py-16 sm:px-8 lg:py-20">
+    <section id="about" className="scroll-mt-28 px-5 py-10 sm:px-8 sm:py-16 lg:py-20">
       <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
   <div data-reveal className="[container-type:inline-size]">
     <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
       Client response
     </p>
 
-    <h2 className="section-title max-w-[700px] text-[clamp(1.6rem,7.2cqw,3.25rem)]">
+    <h2 className="section-title max-w-[700px] text-[clamp(1.4rem,7.2cqw,3.25rem)] leading-[1.1]">
       OUR WORK SPEAKS.
       <br />
       THEY CONFIRM.
@@ -1539,14 +1552,14 @@ function ContactSection() {
   const [message, setMessage] = useState("");
 
   return (
-    <section id="contact" className="relative scroll-mt-28 px-5 py-20 sm:px-8 lg:py-24">
+    <section id="contact" className="relative scroll-mt-28 px-5 py-14 sm:px-8 sm:py-20 lg:py-24">
       <div className="absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.24),transparent_66%)]" />
       <div className="relative mx-auto max-w-[1480px]">
-        <div data-reveal className="mb-10 lg:mb-14">
+        <div data-reveal className="mb-6 sm:mb-10 lg:mb-14">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Start project
           </p>
-          <h2 className="section-title max-w-[1200px]">
+          <h2 className="section-title max-w-[1200px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]">
             YOU'VE SEEN OUR STORIES.
             <br />
             NOW LET'S HEAR YOURS.
@@ -1556,7 +1569,7 @@ function ContactSection() {
         <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div data-reveal>
             <div className="space-y-5 text-white/70">
-  <a
+    <a
     href="mailto:team@krooproduction.in"
     className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
   >
@@ -1566,7 +1579,7 @@ function ContactSection() {
     </span>
   </a>
 
-  <a
+  <a target="_blank"
     href="tel:+916291252126"
     className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
   >
@@ -1755,7 +1768,8 @@ function Footer() {
           </h3>
 
           {services.map((service) => (
-            <a
+            
+          <a
               key={service.title}
               href="#services"
               className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
@@ -1778,21 +1792,21 @@ function Footer() {
             Privacy Policy
           </a>
 
-          <a
+          <a 
             href="/terms-of-service"
             className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
           >
             Terms of Service
           </a>
 
-          <a
+            <a 
             href="/cookie-policy"
             className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
           >
             Cookie Policy
           </a>
 
-          <a
+          <a 
             href="/disclaimer"
             className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
           >
@@ -1808,7 +1822,7 @@ function Footer() {
 
           <div className="flex flex-wrap gap-3">
 
-            <a
+            <a 
               href="https://www.instagram.com/kroo.production/"
               target="_blank"
               rel="noopener noreferrer"
@@ -1818,7 +1832,7 @@ function Footer() {
               <Instagram size={17} />
             </a>
 
-            <a
+            <a 
               href="https://youtube.com/@krooproduction"
               target="_blank"
               rel="noopener noreferrer"
@@ -1828,7 +1842,7 @@ function Footer() {
               <Youtube size={17} />
             </a>
 
-            <a
+            <a 
               href="https://www.linkedin.com/company/krooproduction/"
               target="_blank"
               rel="noopener noreferrer"
