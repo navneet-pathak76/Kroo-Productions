@@ -1748,17 +1748,21 @@ function Footer() {
             Quick Links
           </h3>
 
-          {["Home", "Work", "Services", "Team", "About", "Contact"].map(
-            (item) => (
-              <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
-              >
-                {item}
-              </a>
-            )
-          )}
+          {[
+            { label: "Home", href: "#home" },
+            { label: "Projects", href: "#work" },
+            { label: "Services", href: "#services" },
+            { label: "Our Team", href: "#team" },
+            { label: "Contact", href: "#contact" },
+          ].map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              className="block rounded-sm py-1 text-sm text-white/50 transition hover:text-primary"
+            >
+              {item.label}
+            </a>
+          ))}
         </div>
 
         {/* Services */}
