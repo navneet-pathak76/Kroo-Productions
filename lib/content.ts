@@ -16,10 +16,9 @@ import {
 
 export const navItems = [
   { label: "Home", href: "#home" },
-  { label: "Work", href: "#work" },
-  { label: "Team", href: "#team" },
+  { label: "Projects", href: "#work" },
   { label: "Services", href: "#services" },
-  { label: "About", href: "#about" },
+  { label: "Our Team", href: "#team" },
   { label: "Contact", href: "#contact" },
 ];
 

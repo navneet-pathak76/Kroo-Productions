@@ -1248,7 +1248,7 @@ function StatsSection() {
 
 function ShowreelSection() {
   return (
-    <section id="work" className="relative scroll-mt-28 px-2 py-6 sm:px-16 lg:px-24 lg:py-32">
+    <section className="relative scroll-mt-28 px-2 py-6 sm:px-16 lg:px-24 lg:py-32">
       <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:mb-10 sm:px-8">
   <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
     SHOWREEL
@@ -1392,7 +1392,7 @@ function ServicesSection() {
 }
 function ProjectsSection() {
   return (
-    <section className="scroll-mt-28 overflow-visible py-12 sm:py-20">
+    <section id="work" className="scroll-mt-28 overflow-visible py-12 sm:py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
@@ -1884,9 +1884,9 @@ export default function HomePage() {
         <StatsSection />
         <ShowreelSection />
         <LogoStrip />
-        <FoundersSection />
-        <ServicesSection />
         <ProjectsSection />
+        <ServicesSection />
+        <FoundersSection />
         <TestimonialsSection />
         <ContactSection />
         <Footer />
