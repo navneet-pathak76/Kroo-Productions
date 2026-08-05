@@ -177,8 +177,14 @@ const CARD_WIDTH_CONFIG = {
 };
 
 function computeCardWidth(viewportWidth: number): number {
+  // Same 280px floor for every viewport >= 530px (tablet and desktop
+  // unchanged). Below 530px the 280px floor leaves almost no side margin
+  // (e.g. 280px card on a 320px phone), which is what pushed the active
+  // card's edges — and its decorative overlays — past the viewport. This
+  // adds a lower floor ONLY below 530px, mirroring computeSpread above.
+  const minPx = viewportWidth < 530 ? 220 : CARD_WIDTH_CONFIG.minPx;
   return Math.max(
-    CARD_WIDTH_CONFIG.minPx,
+    minPx,
     Math.min(CARD_WIDTH_CONFIG.maxPx, viewportWidth * CARD_WIDTH_CONFIG.vwPercent),
   );
 }
@@ -214,7 +220,7 @@ const STAGE_CONFIG = {
   // which is what made mobile read as oversized: the card could shrink,
   // but the stage around it never did. clamp() scales the stage down
   // with the viewport too, capping at the original 720px on desktop.
-  heightClassName: "h-[clamp(340px,92vw,720px)]",
+  heightClassName: "h-[clamp(280px,92vw,720px)]",
   overflowClassName: "overflow-visible",
 };
 
@@ -553,14 +559,19 @@ function SpatialCardStack<T>({
     const entries: { item: T; index: number; offset: number }[] = [];
     if (total === 0) return entries;
 
-    const span = Math.min(MAX_VISIBLE_OFFSET, Math.floor((total - 1) / 2) || 0);
+    // Below 640px there isn't room to peek 3 cards deep on either side
+    // without the outer ones sitting past the screen edge — cap how many
+    // orbit slots render there. Desktop/tablet (>=640px) keep the full
+    // MAX_VISIBLE_OFFSET depth, unchanged.
+    const mobileCap = viewportWidth < 640 ? 1 : MAX_VISIBLE_OFFSET;
+    const span = Math.min(mobileCap, Math.floor((total - 1) / 2) || 0);
     for (let d = -span; d <= span; d++) {
       const index = ((active + d) % total + total) % total;
       const offset = normalizeOffset(d, total);
       entries.push({ item: items[index], index, offset });
     }
     return entries;
-  }, [active, items, total]);
+  }, [active, items, total, viewportWidth]);
 
 const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
   const cardWidth = computeCardWidth(viewportWidth);
@@ -954,22 +965,22 @@ function SectionIntro({
   titleClassName?: string;
 }) {
   return (
-    <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:px-8 sm:mb-10 lg:mb-14">
+    <div className="mx-auto mb-3 max-w-[1480px] px-5 sm:px-8 sm:mb-6 lg:mb-14">
       <div data-reveal>
-        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
+        <p className="mb-2.5 text-xs font-black uppercase tracking-[0.32em] text-primary sm:mb-4">
           {eyebrow}
         </p>
 
         <h2
           className={cn(
-            "section-title max-w-[1200px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]",
+            "section-title max-w-[1200px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]",
             titleClassName,
           )}
         >
           {title}
         </h2>
 
-        <p className="mt-6 max-w-xl text-base leading-7 text-white/60">
+        <p className="mt-3 max-w-xl text-sm leading-6 text-white/60 sm:mt-6 sm:text-base sm:leading-7">
           {copy}
         </p>
       </div>
@@ -1157,7 +1168,8 @@ function HeroSection() {
     font-black
     tracking-tight
     max-w-[1550px]
-    text-[clamp(1.15rem,6.8cqw,3.4rem)]
+    text-[clamp(1.15rem,5.9cqw,3.4rem)]
+    sm:text-[clamp(1.15rem,6.8cqw,3.4rem)]
   "
 >
   IF YOU'RE HERE TO HIRE US
@@ -1222,23 +1234,28 @@ function HeroSection() {
 
 function StatsSection() {
   return (
-    <section className="relative z-10 scroll-mt-28 px-5 py-8 sm:px-8 sm:py-12 lg:py-16">
+    <section className="relative z-10 scroll-mt-28 px-5 py-5 sm:px-8 sm:py-8 lg:py-16">
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,255,255,0.015)_55%,transparent_80%)] blur-[120px] opacity-70" />
       <div className="absolute left-1/2 top-1/2 -z-20 h-[620px] w-[1520px] -translate-x-1/2 -translate-y-1/2 rounded-[32px] bg-black/10 opacity-25 shadow-[inset_0_0_140px_rgba(0,0,0,0.6)]" />
-      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-2 gap-4 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-5 py-8 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:grid-cols-4 sm:px-8 sm:py-10 xl:px-10">
+      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-4 gap-1 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-2 py-3 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:grid-cols-4 sm:gap-4 sm:px-8 sm:py-10 xl:px-10">
         {stats.map((stat) => (
           <div
             key={stat.label}
             data-reveal
-            className="relative min-h-[96px] border border-transparent bg-transparent p-2.5 transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 sm:min-h-40 sm:p-7"
+            className="relative flex min-h-0 flex-col items-center gap-1 border border-transparent bg-transparent p-1.5 text-center transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 sm:block sm:min-h-40 sm:gap-0 sm:p-7 sm:text-left"
             >
-              <stat.icon className="mb-7 text-primary" size={24} />
-            <p className="text-xl sm:text-5xl font-black leading-none text-white sm:text-5xl">
-              <CountUp value={stat.value} suffix={stat.suffix} />
-            </p>
-            <p className="mt-1 text-[9px] font-bold uppercase tracking-[0.08em] text-white/60 sm:mt-3 sm:text-sm">
-              {stat.label}
-            </p>
+              <>
+                <stat.icon className="shrink-0 text-primary sm:hidden" size={16} />
+                <stat.icon className="hidden shrink-0 text-primary sm:mb-7 sm:block" size={24} />
+              </>
+              <div>
+                <p className="text-lg font-black leading-none text-white sm:text-5xl">
+                  <CountUp value={stat.value} suffix={stat.suffix} />
+                </p>
+                <p className="mt-0.5 text-[8px] leading-tight font-bold uppercase tracking-[0.04em] text-white/60 sm:mt-3 sm:text-sm sm:tracking-[0.08em] sm:leading-normal">
+                  {stat.label}
+                </p>
+              </div>
           </div>
         ))}
       </div>
@@ -1248,13 +1265,13 @@ function StatsSection() {
 
 function ShowreelSection() {
   return (
-    <section className="relative scroll-mt-28 px-2 py-6 sm:px-16 lg:px-24 lg:py-32">
+    <section className="relative scroll-mt-28 px-2 py-4 sm:px-16 sm:py-10 lg:px-24 lg:py-32">
       <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:mb-10 sm:px-8">
   <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
     SHOWREEL
   </p>
 
-  <h2 className="section-title max-w-[1500px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]">
+  <h2 className="section-title max-w-[1500px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
     THIS ISN'T A SHOWREEL.
     <br />
     IT'S A REASON TO HIRE US.
@@ -1304,13 +1321,13 @@ function LogoStrip() {
 
 function FoundersSection() {
   return (
-    <section id="team" className="flex scroll-mt-28 flex-col px-4 py-10 sm:px-8 sm:py-16 lg:block lg:py-20">
+    <section id="team" className="flex scroll-mt-28 flex-col px-4 py-4 sm:px-8 sm:py-10 lg:block lg:py-20">
      <div className="mx-auto mb-6 w-full px-0 sm:mb-10 lg:mb-14 lg:px-8" style={{ maxWidth: "1980px" }}>
       <div data-reveal>
-        <p className="mb-3 text-xs font-black uppercase tracking-[0.32em] text-primary">
+        <p className="mb-3 text-lg font-black uppercase tracking-[0.32em] text-primary">
           Meet the founders
         </p>
-        <h2 className="section-title max-w-[1200px] text-[clamp(1.5rem,4.4vw,3.75rem)] leading-[1.1]">
+        <h2 className="section-title max-w-[1200px] text-[clamp(1.05rem,4vw,3.75rem)] leading-[1.16] sm:text-[clamp(1.28rem,4vw,3.75rem)] sm:leading-[1.12] lg:text-[clamp(1.5rem,4.4vw,3.75rem)] lg:leading-[1.1]">
             GOOD LUCK TO YOUR COMPETITORS.
         <br />
             YOU FOUND US FIRST.
@@ -1325,13 +1342,11 @@ function FoundersSection() {
     grid
     w-full
     max-w-none
-    grid-cols-1
-    gap-3
+    grid-cols-2
+    md:grid-cols-4
+    gap-[clamp(4px,1.4vw,20px)]
     px-2
-    sm:grid-cols-2
     lg:max-w-[1480px]
-    lg:grid-cols-4
-    lg:gap-5
   "
 >
         {founders.map((founder) => (
@@ -1345,7 +1360,7 @@ function FoundersSection() {
 
 function ServicesSection() {
   return (
-    <section id="services" className="scroll-mt-28 px-5 py-10 sm:px-8 sm:py-16 lg:py-20">
+    <section id="services" className="scroll-mt-28 px-5 py-4 sm:px-8 sm:py-10 lg:py-20">
 {/* ServicesSection */}
     <SectionIntro
       eyebrow="What we do"
@@ -1358,28 +1373,28 @@ function ServicesSection() {
     }
   copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
 />
-      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4 lg:gap-5">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-5">
         {services.map((service, index) => (
           <article
             key={service.title}
             data-reveal
             className={cn(
-              "group cinema-panel relative min-h-44 min-w-0 snap-start overflow-hidden rounded-md p-4 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:min-h-60 sm:p-5 lg:min-h-72 lg:p-7",
+              "group cinema-panel relative min-h-0 min-w-0 snap-start overflow-hidden rounded-md p-3.5 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:min-h-60 sm:p-5 lg:min-h-72 lg:p-7",
               service.span,
             )}
           >
             <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/0 blur-3xl transition duration-500 group-hover:bg-primary/20" />
             <service.icon
-              className="relative mb-4 h-8 w-8 text-white/70 transition duration-300 group-hover:text-primary sm:mb-6 sm:h-9 sm:w-9 lg:mb-10 lg:h-[42px] lg:w-[42px]"
+              className="relative mb-2.5 h-6 w-6 text-white/70 transition duration-300 group-hover:text-primary sm:mb-6 sm:h-9 sm:w-9 lg:mb-10 lg:h-[42px] lg:w-[42px]"
               size={42}
             />
-            <p className="relative mb-3 text-xs font-black uppercase tracking-[0.24em] text-primary">
+            <p className="relative mb-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary sm:mb-3 sm:text-xs sm:tracking-[0.24em]">
               0{index + 1}
             </p>
-            <h3 className="relative text-xl font-black uppercase sm:text-2xl lg:text-3xl">
+            <h3 className="relative text-base font-black uppercase sm:text-2xl lg:text-3xl">
               {service.title}
             </h3>
-            <p className="relative mt-2 max-w-xl text-base leading-7 text-white/60 sm:mt-3 lg:mt-5">
+            <p className="relative mt-1.5 max-w-xl text-sm leading-6 text-white/60 sm:mt-3 sm:text-base sm:leading-7 lg:mt-5">
               {service.description}
             </p>
             
@@ -1392,7 +1407,7 @@ function ServicesSection() {
 }
 function ProjectsSection() {
   return (
-    <section id="work" className="scroll-mt-28 overflow-visible py-12 sm:py-20">
+    <section id="work" className="scroll-mt-28 overflow-x-clip py-5 sm:py-10 lg:py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
@@ -1441,28 +1456,29 @@ function ProjectsSection() {
 
               <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
-              <div className="absolute left-5 top-5 max-w-[calc(100%-2.5rem)] rounded-full border border-white/20 px-3 py-2 text-[0.65rem] font-black uppercase tracking-[0.14em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:text-xs sm:tracking-[0.18em]">
+              <div className="absolute left-3 top-3 max-w-[calc(100%-2rem)] rounded-full border border-white/20 px-2.5 py-1.5 text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.18em]">
                 {project.category}
               </div>
 
-              <div className="absolute bottom-5 left-5 right-5 sm:bottom-8 sm:left-8 sm:right-8">
-                <p className="mb-3 text-xs font-black uppercase tracking-[0.18em] text-primary sm:text-sm sm:tracking-[0.2em]">
+              <div className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8">
+                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.2em]">
                   Case 0{(index % projects.length) + 1}
                 </p>
 
-                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-2xl font-black uppercase leading-[1.05] sm:text-4xl lg:text-5xl">
+                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-lg font-black uppercase leading-[1.08] sm:text-4xl lg:text-5xl">
                   {project.title}
                 </h3>
 
-                <div className="mt-6">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary/10 px-5 py-2 text-xs font-black uppercase tracking-[0.14em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black">
+                <div className="mt-3 sm:mt-6">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black sm:gap-2 sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
                     View Project
-                    <ArrowRight size={16} />
+                    <ArrowRight size={14} className="sm:hidden" />
+                    <ArrowRight size={16} className="hidden sm:block" />
                   </span>
                 </div>
               </div>
 
-              <p className="absolute right-5 top-16 text-2xl font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
+              <p className="absolute right-3 top-11 text-base font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
                 {project.metric}
               </p>
             </div>
@@ -1487,14 +1503,14 @@ function TestimonialsSection() {
   const testimonial = testimonials[active];
 
   return (
-    <section id="about" className="scroll-mt-28 px-5 py-10 sm:px-8 sm:py-16 lg:py-20">
+    <section id="about" className="scroll-mt-28 px-5 py-4 sm:px-8 sm:py-10 lg:py-20">
       <div className="mx-auto grid max-w-[1480px] gap-8 lg:grid-cols-2 lg:items-center lg:gap-16">
   <div data-reveal className="[container-type:inline-size]">
     <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
       Client response
     </p>
 
-    <h2 className="section-title max-w-[700px] text-[clamp(1.4rem,7.2cqw,3.25rem)] leading-[1.1]">
+    <h2 className="section-title max-w-[700px] text-[clamp(1rem,6.2cqw,3.25rem)] leading-[1.16] sm:text-[clamp(1.2rem,6.2cqw,3.25rem)] sm:leading-[1.12] lg:text-[clamp(1.4rem,7.2cqw,3.25rem)] lg:leading-[1.1]">
       OUR WORK SPEAKS.
       <br />
       THEY CONFIRM.
@@ -1502,18 +1518,19 @@ function TestimonialsSection() {
   </div>
 
   
-    <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-8 sm:p-12">
-          <Quote className="mb-8 text-primary" size={42} />
+    <div data-reveal className="cinema-panel relative overflow-hidden rounded-md p-5 sm:p-12">
+          <Quote className="mb-4 text-primary sm:mb-8 sm:hidden" size={32} />
+          <Quote className="mb-8 hidden text-primary sm:mb-8 sm:block" size={42} />
           <motion.p
             key={testimonial.quote}
             initial={{ y: 24, opacity: 0, filter: "blur(8px)" }}
             animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
             transition={{ duration: 0.55, ease: revealEase }}
-            className="text-2xl font-bold leading-tight text-white sm:text-4xl"
+            className="text-lg font-bold leading-tight text-white sm:text-4xl"
           >
             {testimonial.quote}
           </motion.p>
-          <div className="mt-10 flex items-center gap-4">
+          <div className="mt-6 flex items-center gap-4 sm:mt-10">
             <div className="h-14 w-14 rounded-full bg-gradient-to-br from-white/60 via-zinc-600 to-primary/50" />
             <div>
               <p className="font-black uppercase tracking-[0.08em]">
@@ -1552,28 +1569,28 @@ function ContactSection() {
   const [message, setMessage] = useState("");
 
   return (
-    <section id="contact" className="relative scroll-mt-28 px-5 py-14 sm:px-8 sm:py-20 lg:py-24">
+    <section id="contact" className="relative scroll-mt-28 px-5 py-6 sm:px-8 sm:py-12 lg:py-24">
       <div className="absolute inset-x-0 bottom-0 h-72 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.24),transparent_66%)]" />
       <div className="relative mx-auto max-w-[1480px]">
-        <div data-reveal className="mb-6 sm:mb-10 lg:mb-14">
+        <div data-reveal className="mb-4 sm:mb-8 lg:mb-14">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             Start project
           </p>
-          <h2 className="section-title max-w-[1200px] text-[clamp(1.6rem,6.4vw,3.75rem)] leading-[1.12]">
+          <h2 className="section-title max-w-[1200px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
             YOU'VE SEEN OUR STORIES.
             <br />
             NOW LET'S HEAR YOURS.
           </h2>
         </div>
 
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+        <div className="grid gap-5 sm:gap-6 lg:gap-8 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
           <div data-reveal>
-            <div className="space-y-5 text-white/70">
+            <div className="space-y-3 sm:space-y-4 lg:space-y-5 text-white/70">
     <a
     href="mailto:team@krooproduction.in"
     className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
   >
-    <Mail className="shrink-0 text-primary" />
+    <Mail className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
     <span className="min-w-0 break-words">
       team@krooproduction.in
     </span>
@@ -1583,17 +1600,17 @@ function ContactSection() {
     href="tel:+916291252126"
     className="flex min-w-0 items-center gap-4 rounded-sm transition hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
   >
-    <Phone className="shrink-0 text-primary" />
+    <Phone className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
     <span>+91 62912 52126</span>
   </a>
 
   <p className="flex min-w-0 items-center gap-4">
-    <MapPin className="shrink-0 text-primary" />
+    <MapPin className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
     <span>Kolkata, India</span>
   </p>
 </div>
 
-           <div className="mt-8 flex gap-3">
+           <div className="mt-5 sm:mt-6 lg:mt-8 flex gap-2 sm:gap-3">
   {[
     {
       icon: Instagram,
@@ -1618,7 +1635,7 @@ function ContactSection() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="Kroo social channel"
-      className="magnetic-target flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
+      className="magnetic-target flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 transition duration-300 hover:border-primary hover:text-primary hover:shadow-glow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:h-11 sm:w-11 lg:h-12 lg:w-12"
     >
       <Icon size={19} />
     </a>
@@ -1720,7 +1737,7 @@ function ContactSection() {
 
 function Footer() {
   return (
-    <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8 lg:py-14">
+    <footer className="relative border-t border-white/10 px-5 py-6 sm:px-8 sm:py-8 lg:py-14">
       <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.75fr)_minmax(0,0.8fr)]">
 
         {/* Logo */}
