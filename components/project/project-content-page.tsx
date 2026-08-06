@@ -43,7 +43,7 @@ const fadeUp = {
 export type ProjectVideo = {
   id: number;
   title: string;
-  thumbnail: string;
+  thumbnail?: string; // <-- make optional
   video: string;
   description: string;
   duration: string;
