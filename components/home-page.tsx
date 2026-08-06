@@ -1151,22 +1151,25 @@ function HeroSection() {
             We bring
           </motion.p>
 <h1
-  className="leading-[0.96]
+  className="
+    leading-[0.96]
     font-black
     tracking-tight
     max-w-[1550px]
-    text-[clamp(1.15rem,5.9cqw,3.4rem)]
-    sm:text-[clamp(1.15rem,6.8cqw,3.4rem)]
+    text-[clamp(1.2rem,5.9cqw,3.4rem)]
+    sm:text-[clamp(1.2rem,6.8cqw,3.4rem)]
   "
 >
   IF YOU&apos;RE HERE TO HIRE US
   <br />
   <span>—WELCOME.</span>
+
   <br />
   <br />
-  IF YOU&apos;RE HERE TO COPY US
+
+  IF YOU&apos;RE HERE FOR INSPIRATION
   <br />
-  <span>—GOOD LUCK.</span>
+  <span>—DIVE IN.</span>
 </h1>
           <motion.p
             variants={fadeUp}
