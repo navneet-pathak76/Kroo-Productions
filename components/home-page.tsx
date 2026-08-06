@@ -44,7 +44,6 @@ import {
   type MotionValue,
 } from "framer-motion";
 import {
-  brandMarks,
   capabilities,
   founders,
   projects,
@@ -84,18 +83,6 @@ const fadeUp = {
 
 type SlotOffset = -3 | -2 | -1 | 0 | 1 | 2 | 3;
 type SlotMagnitude = 0 | 1 | 2 | 3;
-
-interface SlotConfigEntry {
-  /** x/z are expressed as a MULTIPLE of `spread` (unitless), so they
-   *  still scale responsively with viewport width. rotateY is a literal
-   *  degree value, constant across breakpoints. */
-  xFactor: number;
-  zFactor: number;
-  rotateYDeg: number;
-  scale: number;
-  opacity: number;
-  zIndex: number;
-}
 
 /**
  * Rebuilt from scratch as a proper orbit projection instead of a table of
@@ -1172,12 +1159,12 @@ function HeroSection() {
     sm:text-[clamp(1.15rem,6.8cqw,3.4rem)]
   "
 >
-  IF YOU'RE HERE TO HIRE US
+  IF YOU&apos;RE HERE TO HIRE US
   <br />
   <span>—WELCOME.</span>
   <br />
   <br />
-  IF YOU'RE HERE TO COPY US
+  IF YOU&apos;RE HERE TO COPY US
   <br />
   <span>—GOOD LUCK.</span>
 </h1>
@@ -1272,9 +1259,9 @@ function ShowreelSection() {
   </p>
 
   <h2 className="section-title max-w-[1500px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
-    THIS ISN'T A SHOWREEL.
+    THIS ISN&apos;T A SHOWREEL.
     <br />
-    IT'S A REASON TO HIRE US.
+    IT&apos;S A REASON TO HIRE US.
   </h2>
 
   <p className="mt-6 max-w-md text-base leading-7 text-white/60">
@@ -1421,9 +1408,9 @@ function ProjectsSection() {
         eyebrow="Featured Projects"
         title={
           <>
-            SCROLL IF YOU'RE CURIOUS.
+            SCROLL IF YOU&apos;RE CURIOUS.
             <br />
-            STOP IF YOU'RE IMPRESSED.
+            STOP IF YOU&apos;RE IMPRESSED.
           </>
         }
         copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
@@ -1453,8 +1440,6 @@ function ProjectsSection() {
               />
 
               <div className="absolute inset-0 bg-black/35" />
-
-              <div className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.24)_48%,transparent_58%)] opacity-0 transition duration-700 group-hover:opacity-100" />
 
               <div className="absolute left-3 top-3 max-w-[calc(100%-2rem)] rounded-full border border-white/20 px-2.5 py-1.5 text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.18em]">
                 {project.category}
@@ -1577,9 +1562,9 @@ function ContactSection() {
             Start project
           </p>
           <h2 className="section-title max-w-[1200px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
-            YOU'VE SEEN OUR STORIES.
+            YOU&apos;VE SEEN OUR STORIES.
             <br />
-            NOW LET'S HEAR YOURS.
+            NOW LET&apos;S HEAR YOURS.
           </h2>
         </div>
 
@@ -1672,7 +1657,7 @@ function ContactSection() {
                 setCompany("");
                 setBudget("");
                 setMessage("");
-              } catch (err) {
+              } catch {
                 alert("Failed to send project request.");
               } finally {
                 setLoading(false);

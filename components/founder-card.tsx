@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { useMotionValue, useSpring, useTransform, motion } from "framer-motion";
+import { useMotionValue, useSpring, motion } from "framer-motion";
 import {
   Linkedin,
   Instagram,

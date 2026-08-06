@@ -62,7 +62,7 @@ export default function ComingSoonPage() {
           {/* Subtitle */}
 
           <p className="mx-auto mt-8 max-w-2xl text-lg leading-9 text-zinc-400">
-            We're crafting this experience with the same attention to detail,
+            We&apos;re crafting this experience with the same attention to detail,
             creativity, and precision that defines every Kroo Production
             project.
           </p>

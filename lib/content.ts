@@ -142,39 +142,35 @@ export const projects = [
     category: "Luxury Properties",
     metric: "06",
     image: "/images/projects/real-estate.jpg",
-    href: "/projects/real-estate-content",
+    href: "/real-estate",
   },
-
   {
     title: "PRODUCT ADS",
     category: "Commercial",
     metric: "07",
     image: "/images/projects/products.jpg",
-    href: "/projects/product-content",
+    href: "/product-content",
   },
-
   {
     title: "AI VIDEOS",
     category: "AI Production",
     metric: "08",
     image: "/images/projects/ai-videos.jpg",
-    href: "/projects/ai-video-content",
+    href: "/ai-content",
   },
-
   {
     title: "DIGITAL MARKETING",
     category: "Performance Marketing",
     metric: "09",
     image: "/images/projects/digital-marketing.jpg",
-    href: "/projects/digital-marketing-content",
+    href: "/digital-marketing-content",
   },
-
   {
     title: "LOGO & GRAPHICS",
     category: "Brand Identity",
     metric: "10",
     image: "/images/projects/logo-graphics.jpg",
-    href: "/projects/logo-graphics-content",
+    href: "/logo-graphics-content",
   },
 ];
 
