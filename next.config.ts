@@ -1,5 +1,19 @@
 import type { NextConfig } from "next";
 
+const mediaBaseUrl =
+  process.env.NEXT_PUBLIC_S3_BASE_URL ??
+  "https://d3uo687t366hok.cloudfront.net";
+
+function getMediaHostname(): string {
+  try {
+    return new URL(mediaBaseUrl).hostname;
+  } catch {
+    return "d3uo687t366hok.cloudfront.net";
+  }
+}
+
+const mediaHostname = getMediaHostname();
+
 const securityHeaders = [
   {
     key: "X-Frame-Options",
@@ -59,7 +73,7 @@ const securityHeaders = [
         https://region1.google-analytics.com
         https://www.googletagmanager.com
         https://*.google-analytics.com
-        https://d3uo687t366hok.cloudfront.net;
+        https://${mediaHostname};
 
       worker-src
         'self'
@@ -103,7 +117,7 @@ const nextConfig: NextConfig = {
   remotePatterns: [
     {
       protocol: "https",
-      hostname: "d3uo687t366hok.cloudfront.net",
+      hostname: mediaHostname,
     },
   ],
 },

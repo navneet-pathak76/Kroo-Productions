@@ -1,5 +1,5 @@
 "use client";
-
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Ambient } from "@/components/ambient";
 import { CursorFollower } from "@/components/cursor-follower";
 import { SiteNav } from "@/components/site-nav";
@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+
 
 const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -43,13 +43,13 @@ const fadeUp = {
 export type ProjectVideo = {
   id: number;
   title: string;
-  thumbnail?: string; // <-- make optional
   video: string;
-  description: string;
   duration: string;
   category: string;
   client: string;
   services: string[];
+  /** Shown only inside the expanded project view, never on the grid card. */
+  description?: string;
 };
 
 type ProjectDetail = {
@@ -271,104 +271,196 @@ function ProjectInfo({ items }: { items: ProjectInfoItem[] }) {
   );
 }
 
-function VideoCard({
-  video,
-  isActive,
-  onSelect,
-}: {
-  video: ProjectVideo;
-  isActive: boolean;
-  onSelect: (video: ProjectVideo | null) => void;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const toggle = () => onSelect(isActive ? null : video);
+
+
+/* =========================================================
+   useHoverIntent — single source of truth for delayed hover.
+   ========================================================= */
+function useHoverIntent(
+  onTrigger: () => void,
+  delay = 150
+) {
+  const timerRef = useRef<number | null>(null);
+
+  const cancel = useCallback(() => {
+    if (timerRef.current !== null) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const start = useCallback(() => {
+    cancel();
+
+    timerRef.current = window.setTimeout(() => {
+      timerRef.current = null;
+      onTrigger();
+    }, delay);
+  }, [cancel, delay, onTrigger]);
+
+  useEffect(() => {
+    return cancel;
+  }, [cancel]);
+
+  return {
+    start,
+    cancel,
+  };
+}
+
+/* =========================================================
+   VideoThumbnail — one <video> element only.
+   Resting: fixed 4:3 box (object-cover, cropped, static frame).
+   Active:  bottom-anchored panel grows/shrinks to the video's
+            REAL aspect ratio at the card's fixed width, so the
+            video fills it with zero cropping and zero bars.
+            Only the top edge moves — bottom, left, right and
+            the outer grid cell never move.
+   ========================================================= */
+function VideoThumbnail({
+  src,
+  active,
+}:{
+  src:string;
+  active:boolean;
+}){
+
+  const videoRef=useRef<HTMLVideoElement>(null);
+
+  const [portrait,setPortrait]=useState(false);
+  const [ready,setReady]=useState(false);
+
+  useEffect(()=>{
+
+    const video=videoRef.current;
+    if(!video)return;
+
+    if(active && ready){
+      video.play().catch(()=>{});
+    }else{
+      video.pause();
+      video.currentTime=0.1;
+    }
+
+  },[active,ready]);
+
+  return(
+
+    <video
+      ref={videoRef}
+      src={src}
+      muted
+      loop
+      playsInline
+      preload="metadata"
+
+      onLoadedMetadata={(e)=>{
+
+        const v=e.currentTarget;
+
+        setPortrait(v.videoHeight>v.videoWidth);
+
+        v.currentTime=.1;
+
+      }}
+
+      onSeeked={()=>setReady(true)}
+
+      className="absolute bottom-0 left-1/2 -translate-x-1/2 transition-all duration-300 ease-out pointer-events-none"
+
+ style={{
+  width: portrait
+    ? active
+      ? "82%"
+      : "100%"
+    : "100%",
+
+  height: active
+    ? portrait
+      ? "135%"
+      : "108%"
+    : "100%",
+
+  objectFit: portrait ? "contain" : "cover",
+
+  left: "50%",
+  bottom: 0,
+
+  transform: "translateX(-50%)",
+
+  transformOrigin: "bottom center",
+
+  borderRadius: "14px",
+
+  overflow: "hidden",
+
+  zIndex: 50,
+}}
+
+    />
+
+  );
+
+}
+/* =========================================================
+   VideoCard — the fixed 4:3 grid cell. This element's size is
+   NEVER animated. Only VideoThumbnail's internal panel moves,
+   as an overlay stacked above siblings while active.
+   ========================================================= */
+function VideoCard({ video }: { video: ProjectVideo }) {
+  const cellRef = useRef<HTMLDivElement | null>(null);
+  const [isHovering, setIsHovering] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+
+  const hoverIntent = useHoverIntent(() => setIsHovering(true), 150);
+  const active = isHovering || isPinned;
+
+  const handleMouseEnter = () => hoverIntent.start();
+
+  const handleMouseLeave = () => {
+    hoverIntent.cancel();
+    setIsHovering(false);
+  };
+
+  const handleClick = () => setIsPinned((prev) => !prev);
+
+  // Tapping elsewhere closes a pinned card (mobile has no hover state).
+  useEffect(() => {
+    if (!isPinned) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (cellRef.current && !cellRef.current.contains(event.target as Node)) {
+        setIsPinned(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [isPinned]);
 
   return (
-    <article
-      data-reveal
-      className={cn(
-        "group cinema-panel flex min-w-0 flex-col overflow-hidden rounded-md border border-transparent transition-colors duration-500 hover:border-primary/70 hover:shadow-glow",
-        isActive && "border-primary/80 shadow-glow-strong",
-      )}
+    <div
+      ref={cellRef}
+      className="relative aspect-[4/3] w-full isolate"
+      style={{ zIndex: active ? 40 : 1 }}
     >
-      <div
-        className="relative aspect-[3/4] w-full shrink-0 overflow-hidden rounded-t-md bg-black"
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        <div
-          className={cn(
-            "absolute inset-0 transition-opacity duration-500 ease-out",
-            isActive ? "pointer-events-none opacity-0" : "opacity-100",
-          )}
-        >
-          <video
-  src={video.video}
-  muted
-  playsInline
-  preload="metadata"
-  className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-  onLoadedMetadata={(e) => {
-    e.currentTarget.currentTime = 0.1;
-  }}
-/>
-          <div className="absolute inset-0 bg-gradient-to-t from-black/84 via-black/5 to-transparent" />
-          <button
-            type="button"
-            onClick={toggle}
-            aria-label={`Play ${video.title}`}
-            className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong transition duration-500 group-hover:scale-110 group-hover:bg-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black"
-          >
-            <Play size={23} fill="currentColor" />
-          </button>
-        </div>
-
-        <div
-          className={cn(
-            "absolute inset-0 transition-opacity duration-500 ease-out",
-            isActive ? "opacity-100" : "pointer-events-none opacity-0",
-          )}
-        >
-          {isActive && (
-            <video
-              key={video.id}
-              autoPlay
-              muted
-              loop
-              playsInline
-              preload="metadata"
-              controls={hovered}
-              className="h-full w-full object-cover"
-            >
-              <source src={video.video} type="video/mp4" />
-            </video>
-          )}
-        </div>
-      </div>
-
       <button
         type="button"
-        onClick={toggle}
-        aria-expanded={isActive}
-        className="w-full flex-1 p-4 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black sm:p-5"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        onClick={handleClick}
+        aria-pressed={isPinned}
+        aria-label={`Play preview for ${video.title}`}
+        className="absolute inset-0 h-full w-full cursor-pointer overflow-visible rounded-[16px] bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30 focus-visible:ring-offset-2 focus-visible:ring-offset-black"
       >
-        <h3 className="line-clamp-1 text-xl font-black uppercase leading-tight text-white sm:text-2xl">
-          {video.title}
-        </h3>
-        <p className="mt-1.5 text-xs font-black uppercase tracking-[0.2em] text-primary">
-          {video.category} • {video.duration}
-        </p>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-white/60">
-          {video.description}
-        </p>
+        <VideoThumbnail src={video.video} active={active} containerRef={cellRef} />
       </button>
-    </article>
+    </div>
   );
 }
 
-function VideoGallery({ config }: { config: ProjectPageConfig }) {
-  const [selected, setSelected] = useState<ProjectVideo | null>(null);
 
+function VideoGallery({ config }: { config: ProjectPageConfig }) {
   return (
     <section id="work" className="relative scroll-mt-28 px-2 py-16 sm:px-8 lg:py-20">
       <SectionIntro
@@ -377,14 +469,9 @@ function VideoGallery({ config }: { config: ProjectPageConfig }) {
         titleClassName="max-w-[1100px] text-[clamp(2.4rem,3.6vw,4.2rem)] leading-[0.92]"
         copy={config.gallery.copy}
       />
-      <div className="mx-auto grid max-w-[1180px] grid-cols-2 gap-4 md:gap-5 lg:max-w-[1320px] lg:grid-cols-3 lg:gap-6">
+      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {config.videos.map((video) => (
-          <VideoCard
-            key={video.id}
-            video={video}
-            isActive={selected?.id === video.id}
-            onSelect={setSelected}
-          />
+          <VideoCard key={video.id} video={video} />
         ))}
       </div>
     </section>

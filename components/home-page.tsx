@@ -25,6 +25,7 @@ import {
   Youtube,
 } from "lucide-react";
 import { Ambient } from "@/components/ambient";
+import { mediaUrl } from "@/lib/media-config";
 import { CursorFollower } from "@/components/cursor-follower";
 import { Loader } from "@/components/loader";
 import { KrooMark } from "@/components/scene/kroo-mark";
@@ -1295,7 +1296,7 @@ function ShowreelSection() {
             }}
           >
             <source
-              src="https://d3uo687t366hok.cloudfront.net/TCF_LANSCAPE_4K_30FPS.mp4"
+              src={mediaUrl("/TCF_LANSCAPE_4K_30FPS.mp4")}
               type="video/mp4"
             />
           </video>

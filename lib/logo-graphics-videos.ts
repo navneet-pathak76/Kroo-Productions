@@ -1,4 +1,6 @@
-const BASE = "https://d3uo687t366hok.cloudfront.net/videos/logo-graphics";
+import { videoUrl } from "@/lib/media-config";
+
+const BASE = videoUrl("logo-graphics", "").replace(/\/$/, "");
 
 export type LogoGraphicsVideo = {
   id: number;
