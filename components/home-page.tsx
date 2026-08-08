@@ -1354,10 +1354,12 @@ function ServiceCard({
   service,
   index,
   spanClassName,
+  compact = false,
 }: {
   service: (typeof services)[number];
   index: number;
   spanClassName?: string;
+  compact?: boolean;
 }) {
   return (
     <article
