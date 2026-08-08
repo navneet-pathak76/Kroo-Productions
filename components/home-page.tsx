@@ -646,85 +646,88 @@ function SpatialCard({
     [clampedOffset, spread],
   );
 
-  const springConfig = reducedMotion
-    ? CAROUSEL_CONFIG.reducedMotionSpring
-    : CAROUSEL_CONFIG.spring;
-
-  // Base resting x for this slot (eases toward its target when `offset`
-  // changes, e.g. on keyboard/wheel/autoplay/goTo).
-  const restingX = useMotionValue(style.x);
-  useEffect(() => {
-    restingX.set(style.x);
-  }, [style.x, restingX]);
-  const restingXSpring = useSpring(restingX, springConfig);
-
-  // Final x = resting slot position + this card's share of the live,
-  // continuous carouselOffsetSpring (card-width units -> px via spread).
-  // Every card reads the SAME shared motion value; a positive shared
-  // offset shifts every card's x by the same +spread*offset px amount,
-  // which is exactly what "the whole stack rotates continuously" means.
-  const x = useTransform<number, string>(
-    [restingXSpring, carouselOffsetSpring],
-    ([restX, sharedOffset]) => `calc(-50% + ${(restX ?? 0) + (sharedOffset ?? 0) * spread}px)`,
-  );
+  // NOTE ON STRUCTURE: three fix attempts on this same node all failed
+  // identically on iOS Safari — a "-50%" transform, an equivalent px
+  // value, and a plain-number MotionValue all failed to move the card,
+  // in every case because x was being supplied via `style` (a raw
+  // MotionValue) on the SAME element that also carries 3D `animate`
+  // props (z, rotateY, scale) inside a preserve-3d context. That specific
+  // combination — style-driven x + animate-driven 3D transforms, one
+  // element — is what doesn't compose on this WebKit build, regardless
+  // of the x value's type or content.
+  //
+  // Fix: stop putting them on the same element. Split into two nodes:
+  //  - OUTER carries ONLY the continuous drag/scrub offset, via style,
+  //    with no other transform on it to conflict with.
+  //  - MIDDLE carries the resting slot offset (x) TOGETHER with z/
+  //    rotateY/scale, all through `animate` as plain numbers — the same
+  //    mechanism already proven to render correctly on this device for
+  //    y/z/rotateY/scale, so x now goes through the path known to work
+  //    instead of the one known not to.
+  const dragX = useTransform(carouselOffsetSpring, (sharedOffset) => sharedOffset * spread);
 
   return (
     <motion.div
       className="absolute left-1/2 top-1/2 flex-none"
       style={{
         width: `${cardWidth}px`,
-        transformStyle: "preserve-3d",
-        willChange: "transform, opacity",
+        marginLeft: -cardWidth / 2,
+        willChange: "transform",
         zIndex: style.zIndex,
         pointerEvents: isActive ? "auto" : "none",
-        x: reducedMotion ? undefined : x,
+        x: reducedMotion ? undefined : dragX,
       }}
-      initial={false}
-      animate={
-        reducedMotion
-          ? { opacity: isActive ? 1 : 0, x: "-50%", y: "-50%" }
-          : {
-              y: "-50%",
-              z: style.z,
-              rotateY: style.rotateY,
-              scale: style.scale,
-              opacity: style.opacity,
-            }
-      }
-      transition={
-        reducedMotion
-          ? { duration: 0.01 }
-          : { type: "spring", ...CAROUSEL_CONFIG.spring }
-      }
     >
       <motion.div
+        style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
+        initial={false}
         animate={
-          isActive && !reducedMotion
-            ? {
-                scale: [1, 1.015, 1],
-                boxShadow: [
-                  "0 30px 80px rgba(0,0,0,0.55)",
-                  "0 40px 110px rgba(0,0,0,0.65)",
-                  "0 30px 80px rgba(0,0,0,0.55)",
-                ],
-              }
+          reducedMotion
+            ? { opacity: isActive ? 1 : 0, x: 0, y: "-50%" }
             : {
-                boxShadow: isActive
-                  ? "0 30px 80px rgba(0,0,0,0.55)"
-                  : `0 ${14 - Math.abs(offset) * 3}px ${40 - Math.abs(offset) * 6}px rgba(0,0,0,0.35)`,
+                x: style.x,
+                y: "-50%",
+                z: style.z,
+                rotateY: style.rotateY,
+                scale: style.scale,
+                opacity: style.opacity,
               }
         }
         transition={
-          isActive && !reducedMotion
-            ? { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
-            : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+          reducedMotion
+            ? { duration: 0.01 }
+            : { type: "spring", ...CAROUSEL_CONFIG.spring }
         }
-        style={{
-          borderRadius: "inherit",
-          filter: isActive ? "brightness(1)" : `brightness(${1 - Math.abs(offset) * 0.08})`,
-        }}
       >
-        {children}
+        <motion.div
+          animate={
+            isActive && !reducedMotion
+              ? {
+                  scale: [1, 1.015, 1],
+                  boxShadow: [
+                    "0 30px 80px rgba(0,0,0,0.55)",
+                    "0 40px 110px rgba(0,0,0,0.65)",
+                    "0 30px 80px rgba(0,0,0,0.55)",
+                  ],
+                }
+              : {
+                  boxShadow: isActive
+                    ? "0 30px 80px rgba(0,0,0,0.55)"
+                    : `0 ${14 - Math.abs(offset) * 3}px ${40 - Math.abs(offset) * 6}px rgba(0,0,0,0.35)`,
+                }
+          }
+          transition={
+            isActive && !reducedMotion
+              ? { duration: 4.5, repeat: Infinity, ease: "easeInOut" }
+              : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+          }
+          style={{
+            borderRadius: "inherit",
+            filter: isActive ? "brightness(1)" : `brightness(${1 - Math.abs(offset) * 0.08})`,
+          }}
+        >
+          {children}
+        </motion.div>
       </motion.div>
     </motion.div>
   );
@@ -761,7 +764,7 @@ function CarouselTimeline({
    * from exactly the same two ingredients that place the cards:
    *   1. `activeIndex` — mirrors the discrete `active` index, but instead
    *      of jumping, animates to each new value with the SAME spring
-   *      physics as SpatialCard's restingXSpring (CAROUSEL_CONFIG.spring),
+   *      physics as SpatialCard's resting-slot animate (CAROUSEL_CONFIG.spring),
    *      so the knob moves in lockstep with the cards on every
    *      advance/goTo/autoplay step instead of trailing a beat behind.
    *   2. `sharedOffset` — the exact MotionValue that also shifts every
@@ -1516,7 +1519,7 @@ function ServicesSection() {
 }
 function ProjectsSection() {
   return (
-    <section id="work" className="scroll-mt-28 overflow-x-clip py-5 sm:py-10 lg:py-20">
+    <section id="work" className="scroll-mt-28 overflow-x-hidden py-5 sm:py-10 lg:py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
