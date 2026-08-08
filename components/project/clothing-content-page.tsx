@@ -21,6 +21,7 @@ const config = {
   title: "Clothing Content",
   description:
     "Premium fashion campaigns, apparel commercials, lifestyle storytelling and product films. Every edit is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/gym-content/hero-thumb.svg",
     alt: "Clothing Content project thumbnail",

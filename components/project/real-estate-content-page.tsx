@@ -19,6 +19,7 @@ const config = {
   title: "Real Estate Content",
   description:
     "Premium cinematic real estate content created for builders, developers, agencies and luxury property brands. Every walkthrough is designed to increase interest, trust and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/real-estate/hero-thumb.svg",
     alt: "Real Estate Content project thumbnail",

@@ -21,6 +21,7 @@ const config = {
   title: "Clubs Content",
   description:
     "Nightlife promotions, DJ events, concerts, cinematic club films and aftermovies. Every edit is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/gym-content/hero-thumb.svg",
     alt: "Clubs Content project thumbnail",

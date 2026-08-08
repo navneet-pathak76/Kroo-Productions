@@ -19,6 +19,7 @@ const config = {
   title: "Gym Content",
   description:
     "Premium cinematic fitness content created for gyms, fitness brands, trainers and commercial campaigns. Every edit is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/gym-content/hero-thumb.svg",
     alt: "Gym Content project thumbnail",

@@ -19,6 +19,7 @@ const config = {
   title: "AI Video Production",
   description:
     "Premium AI-generated video content created for brands, agencies and product launches. Every generation is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/ai-videos/hero-thumb.svg",
     alt: "AI Video Production project thumbnail",

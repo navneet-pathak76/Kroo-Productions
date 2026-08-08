@@ -19,6 +19,7 @@ const config = {
   title: "Product Content",
   description:
     "Premium cinematic product content created for brands, e-commerce stores and launch campaigns. Every edit is designed to increase engagement, brand value and conversions.",
+  galleryType: "image",
   hero: {
     thumbnail: "/images/products/hero-thumb.svg",
     alt: "Product Content project thumbnail",

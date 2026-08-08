@@ -1,5 +1,6 @@
-const BASE =
-  "https://d3uo687t366hok.cloudfront.net/videos/PRODUCT%20ADS";
+import { videoUrl } from "@/lib/media-config";
+
+const BASE = videoUrl("PRODUCT ADS", "").replace(/\/$/, "");
 
 export type ProductVideo = {
   id: number;
@@ -11,8 +12,6 @@ export type ProductVideo = {
   client: string;
   services: string[];
 };
-
-
 
 export const productVideos: ProductVideo[] = Array.from(
   { length: 20 },

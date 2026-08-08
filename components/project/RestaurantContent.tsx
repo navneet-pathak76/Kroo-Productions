@@ -22,6 +22,7 @@ const config = {
   title: "Restaurant Content",
   description:
     "Cinematic restaurant films, food storytelling and hospitality content that turns viewers into customers.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/gym-content/hero-thumb.svg",
     alt: "Restaurant Content project thumbnail",

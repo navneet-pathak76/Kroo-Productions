@@ -19,6 +19,7 @@ const config = {
   title: "Digital Marketing",
   description:
     "Premium performance-driven video content created for brands, agencies and marketing teams. Every edit is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/digital-marketing/hero-thumb.svg",
     alt: "Digital Marketing project thumbnail",

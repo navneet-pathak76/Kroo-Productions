@@ -21,6 +21,7 @@ const config = {
   title: "Motion Graphics Content",
   description:
     "2D & 3D motion graphics, brand animations, title sequences and digital motion design. Every edit is designed to increase engagement, brand value and conversions.",
+    galleryType: "video",
   hero: {
     thumbnail: "/images/gym-content/hero-thumb.svg",
     alt: "Motion Graphics Content project thumbnail",
