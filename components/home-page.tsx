@@ -968,7 +968,9 @@ function SectionIntro({
           {title}
         </h2>
 
-        <p className="mt-3 max-w-xl text-sm leading-6 text-white/60 sm:mt-6 sm:text-base sm:leading-7">
+        <p
+className="mt-3 text-sm leading-6 text-white/65 lg:mt-5 lg:text-base lg:leading-8"
+>
           {copy}
         </p>
       </div>
@@ -1348,50 +1350,164 @@ function FoundersSection() {
     </section>
   );
 }
-
-function ServicesSection() {
+function ServiceCard({
+  service,
+  index,
+  spanClassName,
+}: {
+  service: (typeof services)[number];
+  index: number;
+  spanClassName?: string;
+}) {
   return (
-    <section id="services" className="scroll-mt-28 px-5 py-4 sm:px-8 sm:py-10 lg:py-20">
-{/* ServicesSection */}
-    <SectionIntro
-      eyebrow="What we do"
-      title={
-        <>
-        WE CREATE THE REASON
-        <br />
-        PEOPLE REMEMBER YOU.
-      </>
-    }
-  copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
-/>
-      <div className="mx-auto grid max-w-[1480px] grid-cols-1 gap-3 lg:grid-cols-4 lg:gap-5">
+    <article
+      data-reveal
+      className={cn(
+        `
+        group
+        cinema-panel
+        service-card
+        relative
+        min-w-0
+        overflow-hidden
+        rounded-xl
+        border
+        border-white/10
+        bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.65))]
+        transition-all
+        duration-500
+        hover:-translate-y-1
+        hover:border-primary/50
+        hover:shadow-glow
+
+        flex
+        flex-col
+
+        p-4
+        sm:p-5
+        lg:p-7
+
+        compact
+  ? "min-h-0 h-full p-3"
+  : "min-h-[180px] sm:min-h-[210px] lg:min-h-[290px]"
+        `,
+        spanClassName,
+        service.span
+      )}
+    >
+      <div className="absolute -right-20 -top-20 h-48 w-48 rounded-full bg-primary/0 blur-3xl transition duration-500 group-hover:bg-primary/20" />
+
+      <service.icon
+        className="
+          relative
+          mb-3
+          h-6
+          w-6
+          text-white/70
+          transition
+
+          sm:h-7
+          sm:w-7
+
+          lg:mb-8
+          lg:h-10
+          lg:w-10
+        "
+      />
+
+      <p
+        className="
+          mb-2
+          text-[10px]
+          font-black
+          uppercase
+          tracking-[0.22em]
+          text-primary
+        "
+      >
+        0{index + 1}
+      </p>
+
+      <h3
+        className="
+          text-[1.05rem]
+          font-black
+          uppercase
+          leading-[1.05]
+
+          sm:text-[1.25rem]
+
+          lg:text-[2rem]
+        "
+      >
+        {service.title}
+      </h3>
+
+      <p
+        className="
+          mt-3
+          text-sm
+          leading-6
+          text-white/65
+
+          lg:mt-5
+          lg:text-base
+          lg:leading-8
+        "
+      >
+        {service.description}
+      </p>
+    </article>
+  );
+}
+function ServicesSection() {
+  const mobileRowOne = services.slice(0, 3);
+  const mobileRowTwo = services.slice(3, 5);
+
+  return (
+    <section id="services" className="scroll-mt-28 px-4 py-3 sm:px-8 sm:py-10 lg:py-20">
+      {/* ServicesSection */}
+      <SectionIntro
+        eyebrow="What we do"
+        title={
+          <>
+            WE CREATE THE REASON
+            <br />
+            PEOPLE REMEMBER YOU.
+          </>
+        }
+        copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
+      />
+
+      {/* DESKTOP — untouched, same grid/spacing/animation/component */}
+      <div className="mx-auto hidden max-w-[1480px] md:grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-5">
         {services.map((service, index) => (
-          <article
+          <ServiceCard
             key={service.title}
-            data-reveal
-            className={cn(
-              "group cinema-panel relative min-h-0 min-w-0 snap-start overflow-hidden rounded-md p-3.5 transition duration-500 will-change-transform hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow sm:min-h-60 sm:p-5 lg:min-h-72 lg:p-7",
-              service.span,
-            )}
-          >
-            <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/0 blur-3xl transition duration-500 group-hover:bg-primary/20" />
-            <service.icon
-              className="relative mb-2.5 h-6 w-6 text-white/70 transition duration-300 group-hover:text-primary sm:mb-6 sm:h-9 sm:w-9 lg:mb-10 lg:h-[42px] lg:w-[42px]"
-              size={42}
-            />
-            <p className="relative mb-1.5 text-[10px] font-black uppercase tracking-[0.2em] text-primary sm:mb-3 sm:text-xs sm:tracking-[0.24em]">
-              0{index + 1}
-            </p>
-            <h3 className="relative text-base font-black uppercase sm:text-2xl lg:text-3xl">
-              {service.title}
-            </h3>
-            <p className="relative mt-1.5 max-w-xl text-sm leading-6 text-white/60 sm:mt-3 sm:text-base sm:leading-7 lg:mt-5">
-              {service.description}
-            </p>
-            
-          </article>
-          
+            service={service}
+            index={index}
+            compact
+            spanClassName={index === 1 || index === 2 ? "col-span-1" : "col-span-2"}
+          />
         ))}
+      </div>
+
+      {/* MOBILE — custom 3-then-2 layout, independent grids */}
+      <div className="mx-auto flex max-w-[1480px] flex-col gap-3 md:hidden">
+        <div className="grid grid-cols-3 gap-3 auto-rows-[220px]">
+          {mobileRowOne.map((service, index) => (
+            <ServiceCard key={service.title} service={service} index={index} />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {mobileRowTwo.map((service, index) => (
+            <ServiceCard
+              key={service.title}
+              service={service}
+              index={index + 3}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

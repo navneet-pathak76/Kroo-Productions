@@ -19,6 +19,7 @@ const config = {
   title: "Logo & Graphics",
   description:
     "Premium motion graphics and logo animation content created for brands, agencies and product launches. Every reveal is designed to increase engagement, brand value and recall.",
+  galleryType: "image",
   hero: {
     thumbnail: "/images/logo-graphics/hero-thumb.svg",
     alt: "Logo & Graphics project thumbnail",
