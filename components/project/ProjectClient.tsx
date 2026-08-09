@@ -11,7 +11,7 @@ import {
 } from "react";
 import { useInView } from "react-intersection-observer";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Maximize, Play } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
@@ -376,6 +376,61 @@ function VideoThumbnail({
     if (video.currentTime === 0) video.currentTime = 0.1;
   };
 
+  const handleFullscreen = useCallback(
+    async (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Stop this from bubbling up to the card's own click/toggle handler.
+      event.stopPropagation();
+      event.preventDefault();
+
+      const video = videoRef.current;
+      if (!video) return;
+
+      type FullscreenableVideo = HTMLVideoElement & {
+        webkitEnterFullscreen?: () => void;
+        webkitRequestFullscreen?: () => Promise<void> | void;
+        webkitSupportsFullscreen?: boolean;
+        mozRequestFullScreen?: () => Promise<void> | void;
+        msRequestFullscreen?: () => Promise<void> | void;
+      };
+      const el = video as FullscreenableVideo;
+
+      try {
+        if (video.requestFullscreen) {
+          // Standard Fullscreen API — Chrome/Firefox/desktop Safari, Android Chrome.
+          await video.requestFullscreen();
+        } else if (el.webkitEnterFullscreen) {
+          // iOS Safari only exposes fullscreen on the <video> element itself,
+          // via the native player rather than the Fullscreen API.
+          el.webkitEnterFullscreen();
+        } else if (el.webkitRequestFullscreen) {
+          await el.webkitRequestFullscreen();
+        } else if (el.mozRequestFullScreen) {
+          await el.mozRequestFullScreen();
+        } else if (el.msRequestFullscreen) {
+          await el.msRequestFullscreen();
+        }
+      } catch {
+        // Fullscreen can be rejected (e.g. missing user-activation edge cases);
+        // fail silently and leave inline playback as-is.
+      }
+
+      // A user explicitly requesting fullscreen wants to actually watch/hear
+      // it — unmute (this is a direct user gesture, so browsers allow it)
+      // and make sure playback keeps going once fullscreen opens.
+      video.muted = false;
+      const playAttempt = video.play();
+      if (playAttempt) {
+        playAttempt.catch(() => {
+          // Autoplay-with-sound can still be blocked in edge cases; fall
+          // back to muted playback rather than leaving the video paused.
+          video.muted = true;
+          video.play().catch(() => {});
+        });
+      }
+    },
+    []
+  );
+
   let expandedWidth = restingSize.width;
   let expandedHeight = restingSize.height;
 
@@ -433,11 +488,27 @@ function VideoThumbnail({
             onLoadedMetadata={handleLoadedMetadata}
             className={cn(
               "absolute inset-0 h-full w-full rounded-[14px]",
+              // While the browser has this exact <video> fullscreened, always
+              // letterbox/pillarbox instead of cropping — regardless of the
+              // card's own active/resting object-fit.
+              "[&:fullscreen]:object-contain [&:fullscreen]:!h-full [&:fullscreen]:!w-full",
+              "[&:-webkit-full-screen]:object-contain [&:-webkit-full-screen]:!h-full [&:-webkit-full-screen]:!w-full",
               active ? "object-contain" : "object-cover"
             )}
           />
         )}
         <KrooWatermark />
+        {inView && (
+          <button
+            type="button"
+            onClick={handleFullscreen}
+            onPointerDown={(event) => event.stopPropagation()}
+            aria-label="Watch fullscreen"
+            className="absolute right-3 top-3 z-20 flex h-9 w-9 items-center justify-center rounded-full border border-white/15 bg-black/55 text-white/85 backdrop-blur-md transition duration-200 hover:border-primary hover:bg-black/75 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black"
+          >
+            <Maximize size={16} />
+          </button>
+        )}
       </div>
     </div>
   );
@@ -519,12 +590,12 @@ function VideoCard({
     }
   }, [isActive, previewIntent]);
 
-  const handlePointerEnter = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const handlePointerEnter = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || isActive) return;
     previewIntent.start();
   };
 
-  const handlePointerLeave = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const handlePointerLeave = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse") return;
     previewIntent.cancel();
     setIsPreviewing(false);
@@ -536,9 +607,16 @@ function VideoCard({
       className="relative aspect-[4/3] w-full overflow-visible"
       style={{ zIndex: isActive ? 40 : 0 }}
     >
-      <button
-        type="button"
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggle}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onToggle();
+          }
+        }}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
         aria-pressed={isActive}
@@ -554,7 +632,7 @@ function VideoCard({
             previewing={isPreviewing}
           />
         )}
-      </button>
+      </div>
     </div>
   );
 }
