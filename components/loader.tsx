@@ -10,13 +10,19 @@ export function Loader() {
   const [sliding, setSliding] = useState(false);
 
   useEffect(() => {
-    // Timeline orchestration
-    // t0: logo intro (0 - 1.1s)
-    // t1: typography (1.1 - 1.8s)
-    // t2: slide reveal (1.8 - 3.4s)
-    const tLogo = window.setTimeout(() => setShowTypography(true), 1100);
-    const tSlide = window.setTimeout(() => setSliding(true), 1800);
-    const tEnd = window.setTimeout(() => setLoading(false), 3400);
+    const isMobile =
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches;
+
+    // Mobile: fast, minimal intro — protects LCP.
+    // Desktop: original cinematic timing, unchanged.
+    const logoDelay = isMobile ? 300 : 1100;
+    const slideDelay = isMobile ? 550 : 1800;
+    const endDelay = isMobile ? 950 : 3400;
+
+    const tLogo = window.setTimeout(() => setShowTypography(true), logoDelay);
+    const tSlide = window.setTimeout(() => setSliding(true), slideDelay);
+    const tEnd = window.setTimeout(() => setLoading(false), endDelay);
 
     return () => {
       window.clearTimeout(tLogo);
@@ -42,22 +48,26 @@ export function Loader() {
           animate={sliding ? { y: "-100%", transition: { duration: 0.8, ease: [0.2, 0.8, 0.2, 1] } } : { y: "0%" }}
           exit={{ opacity: 0 }}
         >
-          {/* subtle ambient orange glow */}
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[rgba(255,77,18,0.04)] to-transparent" />
 
-          {/* Center stack */}
           <div className="relative flex flex-col items-center justify-center gap-6 px-6">
-            {/* Scene 1: Logo intro */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.85, filter: "blur(20px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-              transition={{ duration: 0.8, ease: [0.2, 0.8, 0.2, 1] }}
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
               className="flex items-center justify-center"
             >
-              <Image src="/images/kroo.jpeg" alt="Kroo" width={420} height={420} priority className="w-[160px] sm:w-[260px] md:w-[360px] lg:w-[420px] h-auto" />
+              <Image
+                src="/images/kroo.jpeg"
+                alt="Kroo"
+                width={420}
+                height={420}
+                priority
+                quality={80}
+                className="w-[160px] sm:w-[260px] md:w-[360px] lg:w-[420px] h-auto"
+              />
             </motion.div>
 
-            {/* Scene 2: Typographic reveal */}
             <div className="flex flex-col items-center -mt-2">
               <motion.div
                 className="overflow-hidden"

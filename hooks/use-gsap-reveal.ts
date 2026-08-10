@@ -12,11 +12,10 @@ export function useGsapReveal() {
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
         gsap.fromTo(
           element,
-          { y: 34, autoAlpha: 0, filter: "blur(8px)" },
+          { y: 34, autoAlpha: 0 },
           {
             y: 0,
             autoAlpha: 1,
-            filter: "blur(0px)",
             duration: 0.92,
             ease: "power3.out",
             force3D: true,

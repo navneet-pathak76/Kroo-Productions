@@ -60,11 +60,10 @@ import { useMagnetic } from "@/hooks/use-magnetic";
 const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
 const fadeUp = {
-  hidden: { y: 32, opacity: 0, filter: "blur(10px)" },
+  hidden: { y: 32, opacity: 0 },
   visible: (i = 0) => ({
     y: 0,
     opacity: 1,
-    filter: "blur(0px)",
     transition: {
       delay: i * 0.075,
       duration: 0.82,
@@ -256,6 +255,22 @@ function normalizeOffset(rawOffset: number, total: number): number {
   return o;
 }
 
+/**
+ * iOS Safari's dynamic toolbar (URL bar hide/show on scroll) changes the
+ * visual viewport without reliably firing `window.resize`. `window.innerWidth`
+ * alone can go stale at exactly that moment. `document.documentElement.clientWidth`
+ * is the more standards-stable value (also excludes scrollbar-width quirks on
+ * desktop); `visualViewport.width`, where available, is the most accurate
+ * live value on WebKit specifically. This picks the best available source
+ * without ever trusting `window.innerWidth` in isolation.
+ */
+function getStableViewportWidth(): number {
+  if (typeof window === "undefined") return 1440;
+  const visualWidth = window.visualViewport?.width;
+  const clientWidth = document.documentElement.clientWidth;
+  return visualWidth && visualWidth > 0 ? visualWidth : clientWidth || window.innerWidth;
+}
+
 interface SpatialCardStackProps<T> {
   items: T[];
   renderCard: (item: T, index: number) => ReactNode;
@@ -274,10 +289,10 @@ function SpatialCardStack<T>({
   const [isAnimating, setIsAnimating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [spread, setSpread] = useState<number>(() =>
-    typeof window === "undefined" ? SPREAD_CONFIG.base : computeSpread(window.innerWidth),
+    typeof window === "undefined" ? SPREAD_CONFIG.base : computeSpread(getStableViewportWidth()),
   );
   const [viewportWidth, setViewportWidth] = useState<number>(() =>
-    typeof window === "undefined" ? 1440 : window.innerWidth,
+    typeof window === "undefined" ? 1440 : getStableViewportWidth(),
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -329,14 +344,24 @@ function SpatialCardStack<T>({
     const onResize = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        setSpread(computeSpread(window.innerWidth));
-        setViewportWidth(window.innerWidth);
+        const width = getStableViewportWidth();
+        setSpread(computeSpread(width));
+        setViewportWidth(width);
       });
     };
+
     window.addEventListener("resize", onResize);
+    window.addEventListener("orientationchange", onResize);
+    // The actual iOS Safari fix: visualViewport fires on toolbar show/hide,
+    // pinch-zoom, and keyboard open/close — window.resize does not reliably
+    // fire for any of these on WebKit.
+    window.visualViewport?.addEventListener("resize", onResize);
+
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+      window.visualViewport?.removeEventListener("resize", onResize);
     };
   }, []);
 

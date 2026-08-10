@@ -8,20 +8,11 @@ export function KrooMark() {
   const mx = useMotionValue(50);
   const my = useMotionValue(50);
 
-  const smoothMx = useSpring(mx, {
-    stiffness: 70,
-    damping: 20,
-  });
-
-  const smoothMy = useSpring(my, {
-    stiffness: 70,
-    damping: 20,
-  });
+  const smoothMx = useSpring(mx, { stiffness: 70, damping: 20 });
+  const smoothMy = useSpring(my, { stiffness: 70, damping: 20 });
 
   const tx = useTransform(smoothMx, [0, 100], [-15, 15]);
-
   const rotateX = useTransform(smoothMy, [0, 100], [10, -10]);
-
   const rotateY = useTransform(smoothMx, [0, 100], [-18, 18]);
 
   useEffect(() => {
@@ -29,30 +20,19 @@ export function KrooMark() {
       mx.set((e.clientX / window.innerWidth) * 100);
       my.set((e.clientY / window.innerHeight) * 100);
     };
-
     window.addEventListener("mousemove", onMove);
-
-    return () => {
-      window.removeEventListener("mousemove", onMove);
-    };
+    return () => window.removeEventListener("mousemove", onMove);
   }, [mx, my]);
 
   return (
     <div className="relative flex h-auto w-full items-center justify-center overflow-visible">
-      {/* Ambient Orange Atmosphere */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square w-[clamp(19rem,58vw,66rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,77,18,0.30)_0%,rgba(255,77,18,0.16)_34%,rgba(255,77,18,0.07)_57%,transparent_74%)] opacity-80 blur-[clamp(3rem,6vw,7.5rem)] lg:w-[clamp(36rem,64vw,74rem)]"
       />
 
-      {/* Hero Logo */}
       <motion.div
-        style={{
-          x: tx,
-          rotateX,
-          rotateY,
-          transformPerspective: 2500,
-        }}
+        style={{ x: tx, rotateX, rotateY, transformPerspective: 2500 }}
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
         className="relative z-20 flex w-full items-center justify-center will-change-transform"
@@ -60,12 +40,11 @@ export function KrooMark() {
         <Image
           src="/images/kroo.jpeg"
           alt="Kroo Production Logo"
-          width={1400}
-          height={1400}
-          priority
-          quality={100}
+          width={800}
+          height={800}
+          quality={80}
           sizes="(max-width: 1100px) 72vw, (max-width: 1736px) 50vw, 520px"
-          className="aspect-square h-auto w-[clamp(44rem,90vw,48rem)] max-w-full object-contain select-none drop-shadow-[0_0_120px_rgba(255,100,0,0.20)] lg:w-[5020px] lg:max-w-none"
+          className="aspect-square h-auto w-[clamp(44rem,90vw,48rem)] max-w-full object-contain select-none drop-shadow-[0_0_120px_rgba(255,100,0,0.20)]"
         />
       </motion.div>
     </div>
