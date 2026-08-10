@@ -2,17 +2,35 @@ import { NextResponse } from "next/server";
 import {
   SendEmailCommand,
 } from "@aws-sdk/client-sesv2";
-import { ses } from "@/lib/ses";
+import { getSesClient, getSesRuntimeConfig } from "@/lib/ses";
+
+const MAX_FIELD_LENGTH = 4000;
+
+function toSafeString(value: unknown): string {
+  return typeof value === "string" ? value.trim().slice(0, MAX_FIELD_LENGTH) : "";
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function paragraph(value: string): string {
+  return escapeHtml(value).replace(/\n/g, "<br/>");
+}
 
 export async function POST(req: Request) {
   try {
-    const {
-      name,
-      email,
-      company,
-      budget,
-      message,
-    } = await req.json();
+    const payload = await req.json();
+    const name = toSafeString(payload?.name);
+    const email = toSafeString(payload?.email);
+    const company = toSafeString(payload?.company);
+    const budget = toSafeString(payload?.budget);
+    const message = toSafeString(payload?.message);
 
     if (!name || !email || !message) {
       return NextResponse.json(
@@ -20,42 +38,47 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
-    console.log("Region:", process.env.AWS_REGION);
-    console.log(
-        "Access Key:",
-        process.env.AWS_ACCESS_KEY_ID?.slice(0, 8)
-    );
-console.log("From:", process.env.SES_FROM_EMAIL);
+
+    const ses = getSesClient();
+    const config = getSesRuntimeConfig();
+
+    if (!ses || !config) {
+      return NextResponse.json(
+        { error: "Email service is not configured." },
+        { status: 503 },
+      );
+    }
+
     // Email to your team
     await ses.send(
       new SendEmailCommand({
-        FromEmailAddress: process.env.SES_FROM_EMAIL!,
+        FromEmailAddress: config.fromEmail,
         Destination: {
-          ToAddresses: [process.env.SES_TO_EMAIL!],
+          ToAddresses: [config.toEmail],
         },
         Content: {
           Simple: {
             Subject: {
-              Data: `🚀 New Project Enquiry - ${name}`,
+              Data: `New Project Enquiry - ${name}`,
             },
             Body: {
               Html: {
                 Data: `
                   <h2>New Website Enquiry</h2>
 
-                  <p><strong>Name:</strong> ${name}</p>
+                  <p><strong>Name:</strong> ${escapeHtml(name)}</p>
 
-                  <p><strong>Email:</strong> ${email}</p>
+                  <p><strong>Email:</strong> ${escapeHtml(email)}</p>
 
-                  <p><strong>Company:</strong> ${company || "-"}</p>
+                  <p><strong>Company:</strong> ${escapeHtml(company || "-")}</p>
 
-                  <p><strong>Budget:</strong> ${budget || "-"}</p>
+                  <p><strong>Budget:</strong> ${escapeHtml(budget || "-")}</p>
 
                   <hr/>
 
                   <h3>Project Brief</h3>
 
-                  <p>${message.replace(/\n/g, "<br/>")}</p>
+                  <p>${paragraph(message)}</p>
                 `,
               },
             },

@@ -3,8 +3,11 @@
 import Image from "next/image";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEffect } from "react";
+import { useDeviceCapability } from "@/hooks/use-device-capability";
+import { cn } from "@/lib/utils";
 
 export function KrooMark() {
+  const capability = useDeviceCapability();
   const mx = useMotionValue(50);
   const my = useMotionValue(50);
 
@@ -14,27 +17,48 @@ export function KrooMark() {
   const tx = useTransform(smoothMx, [0, 100], [-15, 15]);
   const rotateX = useTransform(smoothMy, [0, 100], [10, -10]);
   const rotateY = useTransform(smoothMx, [0, 100], [-18, 18]);
+  const canAnimate =
+    !capability.reducedMotion &&
+    capability.performanceTier !== "LOW" &&
+    capability.pointer !== "coarse";
+  const canTrackPointer =
+    canAnimate &&
+    capability.hover &&
+    capability.pointer === "fine" &&
+    !capability.touch;
 
   useEffect(() => {
+    if (!canTrackPointer) return;
+
     const onMove = (e: MouseEvent) => {
       mx.set((e.clientX / window.innerWidth) * 100);
       my.set((e.clientY / window.innerHeight) * 100);
     };
-    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, [mx, my]);
+  }, [canTrackPointer, mx, my]);
 
   return (
     <div className="relative flex h-auto w-full items-center justify-center overflow-visible">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square w-[clamp(19rem,58vw,66rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,77,18,0.30)_0%,rgba(255,77,18,0.16)_34%,rgba(255,77,18,0.07)_57%,transparent_74%)] opacity-80 blur-[clamp(3rem,6vw,7.5rem)] lg:w-[clamp(36rem,64vw,74rem)]"
+        className={cn(
+          "pointer-events-none absolute left-1/2 top-1/2 z-0 aspect-square w-[clamp(19rem,58vw,66rem)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(255,77,18,0.30)_0%,rgba(255,77,18,0.16)_34%,rgba(255,77,18,0.07)_57%,transparent_74%)] lg:w-[clamp(36rem,64vw,74rem)]",
+          capability.performanceTier === "LOW" || capability.reducedMotion
+            ? "opacity-45 blur-[clamp(2rem,4vw,4.5rem)]"
+            : "opacity-80 blur-[clamp(3rem,6vw,7.5rem)]",
+        )}
       />
 
       <motion.div
-        style={{ x: tx, rotateX, rotateY, transformPerspective: 2500 }}
-        animate={{ y: [0, -8, 0] }}
-        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        style={{
+          x: canAnimate ? tx : 0,
+          rotateX: canAnimate ? rotateX : 0,
+          rotateY: canAnimate ? rotateY : 0,
+          transformPerspective: 2500,
+        }}
+        animate={canAnimate ? { y: [0, -8, 0] } : { y: 0 }}
+        transition={canAnimate ? { duration: 7, repeat: Infinity, ease: "easeInOut" } : { duration: 0 }}
         className="relative z-20 flex w-full items-center justify-center will-change-transform"
       >
         <Image

@@ -1,5 +1,6 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
+import { CapabilityRoot } from "@/components/capability-root";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -142,7 +143,10 @@ export default function RootLayout({
         />
       </head>
 
-      <body>{children}</body>
+      <body>
+        <CapabilityRoot />
+        {children}
+      </body>
 
       <GoogleAnalytics gaId="G-9WBJV41K0G" />
     </html>

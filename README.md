@@ -1,6 +1,6 @@
 # Kroo Production
 
-A cinematic production house website for KROO PRODUCTION, built with Next.js 15, TypeScript, TailwindCSS, Framer Motion, GSAP, Lenis, React Three Fiber, Shadcn-style UI primitives, and Lucide icons.
+A cinematic production house website for KROO PRODUCTION, built with Next.js 15, TypeScript, TailwindCSS, Framer Motion, GSAP, Lenis, Shadcn-style UI primitives, and Lucide icons.
 
 ## Structure
 
@@ -16,7 +16,7 @@ components/
   cursor-follower.tsx  Cursor follower interaction
   home-page.tsx        Complete landing experience
   loader.tsx           Animated logo loader
-  scene/kroo-mark.tsx  React Three Fiber hero mark
+  scene/kroo-mark.tsx  Capability-aware animated hero mark
   site-nav.tsx         Responsive navigation
   ui/                  Shadcn-style Button, Input, Textarea primitives
 hooks/

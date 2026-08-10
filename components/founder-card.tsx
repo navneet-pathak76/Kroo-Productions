@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import Image from "next/image";
 import { useMotionValue, useSpring, motion } from "framer-motion";
 import {
@@ -9,6 +9,7 @@ import {
   MoreVertical,
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
+import { useDeviceCapability } from "@/hooks/use-device-capability";
 
 type Founder = {
   name: string;
@@ -180,8 +181,13 @@ function CursorSpotlight() {
 }
 
 export function FounderCard({ founder }: FounderCardProps) {
+  const capability = useDeviceCapability();
   const rootRef = useRef<HTMLDivElement>(null);
-  const [isTouch, setIsTouch] = useState(false);
+  const reduceEffects =
+    capability.reducedMotion ||
+    capability.performanceTier === "LOW" ||
+    capability.pointer !== "fine" ||
+    capability.touch;
 
   const content = founderContent[founder.name] ?? fallbackContent;
   const socials =
@@ -197,11 +203,6 @@ export function FounderCard({ founder }: FounderCardProps) {
   const rawTiltY = useMotionValue(0);
   const tiltX = useSpring(rawTiltX, { stiffness: 220, damping: 22, mass: 0.4 });
   const tiltY = useSpring(rawTiltY, { stiffness: 220, damping: 22, mass: 0.4 });
-
-  useEffect(() => {
-    const mq = window.matchMedia("(hover: none), (pointer: coarse)");
-    setIsTouch(mq.matches);
-  }, []);
 
   const setSpotVars = (px: number, py: number) => {
     rootRef.current?.style.setProperty("--mx", `${px * 100}%`);
@@ -234,8 +235,8 @@ export function FounderCard({ founder }: FounderCardProps) {
         ["--accent" as string]: content.accent,
       }}
       className="group relative h-full w-full min-w-0 max-w-none"
-      onMouseMove={isTouch ? undefined : handleMove}
-      onMouseLeave={isTouch ? undefined : resetTilt}
+      onMouseMove={reduceEffects ? undefined : handleMove}
+      onMouseLeave={reduceEffects ? undefined : resetTilt}
     >
       {/* ambient orange glow — strengthens on hover via opacity only */}
       <div
@@ -261,8 +262,8 @@ export function FounderCard({ founder }: FounderCardProps) {
           transformOrigin: "center center",
           willChange: "transform",
         }}
-        whileHover={{ y: -10, scale: 1.02 }}
-        transition={cardTransition}
+        whileHover={reduceEffects ? undefined : { y: -10, scale: 1.02 }}
+        transition={reduceEffects ? { duration: 0 } : cardTransition}
 className="
 relative
 w-full
@@ -272,7 +273,7 @@ md:aspect-[3/4.7]
 [transform:translateZ(0)]
 "
       >
-        <div className={`${glassShell} bg-[#0b0b0b]`}>
+        <div className={`${glassShell} founder-glass bg-[#0b0b0b]`}>
           <div className="relative h-full">
             {/* ================================================================ */}
             {/* DESKTOP LAYOUT — untouched, pixel-identical to the approved design */}

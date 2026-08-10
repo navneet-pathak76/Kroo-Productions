@@ -24,14 +24,20 @@ export function useDeviceCapability(): DeviceCapability {
     setCapability(getDeviceCapability());
 
     let raf = 0;
+    const connection = (
+      navigator as unknown as {
+        connection?: EventTarget;
+      }
+    ).connection;
     const recompute = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => setCapability(getDeviceCapability()));
     };
 
-    window.addEventListener("resize", recompute);
-    window.addEventListener("orientationchange", recompute);
-    window.visualViewport?.addEventListener("resize", recompute);
+    window.addEventListener("resize", recompute, { passive: true });
+    window.addEventListener("orientationchange", recompute, { passive: true });
+    window.visualViewport?.addEventListener("resize", recompute, { passive: true });
+    connection?.addEventListener("change", recompute);
 
     const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
     reducedMotionQuery.addEventListener("change", recompute);
@@ -41,6 +47,7 @@ export function useDeviceCapability(): DeviceCapability {
       window.removeEventListener("resize", recompute);
       window.removeEventListener("orientationchange", recompute);
       window.visualViewport?.removeEventListener("resize", recompute);
+      connection?.removeEventListener("change", recompute);
       reducedMotionQuery.removeEventListener("change", recompute);
     };
   }, []);

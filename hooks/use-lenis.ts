@@ -2,11 +2,19 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
+import { getDeviceCapability } from "@/lib/device-capability";
 
 export function useLenis() {
   useEffect(() => {
-    const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
-    if (isCoarsePointer) return; // let iOS/Android use native momentum scroll
+    const capability = getDeviceCapability();
+    if (
+      capability.pointer === "coarse" ||
+      capability.touch ||
+      capability.reducedMotion ||
+      capability.performanceTier === "LOW"
+    ) {
+      return; // let iOS/Android and low-tier clients use native momentum scroll
+    }
 
     const lenis = new Lenis({
       duration: 1.15,

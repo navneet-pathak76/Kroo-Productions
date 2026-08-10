@@ -1,9 +1,20 @@
 "use client";
 
 import { useEffect } from "react";
+import { getDeviceCapability } from "@/lib/device-capability";
 
 export function useMagnetic() {
   useEffect(() => {
+    const capability = getDeviceCapability();
+    const enabled =
+      capability.hover &&
+      capability.pointer === "fine" &&
+      !capability.touch &&
+      !capability.reducedMotion &&
+      capability.performanceTier !== "LOW";
+
+    if (!enabled) return;
+
     const elements = Array.from(
       document.querySelectorAll<HTMLElement>(".magnetic-target"),
     );
@@ -44,7 +55,7 @@ export function useMagnetic() {
       };
 
       element.addEventListener("mouseenter", setBaseTransform);
-      element.addEventListener("mousemove", onMove);
+      element.addEventListener("mousemove", onMove, { passive: true });
       element.addEventListener("mouseleave", onLeave);
 
       return () => {

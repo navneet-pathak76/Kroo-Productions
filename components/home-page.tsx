@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
+import { useDeviceCapability } from "@/hooks/use-device-capability";
 
 const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -284,6 +285,7 @@ function SpatialCardStack<T>({
   getKey,
   className,
 }: SpatialCardStackProps<T>) {
+  const capability = useDeviceCapability();
   const total = items.length;
   const [active, setActive] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -300,11 +302,24 @@ function SpatialCardStack<T>({
   const inactivityTimer = useRef<number | null>(null);
   const reducedMotionRef = useRef(reducedMotion);
   const spreadRef = useRef(spread);
-  reducedMotionRef.current = reducedMotion;
   spreadRef.current = spread;
 
   const wheelCooldown = useRef(false);
   const wheelAccum = useRef(0);
+  const effectiveReducedMotion =
+    reducedMotion ||
+    capability.reducedMotion ||
+    capability.performanceTier === "LOW" ||
+    capability.saveData;
+  const canUseMouseParallax =
+    capability.hover &&
+    capability.pointer === "fine" &&
+    !capability.touch &&
+    !effectiveReducedMotion;
+  const canUseWheelNavigation =
+    capability.pointer === "fine" &&
+    !effectiveReducedMotion;
+  reducedMotionRef.current = effectiveReducedMotion;
 
   const dragStartX = useRef(0);
   const dragLastX = useRef(0);
@@ -350,12 +365,13 @@ function SpatialCardStack<T>({
       });
     };
 
-    window.addEventListener("resize", onResize);
-    window.addEventListener("orientationchange", onResize);
+    window.addEventListener("resize", onResize, { passive: true });
+    window.addEventListener("orientationchange", onResize, { passive: true });
     // The actual iOS Safari fix: visualViewport fires on toolbar show/hide,
     // pinch-zoom, and keyboard open/close — window.resize does not reliably
     // fire for any of these on WebKit.
-    window.visualViewport?.addEventListener("resize", onResize);
+    window.visualViewport?.addEventListener("resize", onResize, { passive: true });
+    onResize();
 
     return () => {
       cancelAnimationFrame(raf);
@@ -414,17 +430,17 @@ function SpatialCardStack<T>({
   );
 
   useEffect(() => {
-    if (reducedMotion) return;
+    if (effectiveReducedMotion) return;
     startAutoplay();
     return () => {
       if (autoplayTimer.current) window.clearInterval(autoplayTimer.current);
       if (inactivityTimer.current) window.clearTimeout(inactivityTimer.current);
     };
-  }, [startAutoplay, reducedMotion]);
+  }, [startAutoplay, effectiveReducedMotion]);
 
   useEffect(() => {
     const node = containerRef.current;
-    if (!node) return;
+    if (!node || !canUseWheelNavigation) return;
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
@@ -453,7 +469,7 @@ function SpatialCardStack<T>({
 
     node.addEventListener("wheel", onWheel, { passive: false });
     return () => node.removeEventListener("wheel", onWheel);
-  }, [advance]);
+  }, [advance, canUseWheelNavigation]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
@@ -525,7 +541,7 @@ function SpatialCardStack<T>({
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (reducedMotion || !containerRef.current) return;
+    if (!canUseMouseParallax || !containerRef.current) return;
     const rect = containerRef.current.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / rect.width - 0.5;
     const relY = (e.clientY - rect.top) / rect.height - 0.5;
@@ -606,9 +622,9 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
           STAGE_CONFIG.overflowClassName,
         )}
         style={{ perspective: `${perspective}px`, perspectiveOrigin: CAMERA_CONFIG.perspectiveOrigin }}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
+        onMouseMove={canUseMouseParallax ? handleMouseMove : undefined}
+        onMouseEnter={canUseMouseParallax ? handleMouseEnter : undefined}
+        onMouseLeave={canUseMouseParallax ? handleMouseLeave : undefined}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={endDrag}
@@ -624,7 +640,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               offset={offset}
               isActive={offset === 0}
               cardWidth={cardWidth}
-              reducedMotion={reducedMotion}
+              reducedMotion={effectiveReducedMotion}
               carouselOffsetSpring={carouselOffsetSpring}
               spread={spread}
             >
@@ -637,7 +653,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
       <CarouselTimeline
         total={total}
         active={active}
-        reducedMotion={reducedMotion}
+        reducedMotion={effectiveReducedMotion}
         onSelect={goTo}
         onScrubStart={handleTimelineScrubStart}
         onScrubMove={handleTimelineScrubMove}
@@ -938,12 +954,17 @@ function CarouselTimeline({
 }
 
 function CountUp({ value, suffix }: { value: number; suffix: string }) {
+  const capability = useDeviceCapability();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: "-12%" });
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     if (!inView) return;
+    if (capability.reducedMotion || capability.performanceTier === "LOW") {
+      setCount(value);
+      return;
+    }
 
     let frame = 0;
     const start = performance.now();
@@ -957,7 +978,7 @@ function CountUp({ value, suffix }: { value: number; suffix: string }) {
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [inView, value]);
+  }, [capability.performanceTier, capability.reducedMotion, inView, value]);
 
   return (
     <span ref={ref}>
@@ -1008,24 +1029,21 @@ className="mt-3 text-sm leading-6 text-white/65 lg:mt-5 lg:text-base lg:leading-
 const cardEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
 function CapabilityCard({ item }: { item: (typeof capabilities)[number] }) {
+  const capability = useDeviceCapability();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const orbX = useSpring(mouseX, { stiffness: 150, damping: 20, mass: 0.4 });
   const orbY = useSpring(mouseY, { stiffness: 150, damping: 20, mass: 0.4 });
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    setReducedMotion(mq.matches);
-    const handler = () => setReducedMotion(mq.matches);
-    mq.addEventListener("change", handler);
-    return () => mq.removeEventListener("change", handler);
-  }, []);
+  const reduceEffects =
+    capability.reducedMotion ||
+    capability.performanceTier === "LOW" ||
+    capability.pointer !== "fine" ||
+    capability.touch;
 
   const handleMouseMove = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (reducedMotion || !cardRef.current) return;
+    if (reduceEffects || !cardRef.current) return;
     const rect = cardRef.current.getBoundingClientRect();
     const relX = (e.clientX - rect.left) / rect.width - 0.5;
     const relY = (e.clientY - rect.top) / rect.height - 0.5;
@@ -1085,15 +1103,15 @@ function CapabilityCard({ item }: { item: (typeof capabilities)[number] }) {
   return (
     <motion.div
       ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseMove={reduceEffects ? undefined : handleMouseMove}
+      onMouseLeave={reduceEffects ? undefined : handleMouseLeave}
       initial="rest"
       animate="rest"
-      whileHover={reducedMotion ? undefined : "hover"}
+      whileHover={reduceEffects ? undefined : "hover"}
       variants={cardVariants}
       className="cinema-panel relative min-h-[110px] min-w-0 overflow-hidden rounded-xl border p-4 text-white/70 [will-change:transform]"
     >
-      {!reducedMotion && (
+      {!reduceEffects && (
         <>
           <motion.span
             aria-hidden
@@ -1123,7 +1141,7 @@ function CapabilityCard({ item }: { item: (typeof capabilities)[number] }) {
         {item.label}
       </motion.p>
 
-      {!reducedMotion && (
+      {!reduceEffects && (
         <motion.span
           aria-hidden
           variants={accentVariants}
@@ -1416,11 +1434,10 @@ function ServiceCard({
         p-4
         sm:p-5
         lg:p-7
-
-        compact
-  ? "min-h-0 h-full p-3"
-  : "min-h-[180px] sm:min-h-[210px] lg:min-h-[290px]"
         `,
+        compact
+          ? "h-full min-h-0 p-3"
+          : "min-h-[180px] sm:min-h-[210px] lg:min-h-[290px]",
         spanClassName,
         service.span
       )}

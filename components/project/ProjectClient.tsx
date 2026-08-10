@@ -14,6 +14,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { ArrowRight, Maximize, Play } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
+import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
@@ -104,6 +105,7 @@ export function ProjectHero({
   heroIcon,
   accentIcon,
 }: ProjectHeroProps) {
+  const capability = useDeviceCapability();
   const ref = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -111,6 +113,10 @@ export function ProjectHero({
   });
   const y = useTransform(scrollYProgress, [0, 1], [0, 82]);
   const scale = useTransform(scrollYProgress, [0, 1], [1, 0.965]);
+  const reduceEffects =
+    capability.reducedMotion ||
+    capability.performanceTier === "LOW" ||
+    capability.saveData;
 
   return (
     <section
@@ -128,7 +134,7 @@ export function ProjectHero({
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
-          style={{ y, scale }}
+          style={{ y: reduceEffects ? 0 : y, scale: reduceEffects ? 1 : scale }}
         >
           <motion.p
             variants={fadeUp}
@@ -174,8 +180,8 @@ export function ProjectHero({
         >
           <motion.div
             className="cinema-panel relative overflow-hidden rounded-md p-3 shadow-2xl shadow-primary/10"
-            animate={{ y: [0, -12, 0] }}
-            transition={{ duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
+            animate={reduceEffects ? { y: 0 } : { y: [0, -12, 0] }}
+            transition={reduceEffects ? { duration: 0 } : { duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
           >
             <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black">
               <Image
@@ -205,8 +211,8 @@ export function ProjectHero({
           </motion.div>
           <motion.div
             className="absolute -right-5 top-10 hidden h-24 w-24 items-center justify-center rounded-full border border-primary/30 bg-black/55 text-primary shadow-glow backdrop-blur-2xl sm:flex"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+            animate={reduceEffects ? { rotate: 0 } : { rotate: 360 }}
+            transition={reduceEffects ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: "linear" }}
           >
             {accentIcon}
           </motion.div>
@@ -579,7 +585,7 @@ function VideoCard({
       }
     };
 
-    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("pointerdown", handlePointerDown, { passive: true });
     return () => document.removeEventListener("pointerdown", handlePointerDown);
   }, [isActive, onToggle]);
 
@@ -643,6 +649,14 @@ function VideoCard({
  */
 export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
   const [activeId, setActiveId] = useState<number | null>(null);
+
+  if (videos.length === 0) {
+    return (
+      <div className="mx-auto max-w-[1480px] rounded-md border border-white/10 bg-white/[0.025] px-5 py-10 text-center text-sm leading-6 text-white/55">
+        Media is not available in this environment.
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 sm:gap-4 lg:gap-5">

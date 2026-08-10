@@ -4,7 +4,7 @@ import {
   ListObjectsV2Command,
   type _Object as S3Object,
 } from "@aws-sdk/client-s3";
-import { s3Client, S3_BUCKET_NAME } from "./s3-client";
+import { getS3Client, getS3RuntimeConfig } from "./s3-client";
 
 export type MediaType = "image" | "video";
 
@@ -78,26 +78,29 @@ function toPublicUrl(key: string): string {
 }
 
 async function listAllObjects(prefix: string): Promise<S3Object[]> {
+  const config = getS3RuntimeConfig();
+  const s3Client = getS3Client();
+
+  if (!config || !s3Client) {
+    if (process.env.NODE_ENV !== "production") {
+      console.warn(
+        "[getFolderMedia] Missing S3 runtime configuration; returning no media. Required: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME.",
+      );
+    }
+    return [];
+  }
+
   const objects: S3Object[] = [];
   let continuationToken: string | undefined;
 
   do {
     const response = await s3Client.send(
       new ListObjectsV2Command({
-        Bucket: S3_BUCKET_NAME,
+        Bucket: config.bucket,
         Prefix: prefix,
         ContinuationToken: continuationToken,
       })
     );
-
-    // DEBUG: raw S3 response for this page
-    console.log("[getFolderMedia] S3 RAW RESPONSE", {
-      Bucket: S3_BUCKET_NAME,
-      Prefix: prefix,
-      KeyCount: response.KeyCount,
-      IsTruncated: response.IsTruncated,
-      Keys: (response.Contents ?? []).map((o) => o.Key),
-    });
 
     if (response.Contents) {
       objects.push(...response.Contents);
@@ -124,15 +127,8 @@ export async function getFolderMedia(
   noStore();
 
   const prefix = `videos/${folder}/`;
-  console.log("[getFolderMedia] PREFIX", prefix, "| BUCKET", S3_BUCKET_NAME);
 
   const objects = await listAllObjects(prefix);
-  console.log(
-    "[getFolderMedia] OBJECTS (count)",
-    objects.length,
-    "| all keys:",
-    objects.map((o) => o.Key)
-  );
 
   const folderLabel = toFolderLabel(folder);
 
@@ -155,8 +151,6 @@ export async function getFolderMedia(
         : "video";
       const url = toPublicUrl(key);
 
-      console.log("[getFolderMedia] URL", { key, mediaType, url });
-
       return {
         baseName,
         mediaType,
@@ -171,9 +165,8 @@ export async function getFolderMedia(
     });
 
   if (rejected.length > 0) {
-    console.log(
-      "[getFolderMedia] REJECTED BY EXTENSION FILTER (not in IMAGE_EXTENSIONS/VIDEO_EXTENSIONS):",
-      rejected
+    console.warn(
+      `[getFolderMedia] Ignored ${rejected.length} unsupported media object(s) under "${prefix}".`,
     );
   }
 
@@ -188,11 +181,6 @@ export async function getFolderMedia(
     client: meta.client,
     services: meta.services,
   }));
-
-  console.log(
-    `[getFolderMedia] FINAL "videos" ARRAY for prefix "${prefix}" (count=${videos.length})`,
-    videos
-  );
 
   return videos;
 }

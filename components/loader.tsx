@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { getDeviceCapability } from "@/lib/device-capability";
 
 export function Loader() {
   const [loading, setLoading] = useState(true);
@@ -10,15 +11,18 @@ export function Loader() {
   const [sliding, setSliding] = useState(false);
 
   useEffect(() => {
-    const isMobile =
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches;
+    const capability = getDeviceCapability();
+    const isMobile = capability.viewportWidth < 768 || capability.pointer === "coarse";
+    const reduceIntro =
+      capability.reducedMotion ||
+      capability.performanceTier === "LOW" ||
+      capability.saveData;
 
     // Mobile: fast, minimal intro — protects LCP.
     // Desktop: original cinematic timing, unchanged.
-    const logoDelay = isMobile ? 300 : 1100;
-    const slideDelay = isMobile ? 550 : 1800;
-    const endDelay = isMobile ? 950 : 3400;
+    const logoDelay = reduceIntro ? 80 : isMobile ? 300 : 1100;
+    const slideDelay = reduceIntro ? 140 : isMobile ? 550 : 1800;
+    const endDelay = reduceIntro ? 220 : isMobile ? 950 : 3400;
 
     const tLogo = window.setTimeout(() => setShowTypography(true), logoDelay);
     const tSlide = window.setTimeout(() => setSliding(true), slideDelay);

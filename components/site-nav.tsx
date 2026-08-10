@@ -2,8 +2,9 @@
 
 import { motion } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { MouseEvent, useEffect, useState } from "react";
+import { MouseEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { navItems } from "@/lib/content";
 import { cn } from "@/lib/utils";
 
@@ -25,16 +26,35 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>, href: string) {
 }
 
 export function SiteNav() {
+  const capability = useDeviceCapability();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("#home");
+  const scrolledRef = useRef(false);
+  const reduceEffects =
+    capability.reducedMotion ||
+    capability.performanceTier === "LOW" ||
+    capability.pointer === "coarse";
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 24);
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = window.scrollY > 24;
+        if (next !== scrolledRef.current) {
+          scrolledRef.current = next;
+          setScrolled(next);
+        }
+      });
+    };
     onScroll();
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   useEffect(() => {
@@ -71,10 +91,19 @@ export function SiteNav() {
     >
       <nav
         className={cn(
-          "mx-auto flex max-w-[1520px] items-center justify-between gap-3 rounded-full border px-4 py-3 backdrop-blur-2xl transition-all duration-500 sm:px-5",
+          "mx-auto flex max-w-[1520px] items-center justify-between gap-3 rounded-full border px-4 py-3 transition-all duration-500 sm:px-5",
+          reduceEffects ? "bg-black/85" : "backdrop-blur-2xl",
           scrolled
-            ? "border-primary/25 bg-black/[0.72] shadow-[0_18px_70px_rgba(0,0,0,0.55),0_0_42px_rgba(255,77,18,0.12)]"
-            : "border-white/10 bg-black/[0.34] shadow-2xl shadow-black/25",
+            ? cn(
+                "border-primary/25 bg-black/[0.72]",
+                reduceEffects
+                  ? "shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
+                  : "shadow-[0_18px_70px_rgba(0,0,0,0.55),0_0_42px_rgba(255,77,18,0.12)]",
+              )
+            : cn(
+                "border-white/10",
+                reduceEffects ? "bg-black/80 shadow-lg shadow-black/20" : "bg-black/[0.34] shadow-2xl shadow-black/25",
+              ),
         )}
       >
         <a
@@ -145,10 +174,15 @@ export function SiteNav() {
 
       {open ? (
         <motion.div
-          className="mx-auto mt-3 max-w-[1520px] rounded-2xl border border-primary/20 bg-black/[0.88] p-3 shadow-[0_22px_80px_rgba(0,0,0,0.72),0_0_42px_rgba(255,77,18,0.13)] backdrop-blur-2xl lg:hidden"
-          initial={{ y: -8, opacity: 0, filter: "blur(8px)" }}
-          animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-          transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+          className={cn(
+            "mx-auto mt-3 max-w-[1520px] rounded-2xl border border-primary/20 bg-black/[0.88] p-3 lg:hidden",
+            reduceEffects
+              ? "shadow-[0_16px_48px_rgba(0,0,0,0.62)]"
+              : "shadow-[0_22px_80px_rgba(0,0,0,0.72),0_0_42px_rgba(255,77,18,0.13)] backdrop-blur-2xl",
+          )}
+          initial={{ y: -8, opacity: 0, filter: reduceEffects ? "none" : "blur(8px)" }}
+          animate={{ y: 0, opacity: 1, filter: reduceEffects ? "none" : "blur(0px)" }}
+          transition={{ duration: reduceEffects ? 0.01 : 0.26, ease: [0.22, 1, 0.36, 1] }}
         >
           {navItems.map((item) => (
             <a

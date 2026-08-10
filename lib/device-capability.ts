@@ -24,8 +24,11 @@ export type DeviceCapability = {
   browserLabel: string;
   engine: "webkit" | "blink" | "gecko" | "unknown";
   viewportWidth: number;
+  viewportHeight: number;
   dpr: number;
   touch: boolean;
+  pointer: "coarse" | "fine" | "none" | "unknown";
+  hover: boolean;
   reducedMotion: boolean;
   saveData: boolean;
   /** "slow-2g" | "2g" | "3g" | "4g" | undefined (unsupported in this browser) */
@@ -87,6 +90,14 @@ function detectWebglSupport(): boolean {
   }
 }
 
+function detectPointer(): DeviceCapability["pointer"] {
+  if (typeof window === "undefined") return "unknown";
+  if (window.matchMedia("(pointer: coarse)").matches) return "coarse";
+  if (window.matchMedia("(pointer: fine)").matches) return "fine";
+  if (window.matchMedia("(pointer: none)").matches) return "none";
+  return "unknown";
+}
+
 /**
  * Tier is derived from *capability signals*, never from a device-name
  * lookup table. A high-end Android phone and an older iPhone with the
@@ -127,6 +138,8 @@ function readCapabilitySnapshot(): DeviceCapability {
   const touch =
     typeof window !== "undefined" &&
     ("ontouchstart" in window || (nav?.maxTouchPoints ?? 0) > 0);
+  const pointer = detectPointer();
+  const hover = typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches;
   const reducedMotion =
     typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const saveData = Boolean(connection?.saveData);
@@ -136,14 +149,18 @@ function readCapabilitySnapshot(): DeviceCapability {
   // computeTier() already treats "undefined" as a safe mid-tier default.
   const deviceMemoryGb = (nav as unknown as { deviceMemory?: number })?.deviceMemory;
   const viewportWidth = typeof document !== "undefined" ? document.documentElement.clientWidth : 1440;
+  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 900;
 
   return {
     deviceLabel: detectDeviceLabel(),
     browserLabel: detectBrowserLabel(),
     engine: detectEngine(),
     viewportWidth,
+    viewportHeight,
     dpr,
     touch,
+    pointer,
+    hover,
     reducedMotion,
     saveData,
     effectiveConnectionType,
@@ -173,8 +190,11 @@ export const SAFE_DEFAULT_CAPABILITY: DeviceCapability = {
   browserLabel: "unknown",
   engine: "unknown",
   viewportWidth: 1440,
+  viewportHeight: 900,
   dpr: 1,
   touch: false,
+  pointer: "unknown",
+  hover: false,
   reducedMotion: false,
   saveData: false,
   effectiveConnectionType: undefined,
