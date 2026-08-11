@@ -276,6 +276,19 @@ function getVideoMimeType(src: string): string {
   return "video/mp4";
 }
 
+/**
+ * MEDIA_ERR_DECODE (3) means the browser successfully fetched the file
+ * and started decoding it, but the bitstream itself is invalid or the
+ * codec isn't supported — the exact same bytes will fail identically no
+ * matter which URL serves them. Only codes 1/2/4 (aborted, network, or
+ * "source not supported" — which also covers a CloudFront/S3 error page
+ * being served in place of the video) are worth retrying via the
+ * signed-URL fallback.
+ */
+function isRetryableMediaError(code: number | undefined): boolean {
+  return code !== 3;
+}
+
 function describeMediaFailure(video: HTMLVideoElement, src: string): string {
   const code = video.error?.code;
   const reason = code ? MEDIA_ERROR_LABELS[code] ?? `media error ${code}` : "unknown media error";
@@ -423,7 +436,11 @@ function VideoThumbnail({
     // failure (403/404/CORS/etc — anything that surfaces as a load
     // error rather than a decode error), retry the exact same object
     // straight from S3 via a short-lived signed URL before giving up.
-    void tryFallback().then((switched) => {
+    // A genuine decode error (code 3) is a codec/container problem —
+    // the same bytes will fail the same way from any URL, so skip the
+    // network round trip and surface the real failure immediately.
+    const retry = isRetryableMediaError(video.error?.code) ? tryFallback() : Promise.resolve(false);
+    void retry.then((switched) => {
       if (switched) return;
       setMediaError(message);
       void reportClientTelemetry({

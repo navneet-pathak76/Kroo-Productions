@@ -112,6 +112,16 @@ const nextConfig: NextConfig = {
 
 images: {
   formats: ["image/avif", "image/webp"],
+  // Every project page's hero thumbnail (public/images/*/hero-thumb.svg)
+  // is a local SVG rendered through next/image. Next's built-in image
+  // optimizer refuses SVG sources by default and returns a 400 — this
+  // is what was actually behind hero images failing to load, not a
+  // missing-asset problem on most pages. These are our own static
+  // assets (never user-uploaded), so allowing SVG here is safe; the
+  // sandboxed CSP below is the standard Next.js-recommended hardening
+  // for this setting regardless.
+  dangerouslyAllowSVG: true,
+  contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   remotePatterns: [
     {
       protocol: "https",

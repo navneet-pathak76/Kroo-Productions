@@ -19,6 +19,12 @@ export const MAX_VIDEO_SIZE_BYTES = 5 * 1024 * 1024 * 1024; // 5GB
  */
 export const MULTIPART_THRESHOLD_BYTES = 24 * 1024 * 1024; // 24MB
 
+// video/x-matroska (.mkv) is intentionally excluded: no major browser's
+// <video> element supports the Matroska container, regardless of what
+// Content-Type it's served with. Accepting it here just lets an admin
+// upload a video that can never play publicly, with no error until a
+// visitor hits it — the exact "video unavailable" failure mode this
+// codebase is trying to eliminate.
 export const ALLOWED_MIME_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -29,7 +35,6 @@ export const ALLOWED_MIME_TYPES = new Set([
   "video/x-m4v",
   "video/webm",
   "video/quicktime",
-  "video/x-matroska",
 ]);
 
 export const MIME_BY_EXTENSION: Record<string, string> = {
@@ -43,7 +48,6 @@ export const MIME_BY_EXTENSION: Record<string, string> = {
   m4v: "video/mp4",
   mov: "video/quicktime",
   webm: "video/webm",
-  mkv: "video/x-matroska",
 };
 
 export function normalizeFileName(value: string): string {

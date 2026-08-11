@@ -20,7 +20,7 @@ type UploadState = {
   projectSlug?: string;
 };
 
-const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "mov", "webm", "mkv"]);
+const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "mov", "webm"]);
 
 function inferMediaKind(file: File): MediaKind {
   if (file.type.startsWith("video")) return "video";
@@ -226,7 +226,7 @@ export function MediaManager() {
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-primary/40 bg-primary/10 px-4 py-2 text-sm hover:bg-primary/20">
           <Upload size={16} />
           Upload media
-          <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.m4v,.mov,.mkv" className="hidden" onChange={handleUpload} />
+          <input type="file" accept="image/*,video/mp4,video/webm,video/quicktime,.m4v,.mov" className="hidden" onChange={handleUpload} />
         </label>
       </div>
 

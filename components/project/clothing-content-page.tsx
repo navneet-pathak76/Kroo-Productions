@@ -21,7 +21,7 @@ export default async function ClothingContentPage() {
     description:
       "Premium fashion campaigns, apparel commercials, lifestyle storytelling and product films. Every edit is designed to increase engagement, brand value and conversions.",
     hero: {
-      thumbnail: "/images/gym-content/hero-thumb.svg",
+      thumbnail: "/images/clothing-content.jpg",
       alt: "Clothing Content project thumbnail",
       icon: Shirt,
       label: "Commercial Production",
