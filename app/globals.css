@@ -109,6 +109,16 @@ textarea {
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
 
+  html[data-performance-tier="medium"] .cinema-panel {
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  html[data-performance-tier="medium"] .backdrop-blur-xl,
+  html[data-performance-tier="medium"] .backdrop-blur-2xl {
+    --tw-backdrop-blur: blur(12px);
+  }
+
   html[data-performance-tier="low"] .founder-glass,
   html[data-reduced-motion="true"] .founder-glass,
   html[data-save-data="true"] .founder-glass,

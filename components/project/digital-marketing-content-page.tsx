@@ -1,24 +1,28 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { digitalMarketingVideos } from "@/lib/digital-marketing-videos";
 import { Calendar, Clock3, Film, Layers3, Megaphone, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function DigitalMarketingContentPage() {
-  const videos = await getFolderMedia("digital marketing", {
-    category: "Marketing Production",
-    client: "Marketing Teams",
-    services: ["Strategy", "Filming", "Editing", "Motion Graphics"],
-  });
+  const videos = await getFolderMedia(
+    "digital-marketing",
+    {
+      category: "Marketing Production",
+      client: "Marketing Teams",
+      services: ["Strategy", "Filming", "Editing", "Motion Graphics"],
+    },
+    digitalMarketingVideos,
+  );
 
   const config = {
-    title: "Digital Marketing",
+    title: "Social Media",
     description:
-      "Premium performance-driven video content created for brands, agencies and marketing teams. Every edit is designed to increase engagement, brand value and conversions.",
+      "Premium social media video content created for brands, agencies and marketing teams. Every edit is designed to increase engagement, brand value and conversions.",
     hero: {
       thumbnail: "/images/digital-marketing/hero-thumb.svg",
-      alt: "Digital Marketing project thumbnail",
+      alt: "Social Media project thumbnail",
       icon: Megaphone,
       label: "Marketing Production",
       visualTitle: "Marketing Visual System",

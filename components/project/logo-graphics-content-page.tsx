@@ -1,16 +1,20 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { logoGraphicsVideos } from "@/lib/logo-graphics-videos";
 import { Calendar, Clock3, Film, Layers3, PenTool, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function LogoGraphicsContentPage() {
-  const videos = await getFolderMedia("logo & graphics", {
-    category: "Motion Production",
-    client: "Emerging Brands",
-    services: ["Design", "Animation", "Editing", "Sound Design"],
-  });
+  const videos = await getFolderMedia(
+    "logo & graphics",
+    {
+      category: "Motion Production",
+      client: "Emerging Brands",
+      services: ["Design", "Animation", "Editing", "Sound Design"],
+    },
+    logoGraphicsVideos,
+  );
 
   const config = {
     title: "Logo & Graphics",

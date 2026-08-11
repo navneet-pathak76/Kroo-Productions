@@ -149,7 +149,13 @@ function readCapabilitySnapshot(): DeviceCapability {
   // computeTier() already treats "undefined" as a safe mid-tier default.
   const deviceMemoryGb = (nav as unknown as { deviceMemory?: number })?.deviceMemory;
   const viewportWidth = typeof document !== "undefined" ? document.documentElement.clientWidth : 1440;
-  const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 900;
+  const visualViewport = typeof window !== "undefined" ? window.visualViewport : undefined;
+  const viewportHeight =
+    visualViewport && visualViewport.height > 0
+      ? visualViewport.height
+      : typeof window !== "undefined"
+        ? window.innerHeight
+        : 900;
 
   return {
     deviceLabel: detectDeviceLabel(),
@@ -212,4 +218,35 @@ export function getDeviceCapability(): DeviceCapability {
     // Failsafe per spec Phase 41: detection failure must never break the page.
     return SAFE_DEFAULT_CAPABILITY;
   }
+}
+
+/** Full cinematic pointer-driven effects (cursor, ambient tracking, magnetic). */
+export function allowsCinematicPointerEffects(capability: DeviceCapability): boolean {
+  return (
+    capability.hover &&
+    capability.pointer === "fine" &&
+    !capability.touch &&
+    !capability.reducedMotion &&
+    !capability.saveData &&
+    (capability.performanceTier === "HIGH" || capability.performanceTier === "ULTRA")
+  );
+}
+
+/** Scroll-linked parallax / scrubbed GSAP effects. */
+export function allowsScrubbedMotionEffects(capability: DeviceCapability): boolean {
+  if (capability.reducedMotion || capability.saveData || capability.performanceTier === "LOW") {
+    return false;
+  }
+  return capability.performanceTier === "HIGH" || capability.performanceTier === "ULTRA";
+}
+
+/** Smooth-scroll (Lenis) — desktop fine pointer, not low tier. */
+export function allowsSmoothScroll(capability: DeviceCapability): boolean {
+  return (
+    capability.pointer === "fine" &&
+    !capability.touch &&
+    !capability.reducedMotion &&
+    capability.performanceTier !== "LOW" &&
+    capability.performanceTier !== "MEDIUM"
+  );
 }

@@ -4,6 +4,11 @@ import {
   ListObjectsV2Command,
   type _Object as S3Object,
 } from "@aws-sdk/client-s3";
+import { listMediaItems } from "@/lib/media-optimization/content-manifest";
+import {
+  PROJECT_OPTIONS,
+  type MediaItemRecord,
+} from "@/lib/media-optimization/media-manifest-types";
 import { getS3Client, getS3RuntimeConfig } from "./s3-client";
 
 export type MediaType = "image" | "video";
@@ -29,6 +34,7 @@ const VIDEO_EXTENSIONS = new Set(["mp4", "mov", "webm", "m4v"]);
 const CDN_BASE_URL =
   process.env.NEXT_PUBLIC_S3_BASE_URL ??
   "https://d3uo687t366hok.cloudfront.net";
+const CDN_BASE = CDN_BASE_URL.replace(/\/$/, "");
 
 function getExtension(key: string): string {
   const lastDot = key.lastIndexOf(".");
@@ -74,7 +80,75 @@ function toPublicUrl(key: string): string {
     .split("/")
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  return `${CDN_BASE_URL}/${encodedPath}`;
+  return `${CDN_BASE}/${encodedPath}`;
+}
+
+function normalizeSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function toProjectSlug(folder: string): string {
+  const normalized = normalizeSlug(folder);
+  const aliasMap: Record<string, string> = {
+    "ai-videos": "ai",
+    "digital-marketing": "digital-marketing",
+    "social-media": "digital-marketing",
+    "logo-graphics": "logo-graphics",
+    "logo-and-graphics": "logo-graphics",
+    "product-ads": "product",
+    "products": "product",
+    "food": "restaurant",
+  };
+
+  return aliasMap[normalized] ?? normalized;
+}
+
+function resolveProjectFolder(folder: string, projectSlug: string): string {
+  const project = PROJECT_OPTIONS.find((option) => option.slug === projectSlug);
+  return project?.folder ?? normalizeSlug(folder);
+}
+
+function uniquePrefixes(...prefixes: string[]): string[] {
+  return [...new Set(prefixes.filter(Boolean))];
+}
+
+/**
+ * Shape of the legacy, hard-coded per-project datasets (e.g. `gymVideos`,
+ * `restaurantVideos`). These already contain fully-formed CDN URLs, so the
+ * only normalization needed is filling in `mediaType`.
+ */
+export type StaticFallbackItem = {
+  id: number;
+  title: string;
+  thumbnail?: string;
+  video?: string;
+  description?: string;
+  duration?: string;
+  category?: string;
+  client?: string;
+  services?: string[];
+};
+
+function toManifestMediaItem(record: MediaItemRecord): MediaItem {
+  const mediaType: MediaType = record.mediaKind === "video" ? "video" : "image";
+  const thumbnail = mediaType === "image" ? record.cdnUrl : undefined;
+  const video = mediaType === "video" ? record.cdnUrl : undefined;
+
+  return {
+    id: Number(record.displayOrder || 1),
+    title: record.title,
+    thumbnail,
+    video,
+    mediaType,
+    duration: record.durationSeconds ? `${record.durationSeconds}s` : "",
+    category: record.category,
+    client: record.projectTitle,
+    services: record.tags,
+  };
 }
 
 async function listAllObjects(prefix: string): Promise<S3Object[]> {
@@ -114,29 +188,110 @@ async function listAllObjects(prefix: string): Promise<S3Object[]> {
   return objects;
 }
 
+/** Normalizes a legacy static dataset entry into the shape the gallery renders. */
+function toStaticMediaItem(
+  item: StaticFallbackItem,
+  index: number,
+  meta: { category: string; client: string; services: string[] },
+): MediaItem {
+  const mediaType: MediaType = item.video ? "video" : "image";
+  return {
+    id: index + 1,
+    title: item.title,
+    thumbnail: item.thumbnail,
+    video: item.video,
+    mediaType,
+    duration: item.duration ?? "",
+    category: item.category ?? meta.category,
+    client: item.client ?? meta.client,
+    services: item.services ?? meta.services,
+  };
+}
+
 /**
- * Lists every media file under `videos/{folder}/` in S3 and returns
- * ready-to-render gallery items, sorted numerically by filename.
- * Always fetches fresh from S3 — never cached — so new uploads appear
- * immediately with no code changes.
+ * Resolves the gallery for a project, in priority order:
+ *
+ *  1. PRIMARY   — published admin-managed media from DynamoDB.
+ *  2. SECONDARY — a direct listing of the canonical `media/{folder}/`
+ *                 S3 prefix (the same prefix the admin uploader writes to).
+ *  3. FALLBACK  — the legacy hard-coded static dataset for this project,
+ *                 if one was supplied.
+ *
+ * AWS/DynamoDB failures are always caught here — a public project page must
+ * never throw or render empty just because a dependency is unavailable.
  */
 export async function getFolderMedia(
   folder: string,
-  meta: { category: string; client: string; services: string[] }
+  meta: { category: string; client: string; services: string[] },
+  fallback: StaticFallbackItem[] = [],
 ): Promise<MediaItem[]> {
   noStore();
 
-  const prefix = `videos/${folder}/`;
+  const projectSlug = toProjectSlug(folder);
+  const projectFolder = resolveProjectFolder(folder, projectSlug);
+  const toFallback = () => fallback.map((item, index) => toStaticMediaItem(item, index, meta));
 
-  const objects = await listAllObjects(prefix);
+  let manifestItems: MediaItemRecord[] = [];
+  try {
+    manifestItems = await listMediaItems({
+      projectSlug,
+      status: "published",
+      sort: "order",
+    });
+  } catch (error) {
+    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`, error);
+    return toFallback();
+  }
 
-  const folderLabel = toFolderLabel(folder);
+  if (manifestItems.length > 0) {
+    return manifestItems.map((item, index) => ({
+      ...toManifestMediaItem(item),
+      id: index + 1,
+      category: meta.category,
+      client: meta.client,
+      services: meta.services, 
+    }));
+  }
+
+  // Canonical S3 structure: admin uploads and public discovery both use
+  // `media/{project.folder}/` (see app/api/admin/media/presign/route.ts).
+  // A secondary `/videos/{folder}/` scan keeps the older static public
+  // library discoverable when DynamoDB metadata is not available.
+  const prefixes = uniquePrefixes(
+    `media/${projectFolder}/`,
+    `media/${normalizeSlug(folder)}/`,
+    `videos/${projectFolder}/`,
+    `videos/${normalizeSlug(folder)}/`,
+  );
+
+  let objects: S3Object[] = [];
+  let usedPrefix = prefixes[0] ?? "";
+  try {
+    for (const prefix of prefixes) {
+      const listed = await listAllObjects(prefix);
+      if (listed.length > 0) {
+        objects = listed;
+        usedPrefix = prefix;
+        break;
+      }
+    }
+  } catch (error) {
+    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`, error);
+    return toFallback();
+  }
+
+  if (objects.length === 0 && fallback.length > 0) {
+    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`);
+    return toFallback();
+  }
+
+  const folderLabel = toFolderLabel(projectFolder);
 
   const rejected: string[] = [];
 
   const items = objects
     .filter((object): object is S3Object & { Key: string } => {
-      if (!object.Key || object.Key === prefix) return false;
+      if (!object.Key || object.Key === usedPrefix) return false;
       const ext = getExtension(object.Key);
       const keep = IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
       if (!keep) rejected.push(`${object.Key} (ext="${ext}")`);
@@ -166,8 +321,13 @@ export async function getFolderMedia(
 
   if (rejected.length > 0) {
     console.warn(
-      `[getFolderMedia] Ignored ${rejected.length} unsupported media object(s) under "${prefix}".`,
+      `[getFolderMedia] Ignored ${rejected.length} unsupported media object(s) under "${usedPrefix}".`,
     );
+  }
+
+  if (items.length === 0 && fallback.length > 0) {
+    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`);
+    return toFallback();
   }
 
   const videos = items.map((item, index) => ({

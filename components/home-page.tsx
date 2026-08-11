@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { Ambient } from "@/components/ambient";
 import { mediaUrl } from "@/lib/media-config";
+import { useResilientMediaSrc } from "@/lib/media-fallback";
 import { CursorFollower } from "@/components/cursor-follower";
 import { Loader } from "@/components/loader";
 import { KrooMark } from "@/components/scene/kroo-mark";
@@ -57,6 +58,8 @@ import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
 import { useDeviceCapability } from "@/hooks/use-device-capability";
+import { allowsCinematicPointerEffects } from "@/lib/device-capability";
+import { reportApiError } from "@/lib/telemetry/client-report";
 
 const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
@@ -298,6 +301,7 @@ function SpatialCardStack<T>({
   );
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const containerRectRef = useRef<DOMRect | null>(null);
   const autoplayTimer = useRef<number | null>(null);
   const inactivityTimer = useRef<number | null>(null);
   const reducedMotionRef = useRef(reducedMotion);
@@ -312,10 +316,7 @@ function SpatialCardStack<T>({
     capability.performanceTier === "LOW" ||
     capability.saveData;
   const canUseMouseParallax =
-    capability.hover &&
-    capability.pointer === "fine" &&
-    !capability.touch &&
-    !effectiveReducedMotion;
+    allowsCinematicPointerEffects(capability) && !effectiveReducedMotion;
   const canUseWheelNavigation =
     capability.pointer === "fine" &&
     !effectiveReducedMotion;
@@ -362,6 +363,7 @@ function SpatialCardStack<T>({
         const width = getStableViewportWidth();
         setSpread(computeSpread(width));
         setViewportWidth(width);
+        containerRectRef.current = null;
       });
     };
 
@@ -540,9 +542,10 @@ function SpatialCardStack<T>({
     scheduleResume();
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!canUseMouseParallax || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
+  const handleMouseMove = (e: ReactMouseEvent) => {
+    if (!canUseMouseParallax) return;
+    const rect = containerRectRef.current ?? containerRef.current?.getBoundingClientRect();
+    if (!rect || !containerRef.current) return;
     const relX = (e.clientX - rect.left) / rect.width - 0.5;
     const relY = (e.clientY - rect.top) / rect.height - 0.5;
     parallaxX.set(relX * 6);
@@ -551,11 +554,15 @@ function SpatialCardStack<T>({
 
   const handleMouseEnter = () => {
     pauseAutoplay();
+    if (containerRef.current) {
+      containerRectRef.current = containerRef.current.getBoundingClientRect();
+    }
   };
 
   const handleMouseLeave = () => {
     parallaxX.set(0);
     parallaxY.set(0);
+    containerRectRef.current = null;
     scheduleResume(1200);
   };
 
@@ -1302,7 +1309,26 @@ function StatsSection() {
   );
 }
 
+const SHOWREEL_SRC = mediaUrl("/TCF_LANSCAPE_4K_30FPS.mp4");
+
 function ShowreelSection() {
+  const { effectiveSrc, tryFallback } = useResilientMediaSrc(SHOWREEL_SRC);
+  const [failed, setFailed] = useState(false);
+
+  const handleError = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = event.currentTarget;
+    console.warn("[Showreel] video failed to load", {
+      src: effectiveSrc,
+      currentSrc: video.currentSrc,
+      errorCode: video.error?.code,
+      networkState: video.networkState,
+      readyState: video.readyState,
+    });
+    void tryFallback().then((switched) => {
+      if (!switched) setFailed(true);
+    });
+  };
+
   return (
     <section className="relative scroll-mt-28 px-2 py-4 sm:px-16 sm:py-10 lg:px-24 lg:py-32">
       <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:mb-10 sm:px-8">
@@ -1327,27 +1353,32 @@ function ShowreelSection() {
         className="group mx-auto max-w-[1280px] overflow-hidden rounded-md border border-white/10 bg-black shadow-2xl shadow-primary/10"
       >
         <div className="relative aspect-[16/9] min-h-[120px] overflow-hidden sm:min-h-[220px]">
-          <video
-  controls
-  preload="metadata"
-  playsInline
-  controlsList="nodownload"
-  className="h-full w-full bg-black object-cover rounded-[inherit]"
-            onClick={(event) => {
-              const video = event.currentTarget;
+          {effectiveSrc && !failed ? (
+            <video
+              key={effectiveSrc}
+              controls
+              preload="metadata"
+              playsInline
+              controlsList="nodownload"
+              className="h-full w-full bg-black object-cover rounded-[inherit]"
+              onError={handleError}
+              onClick={(event) => {
+                const video = event.currentTarget;
 
-              if (video.paused) {
-                void video.play();
-              } else {
-                video.pause();
-              }
-            }}
-          >
-            <source
-              src={mediaUrl("/TCF_LANSCAPE_4K_30FPS.mp4")}
-              type="video/mp4"
-            />
-          </video>
+                if (video.paused) {
+                  void video.play();
+                } else {
+                  video.pause();
+                }
+              }}
+            >
+              <source src={effectiveSrc} type="video/mp4" />
+            </video>
+          ) : (
+            <div className="flex h-full w-full items-center justify-center bg-white/[0.03] text-sm text-white/40">
+              Showreel unavailable — please refresh or check back shortly.
+            </div>
+          )}
         </div>
       </div>
     </section>
@@ -1824,7 +1855,9 @@ function ContactSection() {
                 setCompany("");
                 setBudget("");
                 setMessage("");
-              } catch {
+              } catch (error) {
+                const message = error instanceof Error ? error.message : "Contact API failed";
+                void reportApiError("/", `Contact form: ${message}`);
                 alert("Failed to send project request.");
               } finally {
                 setLoading(false);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDeviceCapability } from "@/lib/device-capability";
+import { getDeviceCapability, allowsScrubbedMotionEffects } from "@/lib/device-capability";
 
 export function useGsapReveal() {
   useEffect(() => {
@@ -26,18 +26,18 @@ export function useGsapReveal() {
 
       gsap.registerPlugin(ScrollTrigger);
 
-      const allowScrubbedEffects =
-        capability.performanceTier === "HIGH" || capability.performanceTier === "ULTRA";
+      const allowScrubbedEffects = allowsScrubbedMotionEffects(capability);
+      const revealDuration = capability.performanceTier === "MEDIUM" ? 0.65 : 0.92;
 
       const ctx = gsap.context(() => {
       gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((element) => {
         gsap.fromTo(
           element,
-          { y: 34, autoAlpha: 0 },
+          { y: capability.performanceTier === "MEDIUM" ? 22 : 34, autoAlpha: 0 },
           {
             y: 0,
             autoAlpha: 1,
-            duration: 0.92,
+            duration: revealDuration,
             ease: "power3.out",
             force3D: true,
             scrollTrigger: {

@@ -1,6 +1,6 @@
 import { videoUrl } from "@/lib/media-config";
 
-const BASE = videoUrl("PRODUCT ADS", "").replace(/\/$/, "");
+const BASE = videoUrl("product", "").replace(/\/$/, "");
 
 export type ProductVideo = {
   id: number;

@@ -3,6 +3,7 @@
 import { motion, useMotionValue, useSpring } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useDeviceCapability } from "@/hooks/use-device-capability";
+import { allowsCinematicPointerEffects } from "@/lib/device-capability";
 
 export function CursorFollower() {
   const capability = useDeviceCapability();
@@ -11,12 +12,7 @@ export function CursorFollower() {
   const y = useMotionValue(-100);
   const springX = useSpring(x, { stiffness: 160, damping: 24, mass: 0.35 });
   const springY = useSpring(y, { stiffness: 160, damping: 24, mass: 0.35 });
-  const enabled =
-    capability.hover &&
-    capability.pointer === "fine" &&
-    !capability.touch &&
-    !capability.reducedMotion &&
-    capability.performanceTier !== "LOW";
+  const enabled = allowsCinematicPointerEffects(capability);
 
   useEffect(() => {
     if (!enabled) {

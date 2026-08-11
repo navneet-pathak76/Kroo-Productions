@@ -1,16 +1,20 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { clothingVideos } from "@/lib/clothing-videos";
 import { Calendar, Clock3, Film, Layers3, Shirt, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function ClothingContentPage() {
-  const videos = await getFolderMedia("clothing", {
-    category: "Commercial Production",
-    client: "Fashion Industry",
-    services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
-  });
+  const videos = await getFolderMedia(
+    "clothing",
+    {
+      category: "Commercial Production",
+      client: "Fashion Industry",
+      services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
+    },
+    clothingVideos,
+  );
 
   const config = {
     title: "Clothing Content",

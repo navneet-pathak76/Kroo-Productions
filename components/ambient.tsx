@@ -3,18 +3,14 @@
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
 import { useEffect } from "react";
 import { useDeviceCapability } from "@/hooks/use-device-capability";
+import { allowsCinematicPointerEffects } from "@/lib/device-capability";
 
 export function Ambient() {
   const capability = useDeviceCapability();
   const x = useMotionValue(50);
   const y = useMotionValue(50);
   const background = useMotionTemplate`radial-gradient(520px circle at ${x}% ${y}%, rgba(255,77,18,0.17), transparent 54%)`;
-  const canTrackPointer =
-    capability.hover &&
-    capability.pointer === "fine" &&
-    !capability.touch &&
-    !capability.reducedMotion &&
-    capability.performanceTier !== "LOW";
+  const canTrackPointer = allowsCinematicPointerEffects(capability);
 
   useEffect(() => {
     if (!canTrackPointer) return;

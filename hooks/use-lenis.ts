@@ -2,17 +2,12 @@
 
 import { useEffect } from "react";
 import Lenis from "lenis";
-import { getDeviceCapability } from "@/lib/device-capability";
+import { getDeviceCapability, allowsSmoothScroll } from "@/lib/device-capability";
 
 export function useLenis() {
   useEffect(() => {
     const capability = getDeviceCapability();
-    if (
-      capability.pointer === "coarse" ||
-      capability.touch ||
-      capability.reducedMotion ||
-      capability.performanceTier === "LOW"
-    ) {
+    if (!allowsSmoothScroll(capability)) {
       return; // let iOS/Android and low-tier clients use native momentum scroll
     }
 

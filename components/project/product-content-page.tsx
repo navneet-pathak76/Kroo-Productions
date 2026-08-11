@@ -1,19 +1,23 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { productVideos } from "@/lib/product-videos";
 import { Calendar, Clock3, Film, Layers3, Package, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function ProductContentPage() {
-  const videos = await getFolderMedia("PRODUCT ADS", {
-    category: "Product Production",
-    client: "Consumer Brands",
-    services: ["Filming", "Styling", "Editing", "Color Grading"],
-  });
+  const videos = await getFolderMedia(
+    "product",
+    {
+      category: "Product Production",
+      client: "Consumer Brands",
+      services: ["Filming", "Styling", "Editing", "Color Grading"],
+    },
+    productVideos,
+  );
 
   const config = {
-    title: "Product Content",
+    title: "Products",
     description:
       "Premium cinematic product content created for brands, e-commerce stores and launch campaigns. Every edit is designed to increase engagement, brand value and conversions.",
     hero: {

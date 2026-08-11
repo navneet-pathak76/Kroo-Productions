@@ -80,9 +80,9 @@ export const services = [
     span: "lg:col-span-1",
   },
   {
-    title: "Digital Marketing",
+    title: "Social Media",
     description:
-      "Campaign strategy, cutdown systems, paid creative, creator content, and launch analytics.",
+      "Social strategy, cutdown systems, paid creative, creator content, and launch analytics.",
     icon: Megaphone,
     span: "lg:col-span-2",
   },
@@ -122,7 +122,7 @@ export const projects = [
     href: "/clubs-content",
   },
   {
-    title: "Motion Graphics",
+    title: "Motion Graphics & Logo Animation",
     category: "2D & 3D animation",
     metric: "Visual FX",
     color: "from-red-700/80 via-orange-900 to-black",
@@ -145,7 +145,7 @@ export const projects = [
     href: "/real-estate",
   },
   {
-    title: "PRODUCT ADS",
+    title: "PRODUCTS",
     category: "Commercial",
     metric: "07",
     image: "/images/projects/products.jpg",
@@ -159,7 +159,7 @@ export const projects = [
     href: "/ai-content",
   },
   {
-    title: "DIGITAL MARKETING",
+    title: "SOCIAL MEDIA",
     category: "Performance Marketing",
     metric: "09",
     image: "/images/projects/digital-marketing.jpg",

@@ -1,16 +1,20 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { aiVideos } from "@/lib/ai-videos";
 import { Calendar, Clock3, Cpu, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function AiContentPage() {
-  const videos = await getFolderMedia("AI VIDEOS", {
-    category: "AI Production",
-    client: "Emerging Brands",
-    services: ["Prompting", "Generation", "Editing", "Motion Graphics"],
-  });
+  const videos = await getFolderMedia(
+    "AI VIDEOS",
+    {
+      category: "AI Production",
+      client: "Emerging Brands",
+      services: ["Prompting", "Generation", "Editing", "Motion Graphics"],
+    },
+    aiVideos,
+  );
 
   const config = {
     title: "AI Video Production",

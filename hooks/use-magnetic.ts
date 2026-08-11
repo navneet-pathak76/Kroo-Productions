@@ -1,17 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { getDeviceCapability } from "@/lib/device-capability";
+import { getDeviceCapability, allowsCinematicPointerEffects } from "@/lib/device-capability";
 
 export function useMagnetic() {
   useEffect(() => {
     const capability = getDeviceCapability();
-    const enabled =
-      capability.hover &&
-      capability.pointer === "fine" &&
-      !capability.touch &&
-      !capability.reducedMotion &&
-      capability.performanceTier !== "LOW";
+    const enabled = allowsCinematicPointerEffects(capability);
 
     if (!enabled) return;
 

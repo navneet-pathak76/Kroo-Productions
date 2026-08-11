@@ -7,14 +7,20 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "media:audit": "node scripts/audit-s3-media.mjs",
+    "media:repair": "node scripts/audit-s3-media.mjs --apply --cors"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1106.0",
     "@aws-sdk/client-s3": "^3.1106.0",
     "@aws-sdk/client-sesv2": "^3.1079.0",
+    "@aws-sdk/lib-dynamodb": "^3.1106.0",
+    "@aws-sdk/s3-request-presigner": "^3.1107.0",
     "@next/third-parties": "^16.2.10",
     "@radix-ui/react-slot": "^1.1.1",
     "@tailwindcss/typography": "^0.5.15",
+    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^11.18.2",
@@ -26,9 +32,11 @@
     "react-dom": "^19.0.0",
     "react-icons": "^5.7.0",
     "react-intersection-observer": "^11.0.0",
-    "tailwind-merge": "^2.6.0"
+    "tailwind-merge": "^2.6.0",
+    "web-vitals": "^6.1.0"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.4",
     "@types/react-dom": "^19.0.2",

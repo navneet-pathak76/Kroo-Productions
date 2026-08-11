@@ -1,24 +1,28 @@
-
 import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
+import { motionGraphicsVideos } from "@/lib/motion-graphics-videos";
 import { Boxes, Calendar, Clock3, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function MotionGraphicsContentPage() {
-  const videos = await getFolderMedia("motion-graphics", {
-    category: "Commercial Production",
-    client: "Brand & Motion",
-    services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
-  });
+  const videos = await getFolderMedia(
+    "motion-graphics",
+    {
+      category: "Commercial Production",
+      client: "Brand & Motion",
+      services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
+    },
+    motionGraphicsVideos,
+  );
 
   const config = {
-    title: "Motion Graphics Content",
+    title: "Motion Graphics & Logo Animation",
     description:
       "2D & 3D motion graphics, brand animations, title sequences and digital motion design. Every edit is designed to increase engagement, brand value and conversions.",
     hero: {
       thumbnail: "/images/gym-content/hero-thumb.svg",
-      alt: "Motion Graphics Content project thumbnail",
+      alt: "Motion Graphics & Logo Animation project thumbnail",
       icon: Boxes,
       label: "Commercial Production",
       visualTitle: "Motion Visual System",

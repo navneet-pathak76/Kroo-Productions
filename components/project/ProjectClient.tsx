@@ -18,6 +18,8 @@ import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
+import { reportClientTelemetry } from "@/lib/telemetry/client-report";
+import { useResilientMediaSrc } from "@/lib/media-fallback";
 import { cn } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ */
@@ -259,6 +261,27 @@ const RISE_SCALE = 1.85; // how much bigger than the resting cell, before clampi
 const MAX_HEIGHT_MULTIPLIER = 1.6; // hard cap — can never reach the heading
 const MAX_WIDTH_MULTIPLIER = 1.5; // hard cap — can't swallow two neighbour columns
 
+const MEDIA_ERROR_LABELS: Record<number, string> = {
+  1: "loading aborted",
+  2: "network failure",
+  3: "decode failure",
+  4: "unsupported source or codec",
+};
+
+function getVideoMimeType(src: string): string {
+  const path = src.split("?")[0]?.toLowerCase() ?? "";
+  if (path.endsWith(".webm")) return "video/webm";
+  if (path.endsWith(".mov")) return "video/quicktime";
+  if (path.endsWith(".m4v")) return "video/mp4";
+  return "video/mp4";
+}
+
+function describeMediaFailure(video: HTMLVideoElement, src: string): string {
+  const code = video.error?.code;
+  const reason = code ? MEDIA_ERROR_LABELS[code] ?? `media error ${code}` : "unknown media error";
+  return `${reason}; currentSrc=${video.currentSrc || src}; networkState=${video.networkState}; readyState=${video.readyState}`;
+}
+
 function KrooWatermark() {
   const krooRef = useRef<HTMLSpanElement>(null);
   const prodRef = useRef<HTMLSpanElement>(null);
@@ -315,6 +338,8 @@ function VideoThumbnail({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [restingSize, setRestingSize] = useState({ width: 0, height: 0 });
   const [nativeAspect, setNativeAspect] = useState<number | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const { effectiveSrc, tryFallback } = useResilientMediaSrc(src);
 
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
@@ -376,10 +401,38 @@ function VideoThumbnail({
     event: React.SyntheticEvent<HTMLVideoElement>
   ) => {
     const video = event.currentTarget;
+    setMediaError(null);
     if (video.videoWidth > 0 && video.videoHeight > 0) {
       setNativeAspect(video.videoWidth / video.videoHeight);
     }
     if (video.currentTime === 0) video.currentTime = 0.1;
+  };
+
+  const handleVideoError = (event: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = event.currentTarget;
+    const message = describeMediaFailure(video, src);
+    console.warn("[ProjectGallery] video playback failed", {
+      src,
+      currentSrc: video.currentSrc,
+      errorCode: video.error?.code,
+      networkState: video.networkState,
+      readyState: video.readyState,
+    });
+
+    // One-shot fallback: if this looks like a CloudFront delivery
+    // failure (403/404/CORS/etc — anything that surfaces as a load
+    // error rather than a decode error), retry the exact same object
+    // straight from S3 via a short-lived signed URL before giving up.
+    void tryFallback().then((switched) => {
+      if (switched) return;
+      setMediaError(message);
+      void reportClientTelemetry({
+        kind: "media-error",
+        route: window.location.pathname,
+        message,
+        source: src,
+      });
+    });
   };
 
   const handleFullscreen = useCallback(
@@ -482,16 +535,27 @@ function VideoThumbnail({
           transition: `width 320ms ${PREVIEW_EASE}, height 320ms ${PREVIEW_EASE}, box-shadow 320ms ${PREVIEW_EASE}`,
         }}
       >
-        {inView && (
+        {inView && effectiveSrc && (
           <video
+            key={effectiveSrc}
             ref={setVideoRef}
-            src={src}
             loop
             playsInline
-            preload="metadata"
+            preload={active || previewing ? "auto" : "metadata"}
             aria-hidden
             tabIndex={-1}
             onLoadedMetadata={handleLoadedMetadata}
+            onCanPlay={() => setMediaError(null)}
+            onError={handleVideoError}
+            onStalled={(event) => {
+              const video = event.currentTarget;
+              console.warn("[ProjectGallery] video stalled", {
+                src: effectiveSrc,
+                currentSrc: video.currentSrc,
+                networkState: video.networkState,
+                readyState: video.readyState,
+              });
+            }}
             className={cn(
               "absolute inset-0 h-full w-full rounded-[14px]",
               // While the browser has this exact <video> fullscreened, always
@@ -501,9 +565,16 @@ function VideoThumbnail({
               "[&:-webkit-full-screen]:object-contain [&:-webkit-full-screen]:!h-full [&:-webkit-full-screen]:!w-full",
               active ? "object-contain" : "object-cover"
             )}
-          />
+          >
+            <source src={effectiveSrc} type={getVideoMimeType(effectiveSrc)} />
+          </video>
         )}
         <KrooWatermark />
+        {inView && mediaError && (
+          <div className="absolute inset-x-3 bottom-3 z-20 rounded-md border border-red-500/25 bg-black/70 px-3 py-2 text-[11px] leading-4 text-white/70 backdrop-blur-md">
+            Video unavailable
+          </div>
+        )}
         {inView && (
           <button
             type="button"
@@ -526,6 +597,13 @@ function ImageThumbnail({ src, active }: { src: string; active: boolean }) {
     rootMargin: "400px",
   });
   const [errored, setErrored] = useState(false);
+  const { effectiveSrc, tryFallback } = useResilientMediaSrc(src);
+
+  const handleImageError = () => {
+    void tryFallback().then((switched) => {
+      if (!switched) setErrored(true);
+    });
+  };
 
   return (
     <div ref={ref} className="absolute inset-0">
@@ -538,16 +616,17 @@ function ImageThumbnail({ src, active }: { src: string; active: boolean }) {
           transition: "all 320ms ease",
         }}
       >
-        {inView && !errored && (
+        {inView && !errored && effectiveSrc && (
           <Image
-            key={src}
-            src={src}
+            key={effectiveSrc}
+            src={effectiveSrc}
             alt=""
             fill
             loading="lazy"
             sizes="(max-width:768px) 100vw, 33vw"
+            unoptimized={effectiveSrc !== src}
             className={active ? "object-contain" : "object-cover"}
-            onError={() => setErrored(true)}
+            onError={handleImageError}
           />
         )}
         {inView && errored && (
