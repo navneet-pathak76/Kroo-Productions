@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Upload, RefreshCw, Eye, Trash2, CheckCircle2, AlertCircle, GripVertical, Search, Filter, ImageIcon, VideoIcon, FileArchive } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Upload, RefreshCw, Eye, Trash2, CheckCircle2, AlertCircle, Search, Filter, ImageIcon, VideoIcon, FileArchive } from "lucide-react";
 import type { MediaItemRecord, MediaKind, MediaStatus } from "@/lib/media-optimization/media-manifest-types";
 import { getProjectOptions } from "@/lib/media-optimization/media-manifest-types";
+import { multipartUpload } from "@/lib/upload/multipart-uploader";
 
 const projectOptions = getProjectOptions();
 
@@ -38,7 +39,7 @@ export function MediaManager() {
   const [uploads, setUploads] = useState<UploadState[]>([]);
   const [selectedItem, setSelectedItem] = useState<MediaManagerItem | null>(null);
 
-  async function loadItems() {
+  const loadItems = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -54,11 +55,11 @@ export function MediaManager() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [project, status, type, search]);
 
   useEffect(() => {
     void loadItems();
-  }, [project, status, type, search]);
+  }, [loadItems]);
 
   async function startUpload(file: File, projectSlugOverride: string, existingId?: string) {
     const uploadId = existingId ?? `${Date.now()}-${file.name}`;
@@ -87,6 +88,41 @@ export function MediaManager() {
 
       if (!request.ok) throw new Error(data.error ?? "Upload preparation failed");
 
+      const finalize = async () => {
+        setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, progress: 100, status: "processing", message: "Processing upload…" } : entry));
+        const completeResponse = await fetch("/api/admin/media/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ objectKey: data.objectKey, metadata: { ...data.metadata, fileName: file.name } }),
+        });
+        const completeData = await completeResponse.json();
+        if (!completeResponse.ok) throw new Error(completeData.error ?? "Metadata save failed");
+        setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, progress: 100, status: "success", message: "Uploaded and saved" } : entry));
+        await loadItems();
+      };
+
+      if (data.uploadMode === "multipart") {
+        // Large file — S3 multipart upload, chunked with per-part retry
+        // (see lib/upload/multipart-uploader.ts). This is what replaced
+        // the old single 15-minute presigned PUT that large showreels
+        // routinely failed on.
+        try {
+          await multipartUpload({
+            file,
+            objectKey: data.objectKey,
+            contentType: data.metadata.mimeType,
+            onProgress: ({ loaded, total }) => {
+              const progress = total > 0 ? Math.min(95, Math.round((loaded / total) * 100)) : 5;
+              setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, progress } : entry));
+            },
+          });
+          await finalize();
+        } catch (error) {
+          setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, status: "error", message: error instanceof Error ? error.message : "Upload failed" } : entry));
+        }
+        return;
+      }
+
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", data.uploadUrl, true);
       xhr.setRequestHeader("Content-Type", file.type);
@@ -98,16 +134,11 @@ export function MediaManager() {
       };
       xhr.onload = async () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, progress: 100, status: "processing", message: "Processing upload…" } : entry));
-          const completeResponse = await fetch("/api/admin/media/complete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ objectKey: data.objectKey, metadata: { ...data.metadata, fileName: file.name } }),
-          });
-          const completeData = await completeResponse.json();
-          if (!completeResponse.ok) throw new Error(completeData.error ?? "Metadata save failed");
-          setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, progress: 100, status: "success", message: "Uploaded and saved" } : entry));
-          await loadItems();
+          try {
+            await finalize();
+          } catch (error) {
+            setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, status: "error", message: error instanceof Error ? error.message : "Metadata save failed" } : entry));
+          }
         } else {
           const errorMessage = getUploadErrorMessage(xhr);
           setUploads((current) => current.map((entry) => entry.id === uploadId ? { ...entry, status: "error", message: errorMessage } : entry));

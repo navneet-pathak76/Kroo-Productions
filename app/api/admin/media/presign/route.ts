@@ -1,55 +1,15 @@
 import { NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { getPresignedUploadUrl } from "@/lib/aws/s3-client";
 import { getProjectOptionBySlug } from "@/lib/media-optimization/content-manifest";
-
-const MAX_IMAGE_SIZE_BYTES = 50 * 1024 * 1024;
-const MAX_VIDEO_SIZE_BYTES = 5 * 1024 * 1024 * 1024;
-const ALLOWED_MIME_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/avif",
-  "image/gif",
-  "video/mp4",
-  "video/x-m4v",
-  "video/webm",
-  "video/quicktime",
-  "video/x-matroska",
-]);
-
-const MIME_BY_EXTENSION: Record<string, string> = {
-  jpg: "image/jpeg",
-  jpeg: "image/jpeg",
-  png: "image/png",
-  webp: "image/webp",
-  avif: "image/avif",
-  gif: "image/gif",
-  mp4: "video/mp4",
-  m4v: "video/mp4",
-  mov: "video/quicktime",
-  webm: "video/webm",
-  mkv: "video/x-matroska",
-};
-
-function normalizeFileName(value: string): string {
-  const trimmed = value.trim().replace(/\s+/g, "-");
-  return trimmed.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 140) || "upload";
-}
-
-function getExtension(fileName: string): string {
-  const match = fileName.toLowerCase().match(/\.([a-z0-9]+)$/);
-  return match?.[1] ?? "";
-}
-
-function normalizeMimeType(mimeType: string, fileName: string): string {
-  const trimmed = mimeType.trim().toLowerCase();
-  if (trimmed && ALLOWED_MIME_TYPES.has(trimmed)) {
-    return trimmed === "video/x-m4v" ? "video/mp4" : trimmed;
-  }
-  return MIME_BY_EXTENSION[getExtension(fileName)] ?? trimmed;
-}
+import {
+  ALLOWED_MIME_TYPES,
+  MAX_IMAGE_SIZE_BYTES,
+  MAX_VIDEO_SIZE_BYTES,
+  MULTIPART_THRESHOLD_BYTES,
+  normalizeFileName,
+  normalizeMimeType,
+} from "@/lib/media-optimization/upload-limits";
 
 export async function POST(request: Request) {
   const session = getSessionFromRequest(request);
@@ -92,6 +52,37 @@ export async function POST(request: Request) {
     }
 
     const objectKey = `media/${project.folder}/${Date.now()}-${normalizeFileName(fileName)}`;
+    const metadata = {
+      projectSlug: project.slug,
+      projectTitle: project.title,
+      route: project.route,
+      title,
+      description,
+      tags,
+      altText,
+      mediaKind,
+      mimeType,
+      fileName,
+      fileSize,
+      uploadedBy: session.email,
+      replaceMediaId,
+    };
+
+    // Anything at/above the multipart threshold must NOT use a single
+    // presigned PUT — a fixed-expiry, non-resumable URL is exactly what
+    // was causing large showreels to fail (connection drop or upload
+    // duration > URL expiry = total failure with no retry path). Tell
+    // the client to initiate a multipart upload instead; it will call
+    // /api/admin/media/multipart/create next.
+    if (fileSize >= MULTIPART_THRESHOLD_BYTES) {
+      return NextResponse.json({
+        uploadMode: "multipart",
+        objectKey,
+        project,
+        metadata,
+      });
+    }
+
     const upload = await getPresignedUploadUrl({
       key: objectKey,
       contentType: mimeType,
@@ -102,27 +93,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "S3 upload is not configured for this environment." }, { status: 503 });
     }
 
-    revalidatePath("/admin");
     return NextResponse.json({
       uploadMode: "direct",
       uploadUrl: upload.url,
       objectKey,
       project,
-      metadata: {
-        projectSlug: project.slug,
-        projectTitle: project.title,
-        route: project.route,
-        title,
-        description,
-        tags,
-        altText,
-        mediaKind,
-        mimeType,
-        fileName,
-        fileSize,
-        uploadedBy: session.email,
-        replaceMediaId,
-      },
+      metadata,
     });
   } catch (error) {
     console.error("[admin/media/presign] failed", error);
