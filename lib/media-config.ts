@@ -5,7 +5,7 @@ const DEFAULT_MEDIA_BASE_URL = "https://d3uo687t366hok.cloudfront.net";
  * Set NEXT_PUBLIC_S3_BASE_URL in .env.local to override (e.g. direct S3 or a different CloudFront distribution).
  */
 export const MEDIA_BASE_URL = (
-  process.env.NEXT_PUBLIC_S3_BASE_URL ?? DEFAULT_MEDIA_BASE_URL
+  process.env.NEXT_PUBLIC_S3_BASE_URL?.trim() || DEFAULT_MEDIA_BASE_URL
 ).replace(/\/$/, "");
 
 function encodeMediaPath(path: string): string {
