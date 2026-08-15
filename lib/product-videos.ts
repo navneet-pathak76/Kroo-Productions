@@ -1,6 +1,8 @@
 import { videoUrl } from "@/lib/media-config";
 
-const BASE = videoUrl("product", "").replace(/\/$/, "");
+// Real S3/CloudFront folder is "PRODUCT ADS" (verified directly against the bucket),
+// not the "product" route slug used elsewhere in the app.
+const BASE = videoUrl("PRODUCT ADS", "").replace(/\/$/, "");
 
 export type ProductVideo = {
   id: number;

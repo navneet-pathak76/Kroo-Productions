@@ -112,6 +112,17 @@ function resolveProjectFolder(folder: string, projectSlug: string): string {
   return project?.folder ?? normalizeSlug(folder);
 }
 
+// Real S3 folder names that don't match their PROJECT_OPTIONS slug — verified
+// directly against the bucket. Without these, dynamic discovery silently scans
+// an empty prefix and falls through to the static dataset even when real,
+// current media exists in S3. Add an entry here whenever a category's actual
+// upload folder differs from its route slug.
+const REAL_FOLDER_OVERRIDES: Record<string, string> = {
+  product: "PRODUCT ADS",
+  ai: "AI VIDEOS",
+  "logo-graphics": "logo & graphics",
+};
+
 function uniquePrefixes(...prefixes: string[]): string[] {
   return [...new Set(prefixes.filter(Boolean))];
 }
@@ -156,11 +167,12 @@ async function listAllObjects(prefix: string): Promise<S3Object[]> {
   const s3Client = getS3Client();
 
   if (!config || !s3Client) {
-    if (process.env.NODE_ENV !== "production") {
-      console.warn(
-        "[getFolderMedia] Missing S3 runtime configuration; returning no media. Required: AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME.",
-      );
-    }
+    console.warn(
+      `[getFolderMedia] ⚠️  Missing S3 runtime configuration — cannot list "${prefix}". ` +
+      `Required env vars (AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_BUCKET_NAME) ` +
+      `are not all set. Present: region=${!!process.env.AWS_REGION} accessKeyId=${!!process.env.AWS_ACCESS_KEY_ID} ` +
+      `secretAccessKey=${!!process.env.AWS_SECRET_ACCESS_KEY} bucket=${!!process.env.AWS_S3_BUCKET_NAME}.`,
+    );
     return [];
   }
 
@@ -239,8 +251,13 @@ export async function getFolderMedia(
       sort: "order",
     });
   } catch (error) {
-    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`, error);
-    return toFallback();
+    // A DynamoDB failure here must NOT skip straight to the static
+    // fallback — that bypasses the real S3 listing (step 2) and serves
+    // fully invented placeholder data even when real media exists in
+    // the bucket. Log it and fall through to the S3 listing below,
+    // exactly as if the manifest had simply returned no items.
+    console.warn(`[media] Manifest lookup failed for ${projectSlug}, falling through to direct S3 listing`, error);
+    manifestItems = [];
   }
 
   if (manifestItems.length > 0) {
@@ -256,19 +273,26 @@ export async function getFolderMedia(
   // Canonical S3 structure: admin uploads and public discovery both use
   // `media/{project.folder}/` (see app/api/admin/media/presign/route.ts).
   // A secondary `/videos/{folder}/` scan keeps the older static public
-  // library discoverable when DynamoDB metadata is not available.
+  // library discoverable when DynamoDB metadata is not available. When a
+  // category's real S3 folder name differs from its slug (see
+  // REAL_FOLDER_OVERRIDES above), that real name is scanned too.
+  const realFolder = REAL_FOLDER_OVERRIDES[projectSlug];
   const prefixes = uniquePrefixes(
     `media/${projectFolder}/`,
     `media/${normalizeSlug(folder)}/`,
     `videos/${projectFolder}/`,
     `videos/${normalizeSlug(folder)}/`,
+    ...(realFolder ? [`media/${realFolder}/`, `videos/${realFolder}/`] : []),
   );
+
+  console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
 
   let objects: S3Object[] = [];
   let usedPrefix = prefixes[0] ?? "";
   try {
     for (const prefix of prefixes) {
       const listed = await listAllObjects(prefix);
+      console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
       if (listed.length > 0) {
         objects = listed;
         usedPrefix = prefix;
@@ -276,12 +300,15 @@ export async function getFolderMedia(
       }
     }
   } catch (error) {
-    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`, error);
+    const err = error as { name?: string; message?: string };
+    console.warn(
+      `[media] S3 listing threw for "${projectSlug}" (${err?.name ?? "Error"}: ${err?.message ?? String(error)}) — falling back to static portfolio media.`,
+    );
     return toFallback();
   }
 
   if (objects.length === 0 && fallback.length > 0) {
-    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`);
+    console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — falling back to static portfolio media.`);
     return toFallback();
   }
 
