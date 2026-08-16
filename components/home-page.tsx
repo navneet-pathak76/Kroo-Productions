@@ -284,7 +284,7 @@ function getStableViewportWidth(): number {
 
 interface SpatialCardStackProps<T> {
   items: T[];
-  renderCard: (item: T, index: number) => ReactNode;
+  renderCard: (item: T, index: number, isActive: boolean) => ReactNode;
   getKey: (item: T, index: number) => string;
   className?: string;
 }
@@ -658,7 +658,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               carouselOffsetSpring={carouselOffsetSpring}
               spread={spread}
             >
-              {renderCard(item, index)}
+              {renderCard(item, index, offset === 0)}
             </SpatialCard>
           ))}
         </motion.div>
@@ -1636,7 +1636,7 @@ function ProjectsSection() {
       <SpatialCardStack
         items={projects}
         getKey={(project, index) => `${project.title}-${index}`}
-        renderCard={(project, index) => (
+        renderCard={(project, index, isActive) => (
           <Link
             href={project.href}
             className="group relative block w-full overflow-hidden rounded-md border border-white/10 bg-black"
@@ -1656,23 +1656,38 @@ function ProjectsSection() {
                 {project.category}
               </div>
 
-              <div className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8">
-                <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.2em]">
-                  Case 0{(index % projects.length) + 1}
-                </p>
+              {/*
+                Title/case-label/CTA render ONLY for the active (offset 0)
+                card. This carousel deliberately overlaps neighboring cards
+                on screen (the coverflow look) — at any non-zero opacity,
+                a side card's own title sat close enough to the active
+                card's title to read as duplicated/ghosted text. Diming it
+                further wasn't enough to fully prevent that overlap; not
+                rendering it at all for inactive cards is the only way to
+                guarantee exactly one visible title on screen at a time,
+                without changing card spacing, size, or the 3D animation
+                itself. The category pill above is unaffected — it wasn't
+                part of the reported duplication.
+              */}
+              {isActive && (
+                <div className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8">
+                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.2em]">
+                    Case 0{(index % projects.length) + 1}
+                  </p>
 
-                <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-lg font-black uppercase leading-[1.08] sm:text-4xl lg:text-5xl">
-                  {project.title}
-                </h3>
+                  <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-lg font-black uppercase leading-[1.08] sm:text-4xl lg:text-5xl">
+                    {project.title}
+                  </h3>
 
-                <div className="mt-3 sm:mt-6">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black sm:gap-2 sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
-                    View Project
-                    <ArrowRight size={14} className="sm:hidden" />
-                    <ArrowRight size={16} className="hidden sm:block" />
-                  </span>
+                  <div className="mt-3 sm:mt-6">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black sm:gap-2 sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
+                      View Project
+                      <ArrowRight size={14} className="sm:hidden" />
+                      <ArrowRight size={16} className="hidden sm:block" />
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </Link>
         )}
