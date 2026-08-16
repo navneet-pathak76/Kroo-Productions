@@ -99,13 +99,7 @@ export type ProjectHeroProps = {
 export function ProjectHero({
   title,
   description,
-  thumbnail,
-  alt,
-  label,
-  visualTitle,
   featuredButtonLabel,
-  heroIcon,
-  accentIcon,
 }: ProjectHeroProps) {
   const capability = useDeviceCapability();
   const ref = useRef<HTMLElement>(null);
@@ -130,7 +124,7 @@ export function ProjectHero({
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_68%,transparent)]" />
 
-      <div className="mx-auto grid max-w-[1480px] gap-10 lg:min-h-[calc(92vh-10rem)] lg:grid-cols-[minmax(0,1.04fr)_minmax(320px,0.62fr)] lg:items-center">
+      <div className="mx-auto max-w-[1480px] lg:min-h-[calc(92vh-10rem)] lg:flex lg:items-center">
         <motion.div
           className="relative z-10"
           initial="hidden"
@@ -171,52 +165,6 @@ export function ProjectHero({
                 <ArrowRight size={18} />
               </a>
             </Button>
-          </motion.div>
-        </motion.div>
-
-        <motion.div
-          className="relative z-10 mx-auto w-full max-w-[520px]"
-          initial={{ opacity: 0, x: 48, filter: "blur(18px)" }}
-          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-          transition={{ delay: 0.32, duration: 1.08, ease: revealEase }}
-        >
-          <motion.div
-            className="cinema-panel relative overflow-hidden rounded-md p-3 shadow-2xl shadow-primary/10"
-            animate={reduceEffects ? { y: 0 } : { y: [0, -12, 0] }}
-            transition={reduceEffects ? { duration: 0 } : { duration: 5.8, repeat: Infinity, ease: "easeInOut" }}
-          >
-            <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-black">
-              <Image
-                src={thumbnail}
-                alt={alt}
-                fill
-                priority
-                sizes="(max-width: 1023px) 90vw, 520px"
-                className="object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/20" />
-              <div className="absolute left-5 top-5 rounded-full border border-white/15 bg-black/40 px-4 py-2 text-[0.68rem] font-black uppercase tracking-[0.2em] text-white/80 backdrop-blur-xl">
-                2026
-              </div>
-              <div className="absolute bottom-5 left-5 right-5">
-                <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white shadow-glow-strong">
-                  {heroIcon}
-                </div>
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">
-                  {label}
-                </p>
-                <h2 className="mt-3 text-4xl font-black uppercase leading-none text-white sm:text-5xl">
-                  {visualTitle}
-                </h2>
-              </div>
-            </div>
-          </motion.div>
-          <motion.div
-            className="absolute -right-5 top-10 hidden h-24 w-24 items-center justify-center rounded-full border border-primary/30 bg-black/55 text-primary shadow-glow backdrop-blur-2xl sm:flex"
-            animate={reduceEffects ? { rotate: 0 } : { rotate: 360 }}
-            transition={reduceEffects ? { duration: 0 } : { duration: 18, repeat: Infinity, ease: "linear" }}
-          >
-            {accentIcon}
           </motion.div>
         </motion.div>
       </div>
