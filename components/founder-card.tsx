@@ -356,8 +356,11 @@ md:aspect-[3/4.7]
                 <MoreVertical size="1em" />
               </button>
 
-              {/* floating glass dock — always the horizontal pill, only its scale changes */}
-              <div className="absolute inset-x-[clamp(3px,1.06vw,16px)] bottom-[clamp(3px,1.06vw,16px)] z-10 flex flex-row items-center gap-[clamp(1px,0.53vw,8px)] rounded-full border border-white/15 bg-white/[0.07] p-[clamp(1px,0.53vw,8px)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_18px_40px_-12px_rgba(0,0,0,0.7)] [backdrop-filter:blur(26px)] [-webkit-backdrop-filter:blur(26px)]">
+              {/* CONNECT US footer — flush bottom bar, part of the SAME card.
+                  No independent border/blur/shadow of its own (that read as
+                  a second floating glass panel); just a divider line so it
+                  visually belongs to the one glass shell around the card. */}
+              <div className="absolute inset-x-0 bottom-0 z-10 flex flex-row items-center gap-[clamp(1px,0.53vw,8px)] border-t border-white/10 bg-black/35 px-[clamp(3px,1.06vw,16px)] py-[clamp(3px,1.06vw,16px)]">
                 <div className="relative min-w-0 flex-1">
                   {/* glow — static shadow value, only its opacity animates */}
                   <span
@@ -508,11 +511,11 @@ md:aspect-[3/4.7]
                 <MoreVertical size={12} />
               </button>
 
-              {/* footer dock — absolutely positioned near the bottom so it
-                  overlaps the image directly, matching desktop. ONE glass
-                  surface only; button and icons sit inside it as plain
-                  children, no nested pill, no spacer. */}
-              <div className="absolute inset-x-1 bottom-1 z-10 flex min-w-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-white/15 bg-white/[0.07] px-1.5 py-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_8px_18px_-8px_rgba(0,0,0,0.7)] [backdrop-filter:blur(16px)] [-webkit-backdrop-filter:blur(16px)]">
+              {/* CONNECT US footer — flush bottom bar, part of the SAME card,
+                  matching desktop. No independent border/blur/shadow of its
+                  own; just a divider line, so it never reads as a second
+                  floating glass panel. */}
+              <div className="absolute inset-x-0 bottom-0 z-10 flex min-w-0 items-center justify-center gap-1 overflow-hidden border-t border-white/10 bg-black/35 px-1.5 py-1.5">
                 <button
                   type="button"
                   className="min-w-0 flex-1 truncate rounded-full border border-white/10 bg-transparent py-1.5 px-1 text-center text-[6px] font-black uppercase tracking-[0.04em] text-white"
