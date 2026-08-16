@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { digitalMarketingVideos } from "@/lib/digital-marketing-videos";
 import { Calendar, Clock3, Film, Layers3, Megaphone, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function DigitalMarketingContentPage() {
@@ -12,8 +11,7 @@ export default async function DigitalMarketingContentPage() {
       category: "Marketing Production",
       client: "Marketing Teams",
       services: ["Strategy", "Filming", "Editing", "Motion Graphics"],
-    },
-    digitalMarketingVideos,
+    }
   );
 
   const config = {

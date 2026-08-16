@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { restaurantVideos } from "@/lib/restaurant-videos";
 import { Calendar, ChefHat, Clock3, Film, Flame, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function RestaurantContentPage() {
@@ -12,8 +11,7 @@ export default async function RestaurantContentPage() {
       category: "Restaurant Marketing",
       client: "Hospitality Industry",
       services: ["Filming", "Food Styling", "Editing", "Motion Graphics", "Color Grading", "Drone"],
-    },
-    restaurantVideos,
+    }
   );
 
   const config = {

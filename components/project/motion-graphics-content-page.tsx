@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { motionGraphicsVideos } from "@/lib/motion-graphics-videos";
 import { Boxes, Calendar, Clock3, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function MotionGraphicsContentPage() {
@@ -12,8 +11,7 @@ export default async function MotionGraphicsContentPage() {
       category: "Commercial Production",
       client: "Brand & Motion",
       services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
-    },
-    motionGraphicsVideos,
+    }
   );
 
   const config = {

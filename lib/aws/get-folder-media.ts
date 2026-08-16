@@ -4,11 +4,7 @@ import {
   ListObjectsV2Command,
   type _Object as S3Object,
 } from "@aws-sdk/client-s3";
-import { listMediaItems } from "@/lib/media-optimization/content-manifest";
-import {
-  PROJECT_OPTIONS,
-  type MediaItemRecord,
-} from "@/lib/media-optimization/media-manifest-types";
+import { PROJECT_OPTIONS } from "@/lib/media-optimization/media-manifest-types";
 import { getS3Client, getS3RuntimeConfig } from "./s3-client";
 
 export type MediaType = "image" | "video";
@@ -114,52 +110,18 @@ function resolveProjectFolder(folder: string, projectSlug: string): string {
 
 // Real S3 folder names that don't match their PROJECT_OPTIONS slug — verified
 // directly against the bucket. Without these, dynamic discovery silently scans
-// an empty prefix and falls through to the static dataset even when real,
-// current media exists in S3. Add an entry here whenever a category's actual
-// upload folder differs from its route slug.
+// an empty prefix and finds nothing even when real, current media exists in
+// S3 under a differently-named folder. Add an entry here whenever a
+// category's actual upload folder differs from its route slug.
 const REAL_FOLDER_OVERRIDES: Record<string, string> = {
   product: "PRODUCT ADS",
   ai: "AI VIDEOS",
   "logo-graphics": "logo & graphics",
+  restaurant: "FOOD",
 };
 
 function uniquePrefixes(...prefixes: string[]): string[] {
   return [...new Set(prefixes.filter(Boolean))];
-}
-
-/**
- * Shape of the legacy, hard-coded per-project datasets (e.g. `gymVideos`,
- * `restaurantVideos`). These already contain fully-formed CDN URLs, so the
- * only normalization needed is filling in `mediaType`.
- */
-export type StaticFallbackItem = {
-  id: number;
-  title: string;
-  thumbnail?: string;
-  video?: string;
-  description?: string;
-  duration?: string;
-  category?: string;
-  client?: string;
-  services?: string[];
-};
-
-function toManifestMediaItem(record: MediaItemRecord): MediaItem {
-  const mediaType: MediaType = record.mediaKind === "video" ? "video" : "image";
-  const thumbnail = mediaType === "image" ? record.cdnUrl : undefined;
-  const video = mediaType === "video" ? record.cdnUrl : undefined;
-
-  return {
-    id: Number(record.displayOrder || 1),
-    title: record.title,
-    thumbnail,
-    video,
-    mediaType,
-    duration: record.durationSeconds ? `${record.durationSeconds}s` : "",
-    category: record.category,
-    client: record.projectTitle,
-    services: record.tags,
-  };
 }
 
 async function listAllObjects(prefix: string): Promise<S3Object[]> {
@@ -200,89 +162,48 @@ async function listAllObjects(prefix: string): Promise<S3Object[]> {
   return objects;
 }
 
-/** Normalizes a legacy static dataset entry into the shape the gallery renders. */
-function toStaticMediaItem(
-  item: StaticFallbackItem,
-  index: number,
-  meta: { category: string; client: string; services: string[] },
-): MediaItem {
-  const mediaType: MediaType = item.video ? "video" : "image";
-  return {
-    id: index + 1,
-    title: item.title,
-    thumbnail: item.thumbnail,
-    video: item.video,
-    mediaType,
-    duration: item.duration ?? "",
-    category: item.category ?? meta.category,
-    client: item.client ?? meta.client,
-    services: item.services ?? meta.services,
-  };
-}
-
 /**
- * Resolves the gallery for a project, in priority order:
+ * Resolves the gallery for a project by listing the real S3 bucket
+ * directly — the bucket is the single, unconditional source of truth.
  *
- *  1. PRIMARY   — published admin-managed media from DynamoDB.
- *  2. SECONDARY — a direct listing of the canonical `media/{folder}/`
- *                 S3 prefix (the same prefix the admin uploader writes to).
- *  3. FALLBACK  — the legacy hard-coded static dataset for this project,
- *                 if one was supplied.
- *
- * AWS/DynamoDB failures are always caught here — a public project page must
- * never throw or render empty just because a dependency is unavailable.
+ * There is intentionally NO admin/DynamoDB-manifest priority layer and NO
+ * static/fake fallback dataset: if S3 has one real video, the page shows
+ * one video; if S3 has zero, the page shows zero with an explicit empty
+ * state. An S3 failure is logged and treated as "no media found" — it
+ * must never be silently upgraded into invented or stale placeholder
+ * cards.
  */
 export async function getFolderMedia(
   folder: string,
   meta: { category: string; client: string; services: string[] },
-  fallback: StaticFallbackItem[] = [],
 ): Promise<MediaItem[]> {
   noStore();
 
   const projectSlug = toProjectSlug(folder);
   const projectFolder = resolveProjectFolder(folder, projectSlug);
-  const toFallback = () => fallback.map((item, index) => toStaticMediaItem(item, index, meta));
 
-  let manifestItems: MediaItemRecord[] = [];
-  try {
-    manifestItems = await listMediaItems({
-      projectSlug,
-      status: "published",
-      sort: "order",
-    });
-  } catch (error) {
-    // A DynamoDB failure here must NOT skip straight to the static
-    // fallback — that bypasses the real S3 listing (step 2) and serves
-    // fully invented placeholder data even when real media exists in
-    // the bucket. Log it and fall through to the S3 listing below,
-    // exactly as if the manifest had simply returned no items.
-    console.warn(`[media] Manifest lookup failed for ${projectSlug}, falling through to direct S3 listing`, error);
-    manifestItems = [];
-  }
-
-  if (manifestItems.length > 0) {
-    return manifestItems.map((item, index) => ({
-      ...toManifestMediaItem(item),
-      id: index + 1,
-      category: meta.category,
-      client: meta.client,
-      services: meta.services, 
-    }));
-  }
-
-  // Canonical S3 structure: admin uploads and public discovery both use
-  // `media/{project.folder}/` (see app/api/admin/media/presign/route.ts).
-  // A secondary `/videos/{folder}/` scan keeps the older static public
-  // library discoverable when DynamoDB metadata is not available. When a
-  // category's real S3 folder name differs from its slug (see
-  // REAL_FOLDER_OVERRIDES above), that real name is scanned too.
-  const realFolder = REAL_FOLDER_OVERRIDES[projectSlug];
+  // Canonical bucket structure — verified directly via `aws s3 ls` against
+  // the real bucket root, not just the console UI (a console screenshot
+  // earlier looked like these were root-level folders, but the breadcrumb
+  // was actually one level deeper — this was double-checked with the CLI):
+  //
+  //   videos/gym/, videos/clothing/, videos/PRODUCT ADS/,
+  //   videos/AI VIDEOS/, videos/logo & graphics/, videos/FOOD/, etc.
+  //
+  // `videos/{folder}/` is the real, populated location and is tried
+  // FIRST. `media/{folder}/` (where the admin upload flow at
+  // app/api/admin/media/presign/route.ts writes) is tried second — today
+  // it only holds incidental test uploads, but stays in the list so any
+  // future admin-published media is picked up automatically once it's the
+  // only/first prefix with real content.
+  const realFolder = REAL_FOLDER_OVERRIDES[projectSlug] ?? projectFolder;
   const prefixes = uniquePrefixes(
-    `media/${projectFolder}/`,
-    `media/${normalizeSlug(folder)}/`,
+    `videos/${realFolder}/`,
     `videos/${projectFolder}/`,
     `videos/${normalizeSlug(folder)}/`,
-    ...(realFolder ? [`media/${realFolder}/`, `videos/${realFolder}/`] : []),
+    `media/${realFolder}/`,
+    `media/${projectFolder}/`,
+    `media/${normalizeSlug(folder)}/`,
   );
 
   console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
@@ -302,14 +223,14 @@ export async function getFolderMedia(
   } catch (error) {
     const err = error as { name?: string; message?: string };
     console.warn(
-      `[media] S3 listing threw for "${projectSlug}" (${err?.name ?? "Error"}: ${err?.message ?? String(error)}) — falling back to static portfolio media.`,
+      `[media] S3 listing threw for "${projectSlug}" (${err?.name ?? "Error"}: ${err?.message ?? String(error)}) — rendering empty state, not fake media.`,
     );
-    return toFallback();
+    return [];
   }
 
-  if (objects.length === 0 && fallback.length > 0) {
-    console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — falling back to static portfolio media.`);
-    return toFallback();
+  if (objects.length === 0) {
+    console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — rendering empty state.`);
+    return [];
   }
 
   const folderLabel = toFolderLabel(projectFolder);
@@ -350,11 +271,6 @@ export async function getFolderMedia(
     console.warn(
       `[getFolderMedia] Ignored ${rejected.length} unsupported media object(s) under "${usedPrefix}".`,
     );
-  }
-
-  if (items.length === 0 && fallback.length > 0) {
-    console.warn(`[media] Falling back to static portfolio media for ${projectSlug}`);
-    return toFallback();
   }
 
   const videos = items.map((item, index) => ({

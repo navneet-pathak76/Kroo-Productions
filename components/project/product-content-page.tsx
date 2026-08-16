@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { productVideos } from "@/lib/product-videos";
 import { Calendar, Clock3, Film, Layers3, Package, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function ProductContentPage() {
@@ -12,8 +11,7 @@ export default async function ProductContentPage() {
       category: "Product Production",
       client: "Consumer Brands",
       services: ["Filming", "Styling", "Editing", "Color Grading"],
-    },
-    productVideos,
+    }
   );
 
   const config = {

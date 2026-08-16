@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { logoGraphicsVideos } from "@/lib/logo-graphics-videos";
 import { Calendar, Clock3, Film, Layers3, PenTool, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function LogoGraphicsContentPage() {
@@ -12,8 +11,7 @@ export default async function LogoGraphicsContentPage() {
       category: "Motion Production",
       client: "Emerging Brands",
       services: ["Design", "Animation", "Editing", "Sound Design"],
-    },
-    logoGraphicsVideos,
+    }
   );
 
   const config = {

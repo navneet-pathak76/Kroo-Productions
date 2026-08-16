@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { realEstateVideos } from "@/lib/real-estate-videos";
 import { Building2, Calendar, Clock3, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function RealEstateContentPage() {
@@ -12,8 +11,7 @@ export default async function RealEstateContentPage() {
       category: "Property Production",
       client: "Real Estate Industry",
       services: ["Filming", "Drone", "Editing", "Color Grading"],
-    },
-    realEstateVideos,
+    }
   );
 
   const config = {

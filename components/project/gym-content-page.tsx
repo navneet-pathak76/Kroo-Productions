@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { gymVideos } from "@/lib/gym-videos";
 import { Calendar, Clock3, Dumbbell, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function GymContentPage() {
@@ -12,8 +11,7 @@ export default async function GymContentPage() {
       category: "Commercial Production",
       client: "Fitness Industry",
       services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
-    },
-    gymVideos,
+    }
   );
 
   const config = {

@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { clubsVideos } from "@/lib/clubs-videos";
 import { Calendar, Clock3, Disc3, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function ClubsContentPage() {
@@ -12,8 +11,7 @@ export default async function ClubsContentPage() {
       category: "Commercial Production",
       client: "Nightlife Industry",
       services: ["Filming", "Editing", "Color Grading", "Motion Graphics"],
-    },
-    clubsVideos,
+    }
   );
 
   const config = {

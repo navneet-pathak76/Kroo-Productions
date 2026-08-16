@@ -2,7 +2,6 @@ import ProjectContentPage, {
   type ProjectPageConfig,
 } from "@/components/project/project-content-page";
 import { getFolderMedia } from "@/lib/aws/get-folder-media";
-import { aiVideos } from "@/lib/ai-videos";
 import { Calendar, Clock3, Cpu, Film, Layers3, Sparkles, Target, UserRound } from "lucide-react";
 
 export default async function AiContentPage() {
@@ -12,8 +11,7 @@ export default async function AiContentPage() {
       category: "AI Production",
       client: "Emerging Brands",
       services: ["Prompting", "Generation", "Editing", "Motion Graphics"],
-    },
-    aiVideos,
+    }
   );
 
   const config = {
