@@ -93,13 +93,20 @@ type SlotMagnitude = 0 | 1 | 2 | 3;
  * hand-picked pixel offsets. Every slot's x/z position is DERIVED from its
  * rotateY angle and two constants (ORBIT_CONFIG below) — there is no
  * per-tier magic number for position left in this file. Only rotateY,
- * scale, and opacity are set directly (opacity carried over unchanged
- * from the approved design — it was never flagged as wrong).
+ * scale, and opacity are set directly.
  *
  *   CENTER      scale 1.00  rotateY  0°   opacity 1.00
- *   L1 / R1     scale 0.88  rotateY ±25°  opacity 0.72
- *   L2 / R2     scale 0.76  rotateY ±42°  opacity 0.38
- *   L3 / R3     scale 0.64  rotateY ±55°  opacity 0.18
+ *   L1 / R1     scale 0.88  rotateY ±25°  opacity 0.40
+ *   L2 / R2     scale 0.76  rotateY ±42°  opacity 0.20
+ *   L3 / R3     scale 0.64  rotateY ±55°  opacity 0.08
+ *
+ * Opacity was previously 0.72/0.38/0.18. At 0.72 the immediate side
+ * cards' own titles stayed legible enough to visually collide with the
+ * active card's title (reported as "double text") — the side cards sit
+ * close enough horizontally, by design, that some legibility overlap was
+ * inevitable at that opacity. Dropped so neighboring cards still read as
+ * a depth cue (you can tell something's there) without their text
+ * competing with the active card's.
  *
  * Left cards get POSITIVE rotateY, right cards get NEGATIVE rotateY (the
  * two sides are exact mirror images of each other by construction, so
@@ -108,9 +115,9 @@ type SlotMagnitude = 0 | 1 | 2 | 3;
  */
 const SLOT_CONFIG = {
   0: { rotateYDeg: 0, scale: 1, opacity: 1, zIndex: 100 },
-  1: { rotateYDeg: 25, scale: 0.88, opacity: 0.72, zIndex: 90 },
-  2: { rotateYDeg: 42, scale: 0.76, opacity: 0.38, zIndex: 80 },
-  3: { rotateYDeg: 55, scale: 0.64, opacity: 0.18, zIndex: 70 },
+  1: { rotateYDeg: 25, scale: 0.88, opacity: 0.4, zIndex: 90 },
+  2: { rotateYDeg: 42, scale: 0.76, opacity: 0.2, zIndex: 80 },
+  3: { rotateYDeg: 55, scale: 0.64, opacity: 0.08, zIndex: 70 },
 };
 
 /** Cards beyond this magnitude are not rendered — hidden, not just faded. */
@@ -727,7 +734,12 @@ function SpatialCard({
       }}
     >
       <motion.div
-        style={{ transformStyle: "preserve-3d", willChange: "transform, opacity" }}
+        style={{
+          transformStyle: "preserve-3d",
+          willChange: "transform, opacity",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
+        }}
         initial={false}
         animate={
           reducedMotion
@@ -772,6 +784,8 @@ function SpatialCard({
           style={{
             borderRadius: "inherit",
             filter: isActive ? "brightness(1)" : `brightness(${1 - Math.abs(offset) * 0.08})`,
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
           }}
         >
           {children}
@@ -1660,10 +1674,6 @@ function ProjectsSection() {
                   </span>
                 </div>
               </div>
-
-              <p className="absolute right-3 top-11 text-base font-black text-white/20 sm:right-8 sm:top-8 sm:text-4xl">
-                {project.metric}
-              </p>
             </div>
           </Link>
         )}
