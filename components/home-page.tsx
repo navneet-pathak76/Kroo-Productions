@@ -783,7 +783,6 @@ function SpatialCard({
           }
           style={{
             borderRadius: "inherit",
-            filter: isActive ? "brightness(1)" : `brightness(${1 - Math.abs(offset) * 0.08})`,
             backfaceVisibility: "hidden",
             WebkitBackfaceVisibility: "hidden",
           }}
