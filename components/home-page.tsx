@@ -390,25 +390,56 @@ function SpatialCardStack<T>({
     };
   }, []);
 
+  /**
+   * TEXT/POSITION SYNC. `active` (and therefore `offset === 0` /
+   * isActive) updates the instant React re-renders — but the card's
+   * actual on-screen position animates toward its new slot over the
+   * CAROUSEL_CONFIG.spring transition (several hundred ms). Gating the
+   * title/case/CTA block on isActive alone meant the incoming card's
+   * text mounted immediately while it was still physically off-center
+   * mid-slide, overlapping the outgoing card's text before it had
+   * finished sliding away — reported as duplicated/ghosted text on the
+   * ACTIVE card itself (distinct from the earlier side-card bleed-
+   * through bug). Every place `active` changes now goes through
+   * beginTransition(), and text is gated on `!isAnimating` in
+   * ProjectsSection below, so text is hidden for the ~620ms the cards
+   * are physically moving and only shows once they're settled — never
+   * two cards' text visible at once, regardless of trigger (click,
+   * autoplay, keyboard, drag, or timeline scrub).
+   */
+  const settleTimer = useRef<number | null>(null);
+  const beginTransition = useCallback(() => {
+    setIsAnimating(true);
+    if (settleTimer.current) window.clearTimeout(settleTimer.current);
+    settleTimer.current = window.setTimeout(() => {
+      setIsAnimating(false);
+      settleTimer.current = null;
+    }, 620);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (settleTimer.current) window.clearTimeout(settleTimer.current);
+    };
+  }, []);
+
   const advance = useCallback(
     (direction: 1 | -1) => {
       if (isAnimating || total === 0) return;
-      setIsAnimating(true);
       setActive((prev) => (prev + direction + total) % total);
-      window.setTimeout(() => setIsAnimating(false), 620);
+      beginTransition();
     },
-    [isAnimating, total],
+    [isAnimating, total, beginTransition],
   );
 
   const goTo = useCallback(
     (index: number) => {
       if (total === 0) return;
       const next = ((index % total) + total) % total;
-      setIsAnimating(true);
       setActive(next);
-      window.setTimeout(() => setIsAnimating(false), 620);
+      beginTransition();
     },
-    [total],
+    [total, beginTransition],
   );
 
   const pauseAutoplay = useCallback(() => {
@@ -545,7 +576,10 @@ function SpatialCardStack<T>({
     }
 
     carouselOffset.set(0);
-    if (delta !== 0) setActive((prev) => (prev + delta + total) % total);
+    if (delta !== 0) {
+      setActive((prev) => (prev + delta + total) % total);
+      beginTransition();
+    }
     scheduleResume();
   };
 
@@ -592,10 +626,11 @@ function SpatialCardStack<T>({
       carouselOffset.set(0);
       if (nearest !== 0) {
         setActive((prev) => (prev + nearest + total) % total);
+        beginTransition();
       }
       scheduleResume();
     },
-    [carouselOffset, total, scheduleResume],
+    [carouselOffset, total, scheduleResume, beginTransition],
   );
 
   const visibleEntries = useMemo(() => {
@@ -658,7 +693,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               carouselOffsetSpring={carouselOffsetSpring}
               spread={spread}
             >
-              {renderCard(item, index, offset === 0)}
+              {renderCard(item, index, offset === 0 && !isAnimating)}
             </SpatialCard>
           ))}
         </motion.div>
