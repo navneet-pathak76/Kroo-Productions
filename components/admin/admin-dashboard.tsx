@@ -2,10 +2,12 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TelemetrySnapshot } from "@/lib/telemetry/types";
 import { OptimizationPanel } from "@/components/admin/optimization-panel";
 import { MediaManager } from "@/components/admin/media-manager";
 import { GalleryReorder } from "@/components/admin/gallery-reorder";
+import { MetricCard, TextValueCard, Section, EmptyState } from "@/components/admin/ui";
 
 type Viewer = {
   email: string;
@@ -18,39 +20,6 @@ type Props = {
   viewer: Viewer;
   mediaCdnBase: string;
 };
-
-function MetricCard({ label, value, unit }: { label: string; value?: number; unit?: string }) {
-  return (
-    <div className="cinema-panel rounded-xl p-4">
-      <p className="text-xs uppercase tracking-wider text-white/45">{label}</p>
-      <p className="mt-2 text-2xl font-bold tabular-nums">
-        {value !== undefined ? `${value}${unit ?? ""}` : "—"}
-      </p>
-    </div>
-  );
-}
-
-function TextValueCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="cinema-panel rounded-xl p-4">
-      <p className="text-xs uppercase tracking-wider text-white/45">{label}</p>
-      <p className="mt-2 break-all text-sm font-medium text-white/80">{value}</p>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="space-y-4">
-      <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-white/55">{title}</h2>
-      {children}
-    </section>
-  );
-}
-
-function EmptyState({ message }: { message: string }) {
-  return <p className="rounded-xl border border-white/10 bg-white/[0.03] px-4 py-6 text-sm text-white/50">{message}</p>;
-}
 
 export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
   const router = useRouter();
@@ -82,6 +51,12 @@ export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
+          <Link
+            href="/admin/visitors"
+            className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
+          >
+            Visitors
+          </Link>
           <button
             type="button"
             onClick={handleRefresh}
