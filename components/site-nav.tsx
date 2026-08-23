@@ -2,11 +2,20 @@
 
 import { motion } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { navItems } from "@/lib/content";
 import { cn } from "@/lib/utils";
+
+// The "Home" nav item is the only item that must ever leave the current
+// page. On the homepage itself it keeps the existing smooth-scroll-to-top
+// behavior (via scrollToSection below); on every other route it must do a
+// real Next.js navigation back to "/" instead of appending "#home" to the
+// current pathname.
+const HOME_HREF = "#home";
 
 function scrollToSection(event: MouseEvent<HTMLAnchorElement>, href: string) {
   event.preventDefault();
@@ -27,6 +36,8 @@ function scrollToSection(event: MouseEvent<HTMLAnchorElement>, href: string) {
 
 export function SiteNav() {
   const capability = useDeviceCapability();
+  const pathname = usePathname();
+  const isOnHomepage = pathname === "/";
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("#home");
@@ -128,24 +139,33 @@ export function SiteNav() {
         <div className="hidden items-center gap-8 lg:flex">
           {navItems.map((item) => {
             const isActive = active === item.href;
+            const navLinkClassName = cn(
+              "group relative rounded-full text-xs font-black uppercase tracking-[0.14em] transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black",
+              isActive ? "text-white" : "text-white/[0.64] hover:text-white",
+            );
+            const underlineClassName = cn(
+              "absolute -bottom-2 left-0 h-px bg-primary shadow-[0_0_18px_rgba(255,77,18,0.9)] transition-all duration-300",
+              isActive ? "w-full" : "w-0 group-hover:w-full",
+            );
+
+            if (item.href === HOME_HREF && !isOnHomepage) {
+              return (
+                <Link key={item.href} href="/" className={navLinkClassName}>
+                  {item.label}
+                  <span className={underlineClassName} />
+                </Link>
+              );
+            }
 
             return (
               <a
                 key={item.href}
                 href={item.href}
                 onClick={(event) => scrollToSection(event, item.href)}
-                className={cn(
-                  "group relative rounded-full text-xs font-black uppercase tracking-[0.14em] transition duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-4 focus-visible:ring-offset-black",
-                  isActive ? "text-white" : "text-white/[0.64] hover:text-white",
-                )}
+                className={navLinkClassName}
               >
                 {item.label}
-                <span
-                  className={cn(
-                    "absolute -bottom-2 left-0 h-px bg-primary shadow-[0_0_18px_rgba(255,77,18,0.9)] transition-all duration-300",
-                    isActive ? "w-full" : "w-0 group-hover:w-full",
-                  )}
-                />
+                <span className={underlineClassName} />
               </a>
             );
           })}
@@ -184,24 +204,41 @@ export function SiteNav() {
           animate={{ y: 0, opacity: 1, filter: reduceEffects ? "none" : "blur(0px)" }}
           transition={{ duration: reduceEffects ? 0.01 : 0.26, ease: [0.22, 1, 0.36, 1] }}
         >
-          {navItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              onClick={(event) => {
-                scrollToSection(event, item.href);
-                setOpen(false);
-              }}
-              className={cn(
-                "block rounded-xl px-4 py-3 text-sm font-black uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black",
-                active === item.href
-                  ? "bg-primary/[0.12] text-white"
-                  : "text-white/70 hover:bg-white/10 hover:text-white",
-              )}
-            >
-              {item.label}
-            </a>
-          ))}
+          {navItems.map((item) => {
+            const mobileLinkClassName = cn(
+              "block rounded-xl px-4 py-3 text-sm font-black uppercase tracking-[0.16em] transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-black",
+              active === item.href
+                ? "bg-primary/[0.12] text-white"
+                : "text-white/70 hover:bg-white/10 hover:text-white",
+            );
+
+            if (item.href === HOME_HREF && !isOnHomepage) {
+              return (
+                <Link
+                  key={item.href}
+                  href="/"
+                  onClick={() => setOpen(false)}
+                  className={mobileLinkClassName}
+                >
+                  {item.label}
+                </Link>
+              );
+            }
+
+            return (
+              <a
+                key={item.href}
+                href={item.href}
+                onClick={(event) => {
+                  scrollToSection(event, item.href);
+                  setOpen(false);
+                }}
+                className={mobileLinkClassName}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </motion.div>
       ) : null}
     </motion.header>
