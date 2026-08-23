@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { TelemetrySnapshot } from "@/lib/telemetry/types";
 import { OptimizationPanel } from "@/components/admin/optimization-panel";
 import { MediaManager } from "@/components/admin/media-manager";
+import { GalleryReorder } from "@/components/admin/gallery-reorder";
 
 type Viewer = {
   email: string;
@@ -190,48 +191,8 @@ export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
               </table>
             </div>
           )}
-          {snapshot.byDevice.length > 0 && (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
-              <table className="min-w-full text-sm">
-                <thead className="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-white/45">
-                  <tr>
-                    <th className="px-4 py-3">Device Category</th>
-                    <th className="px-4 py-3">Events</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {snapshot.byDevice.map((row) => (
-                    <tr key={row.device} className="border-t border-white/8">
-                      <td className="px-4 py-3">{row.device}</td>
-                      <td className="px-4 py-3 tabular-nums">{row.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {(snapshot.byPointer.length > 0 || snapshot.byTouch.length > 0) && (
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {snapshot.byPointer.length > 0 ? (
-                <div className="overflow-x-auto rounded-xl border border-white/10">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-white/45">
-                      <tr>
-                        <th className="px-4 py-3">Pointer</th>
-                        <th className="px-4 py-3">Events</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {snapshot.byPointer.map((row) => (
-                        <tr key={row.pointer} className="border-t border-white/8">
-                          <td className="px-4 py-3">{row.pointer}</td>
-                          <td className="px-4 py-3 tabular-nums">{row.count}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : null}
+          {(snapshot.byTouch.length > 0 || snapshot.byReducedMotion.length > 0) && (
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {snapshot.byTouch.length > 0 ? (
                 <div className="overflow-x-auto rounded-xl border border-white/10">
                   <table className="min-w-full text-sm">
@@ -252,26 +213,26 @@ export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
                   </table>
                 </div>
               ) : null}
-            </div>
-          )}
-          {snapshot.byReducedMotion.length > 0 && (
-            <div className="mt-4 overflow-x-auto rounded-xl border border-white/10">
-              <table className="min-w-full text-sm">
-                <thead className="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-white/45">
-                  <tr>
-                    <th className="px-4 py-3">Motion Preference</th>
-                    <th className="px-4 py-3">Events</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {snapshot.byReducedMotion.map((row) => (
-                    <tr key={String(row.reducedMotion)} className="border-t border-white/8">
-                      <td className="px-4 py-3">{row.reducedMotion ? "Reduce motion" : "No preference"}</td>
-                      <td className="px-4 py-3 tabular-nums">{row.count}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {snapshot.byReducedMotion.length > 0 ? (
+                <div className="overflow-x-auto rounded-xl border border-white/10">
+                  <table className="min-w-full text-sm">
+                    <thead className="bg-white/[0.04] text-left text-xs uppercase tracking-wider text-white/45">
+                      <tr>
+                        <th className="px-4 py-3">Motion Preference</th>
+                        <th className="px-4 py-3">Events</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {snapshot.byReducedMotion.map((row) => (
+                        <tr key={String(row.reducedMotion)} className="border-t border-white/8">
+                          <td className="px-4 py-3">{row.reducedMotion ? "Reduce motion" : "No preference"}</td>
+                          <td className="px-4 py-3 tabular-nums">{row.count}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
             </div>
           )}
         </Section>
@@ -357,6 +318,10 @@ export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
           <div className="mt-4">
             <MediaManager />
           </div>
+        </Section>
+
+        <Section title="Gallery Order">
+          <GalleryReorder />
         </Section>
 
         <Section title="Admin Audit">

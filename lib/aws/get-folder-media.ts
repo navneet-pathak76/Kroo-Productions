@@ -1,7 +1,9 @@
 import "server-only";
 import { unstable_noStore as noStore } from "next/cache";
 import {
+  GetObjectCommand,
   ListObjectsV2Command,
+  PutObjectCommand,
   type _Object as S3Object,
 } from "@aws-sdk/client-s3";
 import { PROJECT_OPTIONS } from "@/lib/media-optimization/media-manifest-types";
@@ -31,6 +33,13 @@ const CDN_BASE_URL =
   process.env.NEXT_PUBLIC_S3_BASE_URL ??
   "https://d3uo687t366hok.cloudfront.net";
 const CDN_BASE = CDN_BASE_URL.replace(/\/$/, "");
+
+// Filename of the per-folder order manifest written by the admin
+// "Gallery Order" panel. Lives alongside the real media objects under
+// the same S3 prefix (e.g. `videos/gym/order.json`) and is always
+// excluded from the media listing — it must never be treated as, or
+// displayed as, a media item.
+const ORDER_MANIFEST_FILENAME = "order.json";
 
 function getExtension(key: string): string {
   const lastDot = key.lastIndexOf(".");
@@ -124,7 +133,50 @@ function uniquePrefixes(...prefixes: string[]): string[] {
   return [...new Set(prefixes.filter(Boolean))];
 }
 
-async function listAllObjects(prefix: string): Promise<S3Object[]> {
+export type ResolvedMediaPrefixes = {
+  projectSlug: string;
+  projectFolder: string;
+  prefixes: string[];
+};
+
+/**
+ * Resolves a project's real S3 prefixes, in probe order — the reusable
+ * core of what getFolderMedia used to do inline. Both the public gallery
+ * (getFolderMedia below) and the admin "Gallery Order" API routes call
+ * this so they always agree on exactly which S3 location a given
+ * portfolio page reads from.
+ *
+ * Canonical bucket structure — verified directly via `aws s3 ls` against
+ * the real bucket root, not just the console UI:
+ *
+ *   videos/gym/, videos/clothing/, videos/PRODUCT ADS/,
+ *   videos/AI VIDEOS/, videos/logo & graphics/, videos/FOOD/, etc.
+ *
+ * `videos/{folder}/` is the real, populated location and is tried
+ * FIRST. `media/{folder}/` (where the admin upload flow at
+ * app/api/admin/media/presign/route.ts writes) is tried second — today
+ * it only holds incidental test uploads, but stays in the list so any
+ * future admin-published media is picked up automatically once it's the
+ * only/first prefix with real content.
+ */
+export function resolveMediaPrefixes(folder: string): ResolvedMediaPrefixes {
+  const projectSlug = toProjectSlug(folder);
+  const projectFolder = resolveProjectFolder(folder, projectSlug);
+  const realFolder = REAL_FOLDER_OVERRIDES[projectSlug] ?? projectFolder;
+
+  const prefixes = uniquePrefixes(
+    `videos/${realFolder}/`,
+    `videos/${projectFolder}/`,
+    `videos/${normalizeSlug(folder)}/`,
+    `media/${realFolder}/`,
+    `media/${projectFolder}/`,
+    `media/${normalizeSlug(folder)}/`,
+  );
+
+  return { projectSlug, projectFolder, prefixes };
+}
+
+export async function listAllObjects(prefix: string): Promise<S3Object[]> {
   const config = getS3RuntimeConfig();
   const s3Client = getS3Client();
 
@@ -163,83 +215,57 @@ async function listAllObjects(prefix: string): Promise<S3Object[]> {
 }
 
 /**
- * Resolves the gallery for a project by listing the real S3 bucket
- * directly — the bucket is the single, unconditional source of truth.
- *
- * There is intentionally NO admin/DynamoDB-manifest priority layer and NO
- * static/fake fallback dataset: if S3 has one real video, the page shows
- * one video; if S3 has zero, the page shows zero with an explicit empty
- * state. An S3 failure is logged and treated as "no media found" — it
- * must never be silently upgraded into invented or stale placeholder
- * cards.
+ * Tries each candidate prefix in order and returns the first one that
+ * has real objects in it (the same probing behaviour previously inlined
+ * in getFolderMedia). Reused by the admin "Gallery Order" routes so the
+ * admin panel always lists exactly the same S3 location the public page
+ * will read from.
  */
-export async function getFolderMedia(
-  folder: string,
-  meta: { category: string; client: string; services: string[] },
-): Promise<MediaItem[]> {
-  noStore();
-
-  const projectSlug = toProjectSlug(folder);
-  const projectFolder = resolveProjectFolder(folder, projectSlug);
-
-  // Canonical bucket structure — verified directly via `aws s3 ls` against
-  // the real bucket root, not just the console UI (a console screenshot
-  // earlier looked like these were root-level folders, but the breadcrumb
-  // was actually one level deeper — this was double-checked with the CLI):
-  //
-  //   videos/gym/, videos/clothing/, videos/PRODUCT ADS/,
-  //   videos/AI VIDEOS/, videos/logo & graphics/, videos/FOOD/, etc.
-  //
-  // `videos/{folder}/` is the real, populated location and is tried
-  // FIRST. `media/{folder}/` (where the admin upload flow at
-  // app/api/admin/media/presign/route.ts writes) is tried second — today
-  // it only holds incidental test uploads, but stays in the list so any
-  // future admin-published media is picked up automatically once it's the
-  // only/first prefix with real content.
-  const realFolder = REAL_FOLDER_OVERRIDES[projectSlug] ?? projectFolder;
-  const prefixes = uniquePrefixes(
-    `videos/${realFolder}/`,
-    `videos/${projectFolder}/`,
-    `videos/${normalizeSlug(folder)}/`,
-    `media/${realFolder}/`,
-    `media/${projectFolder}/`,
-    `media/${normalizeSlug(folder)}/`,
-  );
-
-  console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
-
-  let objects: S3Object[] = [];
-  let usedPrefix = prefixes[0] ?? "";
-  try {
-    for (const prefix of prefixes) {
-      const listed = await listAllObjects(prefix);
-      console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-      if (listed.length > 0) {
-        objects = listed;
-        usedPrefix = prefix;
-        break;
-      }
+export async function locatePopulatedPrefix(
+  prefixes: string[],
+): Promise<{ prefix: string; objects: S3Object[] } | null> {
+  for (const prefix of prefixes) {
+    const listed = await listAllObjects(prefix);
+    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
+    if (listed.length > 0) {
+      return { prefix, objects: listed };
     }
-  } catch (error) {
-    const err = error as { name?: string; message?: string };
-    console.warn(
-      `[media] S3 listing threw for "${projectSlug}" (${err?.name ?? "Error"}: ${err?.message ?? String(error)}) — rendering empty state, not fake media.`,
-    );
-    return [];
   }
+  return prefixes.length > 0 ? { prefix: prefixes[0], objects: [] } : null;
+}
 
-  if (objects.length === 0) {
-    console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — rendering empty state.`);
-    return [];
-  }
+function isOrderManifestKey(key: string): boolean {
+  return (key.split("/").pop() ?? key) === ORDER_MANIFEST_FILENAME;
+}
 
+export type MediaEntry = {
+  key: string;
+  filename: string;
+  baseName: string;
+  mediaType: MediaType;
+  title: string;
+  url: string;
+};
+
+/**
+ * Converts raw S3 objects under a resolved prefix into the filtered,
+ * titled, publicly-addressable entries used by both the public gallery
+ * and the admin reorder panel, so the two always agree on what counts as
+ * "media" for a folder. The order manifest file itself (order.json) is
+ * always excluded here — it can never be listed or displayed as media.
+ */
+export function buildMediaEntries(
+  objects: S3Object[],
+  usedPrefix: string,
+  projectFolder: string,
+): MediaEntry[] {
   const folderLabel = toFolderLabel(projectFolder);
-
   const rejected: string[] = [];
 
-  const items = objects
+  const entries = objects
     .filter((object): object is S3Object & { Key: string } => {
       if (!object.Key || object.Key === usedPrefix) return false;
+      if (isOrderManifestKey(object.Key)) return false;
       const ext = getExtension(object.Key);
       const keep = IMAGE_EXTENSIONS.has(ext) || VIDEO_EXTENSIONS.has(ext);
       if (!keep) rejected.push(`${object.Key} (ext="${ext}")`);
@@ -249,17 +275,15 @@ export async function getFolderMedia(
       const key = object.Key;
       const ext = getExtension(key);
       const baseName = getBaseName(key);
-      const mediaType: MediaType = IMAGE_EXTENSIONS.has(ext)
-        ? "image"
-        : "video";
-      const url = toPublicUrl(key);
+      const mediaType: MediaType = IMAGE_EXTENSIONS.has(ext) ? "image" : "video";
 
       return {
+        key,
+        filename: key.split("/").pop() ?? key,
         baseName,
         mediaType,
         title: toTitle(baseName, folderLabel),
-        thumbnail: mediaType === "image" ? url : undefined,
-        video: mediaType === "video" ? url : undefined,
+        url: toPublicUrl(key),
       };
     })
     .sort((a, b) => {
@@ -273,17 +297,152 @@ export async function getFolderMedia(
     );
   }
 
-  const videos = items.map((item, index) => ({
+  return entries;
+}
+
+/**
+ * Reads the S3-stored per-folder order manifest (`<prefix>order.json`),
+ * written by the admin "Gallery Order" panel. A missing manifest (no
+ * order has ever been saved for this folder) is the normal, expected
+ * state and resolves to an empty array — never an error.
+ */
+export async function readOrderManifest(prefix: string): Promise<string[]> {
+  const config = getS3RuntimeConfig();
+  const client = getS3Client();
+  if (!config || !client) return [];
+
+  try {
+    const result = await client.send(
+      new GetObjectCommand({ Bucket: config.bucket, Key: `${prefix}${ORDER_MANIFEST_FILENAME}` }),
+    );
+    const body = await result.Body?.transformToString();
+    if (!body) return [];
+
+    const parsed = JSON.parse(body) as { order?: unknown };
+    if (!Array.isArray(parsed.order)) return [];
+    return parsed.order.filter((entry): entry is string => typeof entry === "string");
+  } catch (error) {
+    const err = error as { name?: string };
+    // NoSuchKey / NotFound just means no order has been saved yet for
+    // this folder — that's the default state, not a failure.
+    if (err?.name !== "NoSuchKey" && err?.name !== "NotFound") {
+      console.warn(
+        `[getFolderMedia] Failed to read order manifest at "${prefix}${ORDER_MANIFEST_FILENAME}"`,
+        error,
+      );
+    }
+    return [];
+  }
+}
+
+/**
+ * Persists the admin-chosen display order for a folder to
+ * `<prefix>order.json`. This only ever writes the small JSON manifest —
+ * it never renames, moves, copies, or deletes the actual S3 media
+ * objects in the folder.
+ */
+export async function writeOrderManifest(prefix: string, order: string[]): Promise<void> {
+  const config = getS3RuntimeConfig();
+  const client = getS3Client();
+  if (!config || !client) {
+    throw new Error("S3 is not configured — cannot save media order.");
+  }
+
+  await client.send(
+    new PutObjectCommand({
+      Bucket: config.bucket,
+      Key: `${prefix}${ORDER_MANIFEST_FILENAME}`,
+      Body: JSON.stringify({ order }, null, 2),
+      ContentType: "application/json",
+      CacheControl: "no-store",
+    }),
+  );
+}
+
+/**
+ * Applies a saved order to a list of media entries: entries named in
+ * `order` come first, in that order. Anything not listed — new uploads
+ * that haven't been manually reordered yet, or a manifest entry whose
+ * file no longer exists — falls back to its existing relative order and
+ * is appended after the explicitly-ordered entries. Filenames in `order`
+ * that no longer exist in `entries` (deleted directly from S3) are
+ * silently skipped.
+ */
+export function applySavedOrder<T extends { filename: string }>(entries: T[], order: string[]): T[] {
+  if (order.length === 0) return entries;
+
+  const byFilename = new Map(entries.map((entry) => [entry.filename, entry]));
+  const seen = new Set<string>();
+  const ordered: T[] = [];
+
+  for (const filename of order) {
+    const match = byFilename.get(filename);
+    if (match && !seen.has(filename)) {
+      ordered.push(match);
+      seen.add(filename);
+    }
+  }
+
+  const remaining = entries.filter((entry) => !seen.has(entry.filename));
+  return [...ordered, ...remaining];
+}
+
+/**
+ * Resolves the gallery for a project by listing the real S3 bucket
+ * directly — the bucket is the single, unconditional source of truth.
+ *
+ * There is intentionally NO admin/DynamoDB-manifest priority layer and NO
+ * static/fake fallback dataset: if S3 has one real video, the page shows
+ * one video; if S3 has zero, the page shows zero with an explicit empty
+ * state. An S3 failure is logged and treated as "no media found" — it
+ * must never be silently upgraded into invented or stale placeholder
+ * cards.
+ *
+ * On top of the live listing, an optional S3-stored `order.json`
+ * manifest (managed from the admin "Gallery Order" panel) is applied to
+ * control display order without ever renaming/moving the underlying S3
+ * objects — see applySavedOrder / readOrderManifest above.
+ */
+export async function getFolderMedia(
+  folder: string,
+  meta: { category: string; client: string; services: string[] },
+): Promise<MediaItem[]> {
+  noStore();
+
+  const { projectSlug, projectFolder, prefixes } = resolveMediaPrefixes(folder);
+
+  console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
+
+  let located: { prefix: string; objects: S3Object[] } | null;
+  try {
+    located = await locatePopulatedPrefix(prefixes);
+  } catch (error) {
+    const err = error as { name?: string; message?: string };
+    console.warn(
+      `[media] S3 listing threw for "${projectSlug}" (${err?.name ?? "Error"}: ${err?.message ?? String(error)}) — rendering empty state, not fake media.`,
+    );
+    return [];
+  }
+
+  if (!located || located.objects.length === 0) {
+    console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — rendering empty state.`);
+    return [];
+  }
+
+  const { prefix: usedPrefix, objects } = located;
+  const entries = buildMediaEntries(objects, usedPrefix, projectFolder);
+  const orderList = await readOrderManifest(usedPrefix);
+  const orderedEntries = applySavedOrder(entries, orderList);
+
+  return orderedEntries.map((entry, index) => ({
     id: index + 1,
-    title: item.title,
-    thumbnail: item.thumbnail,
-    video: item.video,
-    mediaType: item.mediaType,
+    title: entry.title,
+    thumbnail: entry.mediaType === "image" ? entry.url : undefined,
+    video: entry.mediaType === "video" ? entry.url : undefined,
+    mediaType: entry.mediaType,
     duration: "",
     category: meta.category,
     client: meta.client,
     services: meta.services,
   }));
-
-  return videos;
 }
