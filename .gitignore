@@ -8,3 +8,6 @@ dist
 *.tsbuildinfo
 ses-mailer_accessKeys.csv
 .DS_Store
+*.patch
+*.zip
+*.dmg
