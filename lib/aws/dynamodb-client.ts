@@ -69,3 +69,14 @@ export function getTelemetryTableName(): string | null {
 export function getMediaTableName(): string | null {
   return process.env.MEDIA_DYNAMODB_TABLE || null;
 }
+
+/**
+ * Table for anonymous visitor sessions + page views only. Kept separate
+ * from telemetry (web-vitals/errors) and media so its own TTL/retention
+ * sweep and its GSI1 (date-bucketed queries used by analytics/admin
+ * "recent visitors" listings) never interact with the other datasets.
+ * See docs/visitor-tracking-infra.md for the required table + GSI shape.
+ */
+export function getVisitorTableName(): string | null {
+  return process.env.VISITOR_DYNAMODB_TABLE || null;
+}

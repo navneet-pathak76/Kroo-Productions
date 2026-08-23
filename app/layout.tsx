@@ -2,6 +2,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
 import { CapabilityRoot } from "@/components/capability-root";
 import { TelemetryCollector } from "@/components/telemetry-collector";
+import { VisitorTracker } from "@/components/visitor-tracker";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -147,6 +148,7 @@ export default function RootLayout({
       <body>
         <CapabilityRoot />
         <TelemetryCollector />
+        <VisitorTracker />
         {children}
       </body>
 
