@@ -8,10 +8,34 @@ import type {
 const MAX_SESSIONS = 5_000;
 const MAX_PAGE_VIEWS_PER_SESSION = 500;
 
-const sessions = new Map<string, VisitorSessionRecord>();
-const pageViews = new Map<string, PageViewRecord[]>();
-// Insertion-ordered session ids, most-recent-last; used for cheap "recent" listing.
-const sessionOrder: string[] = [];
+/**
+ * Next.js dev mode can compile/require the same server module separately
+ * per route handler (each API route gets its own bundle), which means a
+ * plain module-level `const sessions = new Map()` can silently end up as
+ * TWO different Maps — one written to by /api/visitors/track, a
+ * different empty one read by /admin/visitors. Pinning the store to
+ * globalThis (the same fix Prisma's client uses for hot-reload dev
+ * instances) guarantees every route handler in this process shares the
+ * exact same Maps, in dev and in production alike.
+ */
+type VisitorMemoryStore = {
+  sessions: Map<string, VisitorSessionRecord>;
+  pageViews: Map<string, PageViewRecord[]>;
+  sessionOrder: string[];
+};
+
+const globalForVisitors = globalThis as unknown as { __visitorMemoryStore?: VisitorMemoryStore };
+
+const store: VisitorMemoryStore =
+  globalForVisitors.__visitorMemoryStore ??
+  (globalForVisitors.__visitorMemoryStore = {
+    sessions: new Map<string, VisitorSessionRecord>(),
+    pageViews: new Map<string, PageViewRecord[]>(),
+    // Insertion-ordered session ids, most-recent-last; used for cheap "recent" listing.
+    sessionOrder: [],
+  });
+
+const { sessions, pageViews, sessionOrder } = store;
 
 function touchOrder(sessionId: string): void {
   const idx = sessionOrder.indexOf(sessionId);
