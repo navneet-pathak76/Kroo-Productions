@@ -61,35 +61,35 @@ export const services = [
   {
     title: "Video Production",
     description:
-      "Commercial films, social launches, event stories, and performance-ready brand assets.",
+      "Commercials, social content, events, launches, and branded visual content.",
     icon: Clapperboard,
     span: "lg:col-span-2",
   },
   {
     title: "Film Production",
     description:
-      "Concept development, casting, crews, studio planning, lighting, and on-set direction.",
+      "Concept development, casting, crews, locations, lighting, and on-set direction.",
     icon: Camera,
     span: "lg:col-span-1",
   },
   {
     title: "Post Production",
     description:
-      "Editing, color, motion graphics, sound design, VFX supervision, and delivery masters.",
+      "Editing, colour, motion graphics, sound design, VFX, and final delivery.",
     icon: MonitorPlay,
     span: "lg:col-span-1",
   },
   {
     title: "Social Media",
     description:
-      "Social strategy, cutdown systems, paid creative, creator content, and launch analytics.",
+      "Content strategy, social creatives, creator content, campaigns, and platform-ready content.",
     icon: Megaphone,
     span: "lg:col-span-2",
   },
   {
   title: "AI Content Production",
   description:
-    "AI-powered commercials, cinematic visuals, product renders, virtual models, AI avatars, and branded content engineered for speed without compromising cinematic quality.",
+    "AI-powered visuals, commercials, product renders, virtual worlds, avatars, and branded content.",
   icon: Bot,
   span: "lg:col-span-2",
 },

@@ -14,6 +14,8 @@ import {
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Facebook,
   Instagram,
   Linkedin,
@@ -527,6 +529,21 @@ function SpatialCardStack<T>({
     }
   };
 
+  // ---- Nav-arrow buttons: same advance() the keyboard already uses,
+  // just wrapped with the same pause/resume-autoplay courtesy that
+  // hover/drag already get, so clicking an arrow doesn't fight the
+  // autoplay timer mid-transition. stopPropagation keeps the click
+  // from also being seen by the container's own pointer-drag handlers.
+  const handleArrowClick = useCallback(
+    (e: React.PointerEvent | React.MouseEvent, direction: 1 | -1) => {
+      e.stopPropagation();
+      pauseAutoplay();
+      advance(direction);
+      scheduleResume();
+    },
+    [pauseAutoplay, advance, scheduleResume],
+  );
+
   // ---- Card drag: writes carouselOffset in CARD-WIDTH units (not px) ----
   const handlePointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -664,7 +681,15 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
         tabIndex={0}
         onKeyDown={handleKeyDown}
         className={cn(
-          "relative mx-auto touch-pan-y select-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-black",
+          // `isolate` gives this container its own stacking context so the
+          // slot z-indexes below (up to 100, for the coverflow depth effect)
+          // are only ever compared against each other. Without it they had
+          // no closer positioned+z-indexed ancestor to be scoped by, so the
+          // active card (zIndex 100) could out-rank the fixed site nav
+          // (z-50) and paint on top of it — the reported "black patch"/
+          // overlap during scroll. This only adds containment; none of the
+          // relative depth ordering inside the carousel changes.
+          "relative isolate mx-auto touch-pan-y select-none rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-4 focus-visible:ring-offset-black",
           STAGE_CONFIG.heightClassName,
           "w-full",
           STAGE_CONFIG.maxWidthClassName,
@@ -697,6 +722,50 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
             </SpatialCard>
           ))}
         </motion.div>
+
+        {total > 1 && (
+          <>
+            <button
+              type="button"
+              aria-label="Previous project"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => handleArrowClick(e, -1)}
+              className="
+                group/arrow absolute left-1 top-1/2 z-[110] flex h-8 w-8 -translate-y-1/2
+                items-center justify-center rounded-full border border-white/15
+                bg-black/50 text-white/80 backdrop-blur-md transition duration-300
+                hover:border-primary/60 hover:bg-primary/15 hover:text-primary
+                active:scale-90
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
+                focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                sm:left-2 sm:h-10 sm:w-10
+                lg:left-4 lg:h-14 lg:w-14
+              "
+            >
+              <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+            </button>
+
+            <button
+              type="button"
+              aria-label="Next project"
+              onPointerDown={(e) => e.stopPropagation()}
+              onClick={(e) => handleArrowClick(e, 1)}
+              className="
+                group/arrow absolute right-1 top-1/2 z-[110] flex h-8 w-8 -translate-y-1/2
+                items-center justify-center rounded-full border border-white/15
+                bg-black/50 text-white/80 backdrop-blur-md transition duration-300
+                hover:border-primary/60 hover:bg-primary/15 hover:text-primary
+                active:scale-90
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary
+                focus-visible:ring-offset-2 focus-visible:ring-offset-black
+                sm:right-2 sm:h-10 sm:w-10
+                lg:right-4 lg:h-14 lg:w-14
+              "
+            >
+              <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6" />
+            </button>
+          </>
+        )}
       </div>
 
       <CarouselTimeline
@@ -1256,32 +1325,26 @@ function HeroSection() {
           </motion.p>
 <h1
   className="
-    leading-[0.96]
+    leading-[0.99]
     font-black
     tracking-tight
     max-w-[1550px]
-    text-[clamp(1.2rem,5.9cqw,3.4rem)]
-    sm:text-[clamp(1.2rem,6.8cqw,3.4rem)]
+    text-[clamp(1.2rem,5.9cqw,4.4rem)]
+    sm:text-[clamp(1.2rem,7cqw,3.2rem)]
   "
 >
-  IF YOU&apos;RE HERE TO HIRE US
+WE MAKE BRANDS
   <br />
-  <span>—WELCOME.</span>
-
+  LOOK IMPOSSIBLE TO IGNORE.
   <br />
-  <br />
-
-  IF YOU&apos;RE HERE FOR INSPIRATION
-  <br />
-  <span>—DIVE IN.</span>
+  
 </h1>
           <motion.p
             variants={fadeUp}
             custom={4}
             className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8"
           >
-            Kroo Production crafts cinematic visuals, branded storytelling, and
-            high-impact digital experiences for brands that move culture.
+            From commercial films to social content, we create cinematic visuals built to capture attention, shape perception and move people to act.
           </motion.p>
          <motion.div
           variants={fadeUp}
@@ -1389,9 +1452,8 @@ function ShowreelSection() {
     IT&apos;S A REASON TO HIRE US.
   </h2>
 
-  <p className="mt-6 max-w-md text-base leading-7 text-white/60">
-    Cinematic campaign systems, high-impact launch films, and motion-led
-    storytelling built to hold attention.
+  <p className="mt-6 max-w-md text-base leading-17 text-white/60">
+    Commercials, brand films, social campaigns and visual content crafted to turn attention into brand value.
   </p>
 </div>
       <div
@@ -1442,15 +1504,15 @@ function FoundersSection() {
      <div className="mx-auto mb-6 w-full px-0 sm:mb-10 lg:mb-14 lg:px-8" style={{ maxWidth: "1980px" }}>
       <div data-reveal>
         <p className="mb-3 text-lg font-black uppercase tracking-[0.32em] text-primary">
-          Meet the founders
+          Meet the TEAM
         </p>
         <h2 className="section-title max-w-[1200px] text-[clamp(1.05rem,4vw,3.75rem)] leading-[1.16] sm:text-[clamp(1.28rem,4vw,3.75rem)] sm:leading-[1.12] lg:text-[clamp(1.5rem,4.4vw,3.75rem)] lg:leading-[1.1]">
-            GOOD LUCK TO YOUR COMPETITORS.
+            BEHIND EVERY FRAME,
         <br />
-            YOU FOUND US FIRST.
+            A TEAM THAT CARES.
         </h2>
         <p className="mt-6 max-w-xl text-base leading-7 text-white/60">
-            A leadership team built around cinematic taste, production discipline, and modern distribution craft.
+            Meet the people bringing together creative direction, production and visual storytelling at Kroo.
         </p>
         </div>
       </div>
@@ -1596,9 +1658,9 @@ function ServicesSection() {
         eyebrow="What we do"
         title={
           <>
-            WE CREATE THE REASON
+            MORE THAN JUST PRODUCTION.
             <br />
-            PEOPLE REMEMBER YOU.
+            WE BUILD THE WHOLE PICTURE.
           </>
         }
         copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
@@ -1639,7 +1701,7 @@ function ServicesSection() {
 }
 function ProjectsSection() {
   return (
-    <section id="work" className="scroll-mt-28 overflow-x-hidden py-5 sm:py-10 lg:py-20">
+    <section id="work" className="relative isolate scroll-mt-28 overflow-x-hidden py-5 sm:py-10 lg:py-20">
       {/* Top Marquee */}
       <div className="mb-10 overflow-hidden border-y border-primary/20 py-4">
         <div className="animate-project-marquee whitespace-nowrap text-sm font-black uppercase tracking-[0.35em] text-primary">
@@ -1653,9 +1715,9 @@ function ProjectsSection() {
         eyebrow="Featured Projects"
         title={
           <>
-            SCROLL IF YOU&apos;RE CURIOUS.
+            WE CREATE THE VISION.
             <br />
-            STOP IF YOU&apos;RE IMPRESSED.
+            YOU GET THE ATTENTION.
           </>
         }
         copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
@@ -1686,10 +1748,6 @@ function ProjectsSection() {
 
               <div className="absolute inset-0 bg-black/35" />
 
-              <div className="absolute left-3 top-3 max-w-[calc(100%-2rem)] rounded-full border border-white/20 px-2.5 py-1.5 text-[0.6rem] font-black uppercase tracking-[0.1em] text-white/80 sm:left-8 sm:top-8 sm:px-4 sm:py-2 sm:text-xs sm:tracking-[0.18em]">
-                {project.category}
-              </div>
-
               {/*
                 Title/case-label/CTA render ONLY for the active (offset 0)
                 card. This carousel deliberately overlaps neighboring cards
@@ -1705,10 +1763,6 @@ function ProjectsSection() {
               */}
               {isActive && (
                 <div className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8">
-                  <p className="mb-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-primary sm:mb-3 sm:text-sm sm:tracking-[0.2em]">
-                    Case 0{(index % projects.length) + 1}
-                  </p>
-
                   <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-lg font-black uppercase leading-[1.08] sm:text-4xl lg:text-5xl">
                     {project.title}
                   </h3>
@@ -1752,9 +1806,9 @@ function TestimonialsSection() {
     </p>
 
     <h2 className="section-title max-w-[700px] text-[clamp(1rem,6.2cqw,3.25rem)] leading-[1.16] sm:text-[clamp(1.2rem,6.2cqw,3.25rem)] sm:leading-[1.12] lg:text-[clamp(1.4rem,7.2cqw,3.25rem)] lg:leading-[1.1]">
-      OUR WORK SPEAKS.
+      DON'T TAKE OUR WORD.
       <br />
-      THEY CONFIRM.
+      HEAR IT FROM THEM.
     </h2>
   </div>
 
