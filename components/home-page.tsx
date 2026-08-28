@@ -319,10 +319,17 @@ function SpatialCardStack<T>({
 
   const wheelCooldown = useRef(false);
   const wheelAccum = useRef(0);
-  // Timestamp (performance.now()) until which wheel events on the carousel
-  // are ignored entirely — armed briefly whenever a gesture is released at
-  // a carousel boundary so the page can actually scroll past the section.
+  // Timestamp (performance.now()) until which wheel events are ignored
+  // entirely — armed briefly whenever a gesture is released at a carousel
+  // boundary so the page can actually scroll past the section instead of
+  // being re-captured by the very next tick.
   const wheelReleaseUntil = useRef(0);
+  // Is the Spatial Card section currently the "active" section of the
+  // viewport (per IntersectionObserver, below)? Wheel handling is only
+  // ever attached while this is true — see the effect near the wheel
+  // handler for why this replaces the old "cursor must be over the card"
+  // requirement without turning into a permanent global wheel hijack.
+  const [sectionActive, setSectionActive] = useState(false);
   const effectiveReducedMotion =
     reducedMotion ||
     capability.reducedMotion ||
@@ -484,9 +491,30 @@ function SpatialCardStack<T>({
     };
   }, [startAutoplay, effectiveReducedMotion]);
 
+  // SECTION ACTIVATION: the carousel should capture wheel input whenever
+  // it's the section the user is actually looking at — not only when the
+  // cursor happens to be over the card. A single 0.4 threshold gives a
+  // clean boolean ("at least ~40% of the carousel is in view") that flips
+  // on as the user scrolls down into it and off again once they've scrolled
+  // far enough past it, with no separate rootMargin math to keep in sync
+  // with the section's own (responsive) height.
   useEffect(() => {
     const node = containerRef.current;
-    if (!node || !canUseWheelNavigation) return;
+    if (!node || !canUseWheelNavigation) {
+      setSectionActive(false);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setSectionActive(entry.isIntersecting),
+      { threshold: 0.4 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [canUseWheelNavigation]);
+
+  useEffect(() => {
+    if (!canUseWheelNavigation || !sectionActive) return;
 
     const onWheel = (e: WheelEvent) => {
       // BOUNDARY RELEASE WINDOW: after the carousel lets a gesture fall
@@ -545,9 +573,16 @@ function SpatialCardStack<T>({
       }, 600);
     };
 
-    node.addEventListener("wheel", onWheel, { passive: false });
-    return () => node.removeEventListener("wheel", onWheel);
-  }, [advance, canUseWheelNavigation, active, total]);
+    // Attached to `window`, not the carousel element: the whole point is
+    // that the cursor no longer needs to be over the card for this to
+    // work. This is NOT a permanent global hijack, though — the effect
+    // only runs (and the listener only exists) while `sectionActive` is
+    // true, i.e. while the IntersectionObserver above says this section
+    // is the one currently in view. Everywhere else on the site, at every
+    // other time, no listener is attached at all.
+    window.addEventListener("wheel", onWheel, { passive: false });
+    return () => window.removeEventListener("wheel", onWheel);
+  }, [advance, canUseWheelNavigation, sectionActive, active, total]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
