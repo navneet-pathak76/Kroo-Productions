@@ -815,11 +815,19 @@ function SpatialCard({
   // required to actually block the browser's default vertical scroll for
   // the ticks this card decides to consume.
   //
+  // Consumed ticks (cooldown swallow or a successful step) call BOTH
+  // preventDefault() AND stopPropagation(). preventDefault() alone isn't
+  // enough here: the site's Lenis smooth-scroll instance (hooks/use-lenis)
+  // has its own wheel listener on window that reads deltaY and drives a
+  // virtual scroll position independent of the browser's native default
+  // action, so it still moved the page on every consumed tick even with
+  // preventDefault() called — stopPropagation() is what stops the event
+  // from reaching that listener at all.
+  //
   // At a boundary (onWheelStep returns false) this deliberately does NOT
   // call preventDefault() or stopPropagation(): the event is left to bubble
-  // and run through its normal path (including the site's Lenis smooth
-  // scroll listener on window), so scrolling past the section feels like
-  // ordinary page scrolling rather than a jump-cut.
+  // and run through its normal path (including Lenis), so scrolling past
+  // the section feels like ordinary page scrolling rather than a jump-cut.
   const cardRef = useRef<HTMLDivElement>(null);
   const onWheelStepRef = useRef(onWheelStep);
   onWheelStepRef.current = onWheelStep;
@@ -838,8 +846,10 @@ function SpatialCard({
       if (cooldown) {
         // Mid-transition from the previous step: swallow this tick so it
         // doesn't bleed into a simultaneous page scroll, but only while
-        // the cursor is still over the card.
+        // the cursor is still over the card. stopPropagation is required
+        // here too — see note below.
         e.preventDefault();
+        e.stopPropagation();
         return;
       }
 
@@ -849,7 +859,16 @@ function SpatialCard({
       const handled = onWheelStepRef.current(direction);
       if (!handled) return; // at a boundary — hand off to normal page scroll
 
+      // preventDefault() alone stops the browser's native scroll, but
+      // Lenis (see hooks/use-lenis.ts) drives its virtual smooth-scroll
+      // from its OWN wheel listener on window — which still receives this
+      // event via bubbling regardless of preventDefault(), since Lenis
+      // doesn't check defaultPrevented before applying wheelMultiplier to
+      // its scroll target. That's what caused the horizontal carousel
+      // move AND vertical page scroll to happen at once. stopPropagation()
+      // keeps the event from ever reaching Lenis's listener.
       e.preventDefault();
+      e.stopPropagation();
       cooldown = true;
       window.setTimeout(() => {
         cooldown = false;
