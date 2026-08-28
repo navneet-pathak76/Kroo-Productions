@@ -513,6 +513,30 @@ function SpatialCardStack<T>({
     return () => observer.disconnect();
   }, [canUseWheelNavigation]);
 
+  // LENIS HAND-OFF: the site's smooth-scroll (Lenis, see useLenis()) owns
+  // its own separate `wheel` listener and converts wheel deltas straight
+  // into a page scroll target — it does this independently of whatever
+  // this component's own `onWheel` listener (below) decides, and it does
+  // NOT check `event.defaultPrevented`. So even though the handler below
+  // calls preventDefault() while it's consuming a gesture, Lenis was
+  // already scrolling the page from the very same event, which is exactly
+  // the reported bug ("page continues scrolling instead of the carousel").
+  // Lenis does honor a `data-lenis-prevent-wheel` marker on any element in
+  // the event's composed path, so toggling it on <body> for precisely the
+  // window this component is already capturing wheel input (same
+  // `canUseWheelNavigation && sectionActive` gate as the listener effect
+  // right below) hands wheel control over to the carousel without ever
+  // disabling Lenis globally or outside this section being active.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!canUseWheelNavigation || !sectionActive) return;
+
+    document.body.setAttribute("data-lenis-prevent-wheel", "");
+    return () => {
+      document.body.removeAttribute("data-lenis-prevent-wheel");
+    };
+  }, [canUseWheelNavigation, sectionActive]);
+
   useEffect(() => {
     if (!canUseWheelNavigation || !sectionActive) return;
 
