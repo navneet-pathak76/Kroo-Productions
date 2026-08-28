@@ -317,19 +317,6 @@ function SpatialCardStack<T>({
   const spreadRef = useRef(spread);
   spreadRef.current = spread;
 
-  const wheelCooldown = useRef(false);
-  const wheelAccum = useRef(0);
-  // Timestamp (performance.now()) until which wheel events are ignored
-  // entirely — armed briefly whenever a gesture is released at a carousel
-  // boundary so the page can actually scroll past the section instead of
-  // being re-captured by the very next tick.
-  const wheelReleaseUntil = useRef(0);
-  // Is the Spatial Card section currently the "active" section of the
-  // viewport (per IntersectionObserver, below)? Wheel handling is only
-  // ever attached while this is true — see the effect near the wheel
-  // handler for why this replaces the old "cursor must be over the card"
-  // requirement without turning into a permanent global wheel hijack.
-  const [sectionActive, setSectionActive] = useState(false);
   const effectiveReducedMotion =
     reducedMotion ||
     capability.reducedMotion ||
@@ -491,122 +478,26 @@ function SpatialCardStack<T>({
     };
   }, [startAutoplay, effectiveReducedMotion]);
 
-  // SECTION ACTIVATION: the carousel should capture wheel input whenever
-  // it's the section the user is actually looking at — not only when the
-  // cursor happens to be over the card. A single 0.4 threshold gives a
-  // clean boolean ("at least ~40% of the carousel is in view") that flips
-  // on as the user scrolls down into it and off again once they've scrolled
-  // far enough past it, with no separate rootMargin math to keep in sync
-  // with the section's own (responsive) height.
-  useEffect(() => {
-    const node = containerRef.current;
-    if (!node || !canUseWheelNavigation) {
-      setSectionActive(false);
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => setSectionActive(entry.isIntersecting),
-      { threshold: 0.4 },
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [canUseWheelNavigation]);
-
-  // LENIS HAND-OFF: the site's smooth-scroll (Lenis, see useLenis()) owns
-  // its own separate `wheel` listener and converts wheel deltas straight
-  // into a page scroll target — it does this independently of whatever
-  // this component's own `onWheel` listener (below) decides, and it does
-  // NOT check `event.defaultPrevented`. So even though the handler below
-  // calls preventDefault() while it's consuming a gesture, Lenis was
-  // already scrolling the page from the very same event, which is exactly
-  // the reported bug ("page continues scrolling instead of the carousel").
-  // Lenis does honor a `data-lenis-prevent-wheel` marker on any element in
-  // the event's composed path, so toggling it on <body> for precisely the
-  // window this component is already capturing wheel input (same
-  // `canUseWheelNavigation && sectionActive` gate as the listener effect
-  // right below) hands wheel control over to the carousel without ever
-  // disabling Lenis globally or outside this section being active.
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (!canUseWheelNavigation || !sectionActive) return;
-
-    document.body.setAttribute("data-lenis-prevent-wheel", "");
-    return () => {
-      document.body.removeAttribute("data-lenis-prevent-wheel");
-    };
-  }, [canUseWheelNavigation, sectionActive]);
-
-  useEffect(() => {
-    if (!canUseWheelNavigation || !sectionActive) return;
-
-    const onWheel = (e: WheelEvent) => {
-      // BOUNDARY RELEASE WINDOW: after the carousel lets a gesture fall
-      // through to the page at the first/last project (below), don't
-      // immediately re-trap the very next wheel tick — that would just
-      // yank the page back after a few px of scroll. Let the release
-      // window run out first so normal vertical scrolling can actually
-      // carry the user past the section instead of stalling at the edge.
-      if (performance.now() < wheelReleaseUntil.current) return;
-
-      const dx = e.deltaX;
-      const dy = e.deltaY;
-      // Mac trackpads report deltaX/deltaY simultaneously (diagonal +
-      // momentum); take whichever axis is actually dominant for this
-      // event rather than assuming deltaY is always the signal.
-      const horizontal = e.shiftKey || Math.abs(dx) > Math.abs(dy);
-      const delta = horizontal ? (Math.abs(dx) > Math.abs(dy) ? dx : dy) : dy;
-
-      if (wheelCooldown.current) {
-        // Still mid-transition from the last step — swallow this tick so
-        // it doesn't bleed into a simultaneous page scroll, but don't
-        // accumulate/act on it.
-        e.preventDefault();
-        return;
-      }
-
-      wheelAccum.current += delta;
-
-      const THRESHOLD = 18;
-      if (Math.abs(wheelAccum.current) < THRESHOLD) {
-        // Below the intent threshold: still converting this gesture into
-        // horizontal movement, so keep it from also scrolling the page.
-        e.preventDefault();
-        return;
-      }
-
-      const direction = wheelAccum.current > 0 ? 1 : -1;
+  // CARD-ONLY WHEEL NAVIGATION: there is no section-wide scroll lock —
+  // vertical page scrolling is untouched everywhere except while the
+  // pointer is physically over the active card's own DOM node (the
+  // listener that reads this is attached directly to that node inside
+  // SpatialCard, not to window/document). This callback is the ONE place
+  // that decides whether a wheel tick over the card advances the carousel
+  // or should fall through to the page: at either boundary (first card +
+  // wheel up, last card + wheel down) it returns false and does NOT
+  // advance, so the caller knows to leave the event alone and let normal
+  // vertical scrolling continue.
+  const handleWheelStep = useCallback(
+    (direction: 1 | -1): boolean => {
       const atStart = direction === -1 && active === 0;
       const atEnd = direction === 1 && active === total - 1;
-
-      if (atStart || atEnd) {
-        // NO SCROLL TRAP: at either end, don't wrap and don't
-        // preventDefault — hand this gesture back to the browser so the
-        // page keeps scrolling vertically past the section.
-        wheelAccum.current = 0;
-        wheelReleaseUntil.current = performance.now() + 700;
-        return;
-      }
-
-      e.preventDefault();
-      wheelAccum.current = 0;
-      wheelCooldown.current = true;
+      if (atStart || atEnd) return false;
       advance(direction);
-      window.setTimeout(() => {
-        wheelCooldown.current = false;
-      }, 600);
-    };
-
-    // Attached to `window`, not the carousel element: the whole point is
-    // that the cursor no longer needs to be over the card for this to
-    // work. This is NOT a permanent global hijack, though — the effect
-    // only runs (and the listener only exists) while `sectionActive` is
-    // true, i.e. while the IntersectionObserver above says this section
-    // is the one currently in view. Everywhere else on the site, at every
-    // other time, no listener is attached at all.
-    window.addEventListener("wheel", onWheel, { passive: false });
-    return () => window.removeEventListener("wheel", onWheel);
-  }, [advance, canUseWheelNavigation, sectionActive, active, total]);
+      return true;
+    },
+    [active, total, advance],
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
@@ -812,6 +703,8 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               reducedMotion={effectiveReducedMotion}
               carouselOffsetSpring={carouselOffsetSpring}
               spread={spread}
+              onWheelStep={handleWheelStep}
+              wheelNavigationEnabled={canUseWheelNavigation}
             >
               {renderCard(item, index, offset === 0 && !isAnimating)}
             </SpatialCard>
@@ -885,6 +778,8 @@ function SpatialCard({
   reducedMotion,
   carouselOffsetSpring,
   spread,
+  onWheelStep,
+  wheelNavigationEnabled,
 }: {
   offset: number;
   isActive: boolean;
@@ -893,12 +788,77 @@ function SpatialCard({
   reducedMotion: boolean;
   carouselOffsetSpring: MotionValue<number>;
   spread: number;
+  /** Try to advance the shared carousel by one step. Returns false at a
+   *  boundary (first/last card in that direction) so the caller knows NOT
+   *  to swallow the wheel event — letting it fall through to normal page
+   *  scroll instead. */
+  onWheelStep: (direction: 1 | -1) => boolean;
+  wheelNavigationEnabled: boolean;
 }) {
   const clampedOffset = Math.max(-3, Math.min(3, offset)) as SlotOffset;
   const style = useMemo(
     () => getSlotStyle(clampedOffset, spread),
     [clampedOffset, spread],
   );
+
+  // CARD-SCOPED WHEEL HANDLER. Only the active card is ever hit-testable
+  // (pointerEvents below is "none" for every other slot), so attaching a
+  // native, non-passive `wheel` listener directly to THIS node — instead
+  // of window/document — means the carousel only ever reacts while the
+  // cursor is actually over the visible card thumbnail, and every other
+  // wheel event on the page (above/below/beside the cards, over the
+  // section text, over the arrows, etc.) is left completely untouched.
+  //
+  // React's own onWheel prop is registered passively (perf optimization
+  // since React 17), so calling preventDefault() from it is silently
+  // ignored — a plain addEventListener with `{ passive: false }` is
+  // required to actually block the browser's default vertical scroll for
+  // the ticks this card decides to consume.
+  //
+  // At a boundary (onWheelStep returns false) this deliberately does NOT
+  // call preventDefault() or stopPropagation(): the event is left to bubble
+  // and run through its normal path (including the site's Lenis smooth
+  // scroll listener on window), so scrolling past the section feels like
+  // ordinary page scrolling rather than a jump-cut.
+  const cardRef = useRef<HTMLDivElement>(null);
+  const onWheelStepRef = useRef(onWheelStep);
+  onWheelStepRef.current = onWheelStep;
+
+  useEffect(() => {
+    const node = cardRef.current;
+    if (!node || !isActive || !wheelNavigationEnabled) return;
+
+    // Short debounce so one fast trackpad/Magic Mouse gesture (which can
+    // fire dozens of high-resolution wheel ticks) advances a single card
+    // instead of racing through several at once. Reset whenever this
+    // effect re-runs (i.e. whenever this card becomes the active one).
+    let cooldown = false;
+
+    const onWheel = (e: WheelEvent) => {
+      if (cooldown) {
+        // Mid-transition from the previous step: swallow this tick so it
+        // doesn't bleed into a simultaneous page scroll, but only while
+        // the cursor is still over the card.
+        e.preventDefault();
+        return;
+      }
+
+      const direction = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+      if (direction === 0) return;
+
+      const handled = onWheelStepRef.current(direction);
+      if (!handled) return; // at a boundary — hand off to normal page scroll
+
+      e.preventDefault();
+      cooldown = true;
+      window.setTimeout(() => {
+        cooldown = false;
+      }, 550);
+    };
+
+    node.addEventListener("wheel", onWheel, { passive: false });
+    return () => node.removeEventListener("wheel", onWheel);
+  }, [isActive, wheelNavigationEnabled]);
 
   // NOTE ON STRUCTURE: three fix attempts on this same node all failed
   // identically on iOS Safari — a "-50%" transform, an equivalent px
@@ -922,6 +882,7 @@ function SpatialCard({
 
   return (
     <motion.div
+      ref={cardRef}
       className="absolute left-1/2 top-1/2 flex-none"
       style={{
         width: `${cardWidth}px`,
