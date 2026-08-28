@@ -319,6 +319,10 @@ function SpatialCardStack<T>({
 
   const wheelCooldown = useRef(false);
   const wheelAccum = useRef(0);
+  // Timestamp (performance.now()) until which wheel events on the carousel
+  // are ignored entirely — armed briefly whenever a gesture is released at
+  // a carousel boundary so the page can actually scroll past the section.
+  const wheelReleaseUntil = useRef(0);
   const effectiveReducedMotion =
     reducedMotion ||
     capability.reducedMotion ||
@@ -485,22 +489,54 @@ function SpatialCardStack<T>({
     if (!node || !canUseWheelNavigation) return;
 
     const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      if (wheelCooldown.current) return;
+      // BOUNDARY RELEASE WINDOW: after the carousel lets a gesture fall
+      // through to the page at the first/last project (below), don't
+      // immediately re-trap the very next wheel tick — that would just
+      // yank the page back after a few px of scroll. Let the release
+      // window run out first so normal vertical scrolling can actually
+      // carry the user past the section instead of stalling at the edge.
+      if (performance.now() < wheelReleaseUntil.current) return;
 
       const dx = e.deltaX;
       const dy = e.deltaY;
+      // Mac trackpads report deltaX/deltaY simultaneously (diagonal +
+      // momentum); take whichever axis is actually dominant for this
+      // event rather than assuming deltaY is always the signal.
       const horizontal = e.shiftKey || Math.abs(dx) > Math.abs(dy);
-      wheelAccum.current += horizontal
-        ? Math.abs(dx) > Math.abs(dy)
-          ? dx
-          : dy
-        : dy;
+      const delta = horizontal ? (Math.abs(dx) > Math.abs(dy) ? dx : dy) : dy;
+
+      if (wheelCooldown.current) {
+        // Still mid-transition from the last step — swallow this tick so
+        // it doesn't bleed into a simultaneous page scroll, but don't
+        // accumulate/act on it.
+        e.preventDefault();
+        return;
+      }
+
+      wheelAccum.current += delta;
 
       const THRESHOLD = 18;
-      if (Math.abs(wheelAccum.current) < THRESHOLD) return;
+      if (Math.abs(wheelAccum.current) < THRESHOLD) {
+        // Below the intent threshold: still converting this gesture into
+        // horizontal movement, so keep it from also scrolling the page.
+        e.preventDefault();
+        return;
+      }
 
       const direction = wheelAccum.current > 0 ? 1 : -1;
+      const atStart = direction === -1 && active === 0;
+      const atEnd = direction === 1 && active === total - 1;
+
+      if (atStart || atEnd) {
+        // NO SCROLL TRAP: at either end, don't wrap and don't
+        // preventDefault — hand this gesture back to the browser so the
+        // page keeps scrolling vertically past the section.
+        wheelAccum.current = 0;
+        wheelReleaseUntil.current = performance.now() + 700;
+        return;
+      }
+
+      e.preventDefault();
       wheelAccum.current = 0;
       wheelCooldown.current = true;
       advance(direction);
@@ -511,7 +547,7 @@ function SpatialCardStack<T>({
 
     node.addEventListener("wheel", onWheel, { passive: false });
     return () => node.removeEventListener("wheel", onWheel);
-  }, [advance, canUseWheelNavigation]);
+  }, [advance, canUseWheelNavigation, active, total]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowLeft") {
@@ -1733,11 +1769,30 @@ function ProjectsSection() {
         items={projects}
         getKey={(project, index) => `${project.title}-${index}`}
         renderCard={(project, index, isActive) => (
-          <Link
-            href={project.href}
-            className="group relative block w-full overflow-hidden rounded-md border border-white/10 bg-black"
-          >
-            <div className="relative aspect-[1.15] overflow-hidden">
+          <div className="group relative block w-full overflow-hidden rounded-md border border-white/10 bg-black">
+            {/*
+              Whole-card click target (image / title / empty space), kept for
+              the existing "click anywhere on the card" UX. It sits BELOW the
+              View Project button (z-0, earlier in the DOM) and is skipped in
+              tab order — the visible View Project link below is the real,
+              independently-focusable control for keyboard/AT users, so
+              there's only one meaningful stop per card, not a duplicate.
+            */}
+            <Link
+              href={project.href}
+              aria-hidden="true"
+              tabIndex={-1}
+              className="absolute inset-0 z-0"
+            />
+
+            {/*
+              pointer-events-none: this whole block (image, overlay, title)
+              is purely visual. Clicks fall through it to the background
+              link above; the View Project button below explicitly opts
+              back in with pointer-events-auto so it — and ONLY it — is a
+              separately hoverable/clickable target.
+            */}
+            <div className="pointer-events-none relative aspect-[1.15] overflow-hidden">
               <Image
                 src={project.image}
                 alt={project.title}
@@ -1767,17 +1822,42 @@ function ProjectsSection() {
                     {project.title}
                   </h3>
 
-                  <div className="mt-3 sm:mt-6">
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary bg-primary/10 px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.1em] text-white transition-all duration-300 group-hover:bg-primary group-hover:text-black sm:gap-2 sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.14em]">
+                  {/*
+                    Independent button: its own <Link>, its own hover /
+                    focus-visible / active states, driven purely by native
+                    `:hover`/`:focus-visible` on THIS element — never
+                    group-hover from the card. That's what makes hovering
+                    the image/title no longer light up the button, while
+                    hovering the button itself still does, and moving off
+                    it turns the state off immediately (native browser hit
+                    testing, no extra JS needed).
+                  */}
+                  <div className="pointer-events-auto relative z-10 mt-3 sm:mt-6">
+                    <Link
+                      href={project.href}
+                      className="
+                        inline-flex items-center gap-1.5 rounded-full
+                        border border-white/25 bg-black/40 px-3.5 py-1.5
+                        text-[10px] font-black uppercase tracking-[0.1em]
+                        text-white backdrop-blur-sm transition-colors
+                        duration-[220ms] ease-out
+                        hover:border-primary hover:bg-primary/10 hover:text-primary
+                        focus-visible:outline-none focus-visible:ring-2
+                        focus-visible:ring-primary focus-visible:ring-offset-2
+                        focus-visible:ring-offset-black
+                        active:bg-primary/15
+                        sm:gap-2 sm:px-5 sm:py-2 sm:text-xs sm:tracking-[0.14em]
+                      "
+                    >
                       View Project
                       <ArrowRight size={14} className="sm:hidden" />
                       <ArrowRight size={16} className="hidden sm:block" />
-                    </span>
+                    </Link>
                   </div>
                 </div>
               )}
             </div>
-          </Link>
+          </div>
         )}
       />
     </section>
@@ -1806,7 +1886,7 @@ function TestimonialsSection() {
     </p>
 
     <h2 className="section-title max-w-[700px] text-[clamp(1rem,6.2cqw,3.25rem)] leading-[1.16] sm:text-[clamp(1.2rem,6.2cqw,3.25rem)] sm:leading-[1.12] lg:text-[clamp(1.4rem,7.2cqw,3.25rem)] lg:leading-[1.1]">
-      DON'T TAKE OUR WORD.
+      DON&apos;T TAKE OUR WORD.
       <br />
       HEAR IT FROM THEM.
     </h2>

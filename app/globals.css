@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --font-geist-sans: "Geist", "Satoshi", "General Sans", "Inter", "Arial", sans-serif;
-  --font-geist-mono: "Geist Mono", "SFMono-Regular", "Consolas", monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Consolas", monospace;
   --background: 0 0% 1%;
   --foreground: 0 0% 98%;
   --muted: 0 0% 8%;
@@ -39,6 +39,10 @@ body {
     radial-gradient(circle at 15% 42%, rgba(255, 77, 18, 0.08), transparent 26rem),
     #020202;
   color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "ss01", "cv01", "cv11";
 }
 
@@ -67,7 +71,7 @@ textarea {
     font-size: clamp(3.35rem, 9.1vw, 10.6rem);
     line-height: 0.8;
     letter-spacing: 0;
-    font-weight: 950;
+    font-weight: 900;
     text-transform: uppercase;
   }
 

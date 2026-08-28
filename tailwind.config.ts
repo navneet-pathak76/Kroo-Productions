@@ -48,8 +48,8 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"],
-        mono: ["var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-sans)"],
+        mono: ["var(--font-mono)"],
       },
       letterSpacing: {
         mega: "0.12em",

@@ -1,9 +1,22 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import { CapabilityRoot } from "@/components/capability-root";
 import { TelemetryCollector } from "@/components/telemetry-collector";
 import { VisitorTracker } from "@/components/visitor-tracker";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  // 400-800 cover the standard hierarchy (body -> hero headings). 900 is
+  // loaded too because the existing design uses font-black/950 for display
+  // headlines (.headline, .section-title) — loading it as a real static
+  // weight avoids the browser synthesizing a fake bold on top of 800.
+  weight: ["400", "500", "600", "700", "800", "900"],
+  variable: "--font-inter",
+  display: "swap",
+  preload: true,
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.krooproduction.in"),
@@ -135,7 +148,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <head>
         <script
           type="application/ld+json"
