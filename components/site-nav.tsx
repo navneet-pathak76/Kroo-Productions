@@ -95,7 +95,21 @@ export function SiteNav() {
 
   return (
     <motion.header
-      className="fixed left-0 right-0 top-0 z-50 px-4 py-4 sm:px-6"
+      className={cn(
+        "fixed left-0 right-0 top-0 z-50 px-4 py-4 sm:px-6",
+        // The pill (<nav> below) only ever covers ITS OWN bounding box —
+        // the header's own px-4/py-4 padding around the pill, and the
+        // corner gaps left by its rounded-full shape, were fully
+        // transparent. On mobile/coarse-pointer that let scrolling
+        // content (the hero CTA row, section headings, etc.) show
+        // through in that gap even with the pill itself opaque — visible
+        // as content "peeking" above/below/around the pill rather than
+        // cleanly disappearing behind the header. A solid backdrop across
+        // the WHOLE fixed header box (not just the pill) closes that gap.
+        // Desktop/hover-capable keeps the fully transparent surrounding
+        // padding — this is a touch/mobile-only fix.
+        reduceEffects && "bg-black/[0.96]",
+      )}
       initial={{ y: -28, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.75, delay: 1.85, ease: [0.22, 1, 0.36, 1] }}
