@@ -47,15 +47,63 @@ export function SiteNav() {
     capability.performanceTier === "LOW" ||
     capability.pointer === "coarse";
 
+  /**
+   * HIDE-ON-SCROLL-DOWN. No amount of header opacity/background fixing
+   * can prevent a fixed header from being mid-collision with SOME piece
+   * of scrolling content at SOME scroll offset — that's inherent to
+   * "content passes underneath a fixed overlay", and screenshots kept
+   * showing it (most visibly, the hero's CTA row half-behind the header)
+   * regardless of how solid the header's own background was made. The
+   * actual fix is not to be sitting there to collide with in the first
+   * place: the header slides out of view the moment the user scrolls
+   * down past the very top, and slides back the moment they scroll up
+   * (or land back near the top) — so it's never overlapping content
+   * mid-transition, and reappears instantly whenever they want the nav.
+   */
+  const [headerHidden, setHeaderHidden] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
+  const headerHiddenRef = useRef(false);
+  const lastScrollY = useRef(0);
+  const openRef = useRef(open);
+  openRef.current = open;
+
+  // Force the header visible whenever the mobile menu is opened — no
+  // reason to let it be mid-hide (or hide while it's open) since the
+  // menu itself lives inside this header.
+  useEffect(() => {
+    if (open) {
+      headerHiddenRef.current = false;
+      setHeaderHidden(false);
+    }
+  }, [open]);
+
   useEffect(() => {
     let raf = 0;
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const next = window.scrollY > 24;
+        const y = window.scrollY;
+        const next = y > 24;
         if (next !== scrolledRef.current) {
           scrolledRef.current = next;
           setScrolled(next);
+        }
+
+        // Ignore sub-pixel/momentum jitter so tiny scroll-bounce deltas
+        // (common on iOS Safari's rubber-band scroll) don't flicker the
+        // header in and out.
+        const delta = y - lastScrollY.current;
+        if (Math.abs(delta) > 6 || y < 40) {
+          const shouldHide = !openRef.current && delta > 0 && y > 60;
+          const shouldShow = delta < 0 || y < 40;
+          if (shouldHide && !headerHiddenRef.current) {
+            headerHiddenRef.current = true;
+            setHeaderHidden(true);
+          } else if (shouldShow && headerHiddenRef.current) {
+            headerHiddenRef.current = false;
+            setHeaderHidden(false);
+          }
+          lastScrollY.current = y;
         }
       });
     };
@@ -111,8 +159,13 @@ export function SiteNav() {
         reduceEffects && "bg-black/[0.96]",
       )}
       initial={{ y: -28, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.75, delay: 1.85, ease: [0.22, 1, 0.36, 1] }}
+      animate={{ y: headerHidden ? -120 : 0, opacity: headerHidden ? 0 : 1 }}
+      transition={
+        hasEntered
+          ? { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
+          : { duration: 0.75, delay: 1.85, ease: [0.22, 1, 0.36, 1] }
+      }
+      onAnimationComplete={() => setHasEntered(true)}
     >
       <nav
         className={cn(
