@@ -300,7 +300,6 @@ function SpatialCardStack<T>({
   const capability = useDeviceCapability();
   const total = items.length;
   const [active, setActive] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
   const [spread, setSpread] = useState<number>(() =>
     typeof window === "undefined" ? SPREAD_CONFIG.base : computeSpread(getStableViewportWidth()),
@@ -330,10 +329,29 @@ function SpatialCardStack<T>({
   reducedMotionRef.current = effectiveReducedMotion;
 
   const dragStartX = useRef(0);
+  const dragStartY = useRef(0);
   const dragLastX = useRef(0);
   const dragLastT = useRef(0);
   const dragVelocity = useRef(0);
   const isDragging = useRef(false);
+  /**
+   * TOUCH AXIS LOCK. A touch gesture doesn't declare whether it's meant
+   * to drive the horizontal carousel or the page's normal vertical
+   * scroll until it's moved a few pixels — deciding on pointerdown
+   * alone (the previous behavior) meant EVERY touch on the card,
+   * including a straight-up vertical scroll swipe, immediately called
+   * setPointerCapture and started track-following the gesture, which is
+   * what produced the "sometimes behaves incorrectly while scrolling"
+   * glitch. `undecided` while under the slop threshold, then locked to
+   * whichever axis the gesture actually moved in — `vertical` gestures
+   * are handed back to the browser's native pan-y scrolling untouched
+   * (no capture, no offset writes, no preventDefault), `horizontal`
+   * gestures behave exactly as drag did before. Mouse/pen pointers skip
+   * this entirely (see PRESS_KINDS below) since there's no competing
+   * native scroll gesture to disambiguate against for them.
+   */
+  const gestureAxis = useRef<"undecided" | "horizontal" | "vertical">("undecided");
+  const AXIS_LOCK_SLOP = 8;
 
   /**
    * SINGLE SOURCE OF TRUTH.
@@ -392,44 +410,41 @@ function SpatialCardStack<T>({
 
   /**
    * TEXT/POSITION SYNC. `active` (and therefore `offset === 0` /
-   * isActive) updates the instant React re-renders — but the card's
-   * actual on-screen position animates toward its new slot over the
-   * CAROUSEL_CONFIG.spring transition (several hundred ms). Gating the
-   * title/case/CTA block on isActive alone meant the incoming card's
-   * text mounted immediately while it was still physically off-center
-   * mid-slide, overlapping the outgoing card's text before it had
-   * finished sliding away — reported as duplicated/ghosted text on the
-   * ACTIVE card itself (distinct from the earlier side-card bleed-
-   * through bug). Every place `active` changes now goes through
-   * beginTransition(), and text is gated on `!isAnimating` in
-   * ProjectsSection below, so text is hidden for the ~620ms the cards
-   * are physically moving and only shows once they're settled — never
-   * two cards' text visible at once, regardless of trigger (click,
-   * autoplay, keyboard, drag, or timeline scrub).
+   * isActive) updates the instant React re-renders, and the card's
+   * title/CTA block now mounts on that same instant — together with the
+   * image, which is what item 4 asked for ("no visible blank period").
+   * The old version gated text on `!isAnimating` for the ENTIRE
+   * ~620ms spring settle, which is what actually caused the reported
+   * "image changes but text appears later" delay (and, combined with
+   * `advance()` refusing to fire again while isAnimating, made rapid
+   * swipes feel queued/laggy — item 3). Only one card is ever
+   * `offset === 0` at a time and only that card renders the title
+   * block at all (see ProjectsSection below), so there was never an
+   * actual risk of two cards' titles being visible together — the
+   * previous gate was solving a purely aesthetic "text on a still-
+   * rotating card" concern, which the text block's own fade/translate
+   * transition (ProjectsSection) now handles on its own, immediately,
+   * without needing to wait for the spatial animation to finish.
+   * The settle timer itself is no longer needed for gating anything, but
+   * beginTransition() is kept as the single place every trigger (click,
+   * autoplay, keyboard, drag, scrub) funnels through, so `active` never
+   * changes without going through one shared function.
    */
-  const settleTimer = useRef<number | null>(null);
   const beginTransition = useCallback(() => {
-    setIsAnimating(true);
-    if (settleTimer.current) window.clearTimeout(settleTimer.current);
-    settleTimer.current = window.setTimeout(() => {
-      setIsAnimating(false);
-      settleTimer.current = null;
-    }, 620);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (settleTimer.current) window.clearTimeout(settleTimer.current);
-    };
+    // Intentionally a no-op beyond changing `active` at the call site —
+    // kept as a named hook point rather than inlining `setActive` at
+    // every call site, in case a future consumer needs one.
   }, []);
 
   const advance = useCallback(
     (direction: 1 | -1) => {
-      if (isAnimating || total === 0) return;
+      // No longer gated on isAnimating — rapid swipes/clicks retarget the
+      // shared spring immediately instead of being dropped and queued.
+      if (total === 0) return;
       setActive((prev) => (prev + direction + total) % total);
       beginTransition();
     },
-    [isAnimating, total, beginTransition],
+    [total, beginTransition],
   );
 
   const goTo = useCallback(
@@ -531,8 +546,10 @@ function SpatialCardStack<T>({
   );
 
   // ---- Card drag: writes carouselOffset in CARD-WIDTH units (not px) ----
-  const handlePointerDown = (e: React.PointerEvent) => {
-    if (e.button !== 0) return;
+  // Mouse/pen have no competing native scroll gesture to disambiguate
+  // against, so they keep the original immediate-capture behavior. Touch
+  // goes through the axis-lock path below.
+  const startHorizontalDrag = (e: React.PointerEvent) => {
     isDragging.current = true;
     pauseAutoplay();
     dragStartX.current = e.clientX;
@@ -543,7 +560,40 @@ function SpatialCardStack<T>({
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   };
 
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      // Don't capture or start dragging yet — wait for handlePointerMove
+      // to see which direction this gesture actually goes. Capturing the
+      // pointer here unconditionally is what previously fought the
+      // browser's own vertical-scroll handling on every touch, not just
+      // horizontal swipes.
+      gestureAxis.current = "undecided";
+      dragStartX.current = e.clientX;
+      dragStartY.current = e.clientY;
+      return;
+    }
+    gestureAxis.current = "horizontal";
+    startHorizontalDrag(e);
+  };
+
   const handlePointerMove = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch" || e.pointerType === "pen") {
+      if (gestureAxis.current === "vertical") return; // handed off to native scroll
+      if (gestureAxis.current === "undecided") {
+        const dx = e.clientX - dragStartX.current;
+        const dy = e.clientY - dragStartY.current;
+        if (Math.abs(dx) < AXIS_LOCK_SLOP && Math.abs(dy) < AXIS_LOCK_SLOP) return;
+        if (Math.abs(dx) > Math.abs(dy)) {
+          gestureAxis.current = "horizontal";
+          startHorizontalDrag(e);
+        } else {
+          gestureAxis.current = "vertical";
+          return;
+        }
+      }
+    }
+
     if (!isDragging.current) return;
     const now = performance.now();
     const dt = Math.max(now - dragLastT.current, 1);
@@ -564,6 +614,7 @@ function SpatialCardStack<T>({
   };
 
   const endDrag = () => {
+    gestureAxis.current = "undecided";
     if (!isDragging.current) return;
     isDragging.current = false;
 
@@ -706,7 +757,7 @@ const perspective = spread * CAMERA_CONFIG.perspectiveFactor;
               onWheelStep={handleWheelStep}
               wheelNavigationEnabled={canUseWheelNavigation}
             >
-              {renderCard(item, index, offset === 0 && !isAnimating)}
+              {renderCard(item, index, offset === 0)}
             </SpatialCard>
           ))}
         </motion.div>
@@ -1723,9 +1774,6 @@ function ServiceCard({
   );
 }
 function ServicesSection() {
-  const mobileRowOne = services.slice(0, 3);
-  const mobileRowTwo = services.slice(3, 5);
-
   return (
     <section id="services" className="scroll-mt-28 px-4 py-3 sm:px-8 sm:py-10 lg:py-20">
       {/* ServicesSection */}
@@ -1754,22 +1802,19 @@ function ServicesSection() {
         ))}
       </div>
 
-      {/* MOBILE — custom 3-then-2 layout, independent grids */}
+      {/*
+        MOBILE — single column, one card per row (5 rows total). Was
+        previously a 3-then-2 grid with a fixed `auto-rows-[220px]`
+        height, which is what clipped longer headings like "AI CONTENT
+        PRODUCTION" once combined with their description text. Each
+        card now gets the full container width and a natural,
+        content-driven height (via ServiceCard's own responsive
+        min-height) instead of a hardcoded row height.
+      */}
       <div className="mx-auto flex max-w-[1480px] flex-col gap-3 md:hidden">
-        <div className="grid grid-cols-3 gap-3 auto-rows-[220px]">
-          {mobileRowOne.map((service, index) => (
-            <ServiceCard key={service.title} service={service} index={index} />
-          ))}
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          {mobileRowTwo.map((service, index) => (
-            <ServiceCard
-              key={service.title}
-              service={service}
-              index={index + 3}
-            />
-          ))}
-        </div>
+        {services.map((service, index) => (
+          <ServiceCard key={service.title} service={service} index={index} />
+        ))}
       </div>
     </section>
   );
@@ -1856,7 +1901,13 @@ function ProjectsSection() {
                 part of the reported duplication.
               */}
               {isActive && (
-                <div className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8">
+                <motion.div
+                  key={project.title}
+                  className="absolute bottom-3 left-3 right-3 sm:bottom-8 sm:left-8 sm:right-8"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.32, ease: revealEase }}
+                >
                   <h3 className="line-clamp-2 max-w-full overflow-hidden text-ellipsis break-words text-lg font-black uppercase leading-[1.08] sm:text-4xl lg:text-5xl">
                     {project.title}
                   </h3>
@@ -1893,7 +1944,7 @@ function ProjectsSection() {
                       <ArrowRight size={16} className="hidden sm:block" />
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>

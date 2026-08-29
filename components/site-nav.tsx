@@ -102,18 +102,36 @@ export function SiteNav() {
     >
       <nav
         className={cn(
+          // Background opacity is set ONCE, per branch below — a
+          // `bg-black/85` used to also be applied unconditionally here
+          // AND overridden again per scrolled-state a few lines down,
+          // two conflicting background-color utilities on the same
+          // element. Which one actually won was left to Tailwind's
+          // internal class ordering rather than anything in this file,
+          // and on `reduceEffects` devices (any coarse/touch pointer —
+          // i.e. effectively all mobile) that's what let section
+          // headings read as bleeding through/overlapping the pill while
+          // scrolling. Blur is the only thing set unconditionally now;
+          // background comes from exactly one place.
           "mx-auto flex max-w-[1520px] items-center justify-between gap-3 rounded-full border px-4 py-3 transition-all duration-500 sm:px-5",
-          reduceEffects ? "bg-black/85" : "backdrop-blur-2xl",
+          !reduceEffects && "backdrop-blur-2xl",
           scrolled
             ? cn(
-                "border-primary/25 bg-black/[0.72]",
+                "border-primary/25",
+                // Solid on touch/coarse-pointer devices at all times (not
+                // just once scrolled) — there's no hover-driven reason to
+                // keep it glassy there, and content passing underneath a
+                // fixed header needs to stay legible while scrolling.
+                reduceEffects ? "bg-black/[0.9]" : "bg-black/[0.72]",
                 reduceEffects
                   ? "shadow-[0_12px_40px_rgba(0,0,0,0.45)]"
                   : "shadow-[0_18px_70px_rgba(0,0,0,0.55),0_0_42px_rgba(255,77,18,0.12)]",
               )
             : cn(
                 "border-white/10",
-                reduceEffects ? "bg-black/80 shadow-lg shadow-black/20" : "bg-black/[0.34] shadow-2xl shadow-black/25",
+                reduceEffects
+                  ? "bg-black/[0.9] shadow-lg shadow-black/20"
+                  : "bg-black/[0.34] shadow-2xl shadow-black/25",
               ),
         )}
       >
