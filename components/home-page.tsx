@@ -1494,7 +1494,7 @@ WE MAKE BRANDS
           <motion.div
             variants={fadeUp}
             custom={6}
-            className="mt-6 grid max-w-2xl grid-cols-2 gap-2 sm:grid-cols-4"
+            className="mt-6 grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-4"
           >
             {capabilities.map((item) => (
               <CapabilityCard key={item.label} item={item} />
@@ -1519,7 +1519,7 @@ function StatsSection() {
   return (
     <section className="relative z-10 scroll-mt-28 px-5 py-5 sm:px-8 sm:py-8 lg:py-16">
       <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,255,255,0.015)_55%,transparent_80%)] blur-[120px] opacity-70" />
-      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-[-40px] grid-cols-4 gap-1 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-2 py-3 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:grid-cols-4 sm:gap-4 sm:px-8 sm:py-10 xl:px-10">
+      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-0 grid-cols-4 gap-1 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-2 py-3 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:translate-y-[-40px] sm:grid-cols-4 sm:gap-4 sm:px-8 sm:py-10 xl:px-10">
         {stats.map((stat) => (
           <div
             key={stat.label}
