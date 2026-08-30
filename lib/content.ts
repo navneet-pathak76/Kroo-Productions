@@ -112,25 +112,6 @@ export const projects = [
     href: "/clothing-content",
   },
   {
-<<<<<<< Updated upstream
-    title: "Clubs Content",
-    category: "Nightlife & event visuals",
-    metric: "Aftermovies",
-    color: "from-purple-700/70 via-black to-black",
-    image: "/images/clubs-content.jpg",
-    href: "/clubs-content",
-  },
-  {
-    title: "Motion Graphics & Animation",
-    category: "2D & 3D animation",
-    metric: "Visual FX",
-    color: "from-red-700/80 via-orange-900 to-black",
-    image: "/images/motion-graphics.jpg",
-    href: "/motion-graphics-content",
-  },
-  {
-=======
->>>>>>> Stashed changes
     title: "Restaurant Content",
     category: "Hospitality brand films",
     metric: "03",
