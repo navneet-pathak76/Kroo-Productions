@@ -10,6 +10,7 @@ export type RecordPageViewInput = {
   referrer?: string;
   geo: VisitorSessionRecord["geo"];
   client: VisitorSessionRecord["client"];
+  ip?: string;
   ipHash?: string;
   timestamp: string;
 };
@@ -17,16 +18,9 @@ export type RecordPageViewInput = {
 export interface VisitorStorageAdapter {
   readonly mode: VisitorStorageMode;
   isConfigured(): boolean;
-
-  /** Upsert the session aggregate + append a page view row. Must be idempotent-safe on retry. */
   recordPageView(input: RecordPageViewInput): Promise<void>;
-
   getSession(sessionId: string): Promise<VisitorSessionRecord | null>;
   getPageViews(sessionId: string, limit?: number): Promise<PageViewRecord[]>;
-
-  /** Most recently active sessions, newest first. Cursor is an opaque base64 token. */
   listRecentSessions(limit: number, cursor?: string): Promise<VisitorListResult>;
-
-  /** Sessions whose lastSeen falls within [sinceIso, untilIso). Used by analytics. */
   listSessionsInRange(sinceIso: string, untilIso: string): Promise<VisitorSessionRecord[]>;
 }
