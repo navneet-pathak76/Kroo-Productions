@@ -203,31 +203,3 @@ html[data-save-data="true"] .animate-project-marquee {
 .animate-project-marquee:hover {
   animation-play-state: paused;
 }
-
-/* ============================================================
-   MOBILE CAROUSEL + CAPABILITY LAYOUT FIXES
-   ============================================================ */
-
-@media (max-width: 639px) {
-  /* The five hero capability cards are a single vertical list on phones.
-     The desktop/tablet grid remains unchanged. */
-  #home .mt-6.grid.max-w-2xl {
-    grid-template-columns: minmax(0, 1fr) !important;
-    gap: 0.75rem !important;
-  }
-
-  /* Keep the hero's visual mark below the fixed mobile navigation instead
-     of allowing the top of the scene to sit underneath the nav pill. */
-  #home {
-    padding-top: 9rem !important;
-  }
-
-  /* A touch that begins on a project thumbnail belongs exclusively to the
-     carousel. The page must not vertically scroll from that same gesture.
-     The carousel's Pointer handlers provide the horizontal movement. */
-  #work [aria-roledescription="carousel"] > div > div {
-    touch-action: none;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-}
