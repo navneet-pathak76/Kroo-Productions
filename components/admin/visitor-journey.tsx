@@ -32,9 +32,7 @@ export function VisitorJourney({ session, pageViews, viewer }: Props) {
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-primary">Kroo Production</p>
           <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Visitor journey</h1>
-          <p className="mt-1 text-sm text-white/50">
-            {viewer.name ?? viewer.email} · {viewer.role}
-          </p>
+          <p className="mt-1 text-sm text-white/50">{viewer.name ?? viewer.email} · {viewer.role}</p>
         </div>
         <Link href="/admin/visitors" className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5">
           Back to visitors
@@ -42,16 +40,23 @@ export function VisitorJourney({ session, pageViews, viewer }: Props) {
       </header>
 
       <div className="space-y-10">
+        <Section title="Visitor information">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <TextValueCard label="IP address" value={session.ip ?? "Unavailable for this session"} />
+            <TextValueCard label="Location" value={formatLocation(session)} />
+            <TextValueCard label="Operating system" value={session.client.os} />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <TextValueCard label="Device" value={session.client.device} />
+            <TextValueCard label="Browser" value={session.client.browser} />
+            <TextValueCard label="Country / region" value={[session.geo.country, session.geo.region].filter(Boolean).join(" · ") || "Unknown"} />
+          </div>
+        </Section>
+
         <Section title="Session overview">
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <MetricCard label="Pages viewed" value={session.pageCount} />
             <MetricCard label="Duration" value={formatDuration(session.durationMs)} />
-            <MetricCard label="Device" value={session.client.device} />
-            <MetricCard label="Browser" value={session.client.browser} />
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <TextValueCard label="Location" value={formatLocation(session)} />
-            <TextValueCard label="Operating system" value={session.client.os} />
             <TextValueCard label="First seen" value={new Date(session.firstSeen).toLocaleString()} />
             <TextValueCard label="Last seen" value={new Date(session.lastSeen).toLocaleString()} />
           </div>
@@ -70,9 +75,7 @@ export function VisitorJourney({ session, pageViews, viewer }: Props) {
               {pageViews.map((view, index) => (
                 <li key={`${view.timestamp}-${index}`} className="cinema-panel flex items-start gap-4 rounded-xl p-4">
                   <div className="flex flex-col items-center pt-1">
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">
-                      {index + 1}
-                    </span>
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xs font-semibold text-primary">{index + 1}</span>
                     {index < pageViews.length - 1 && <span className="mt-1 h-full w-px flex-1 bg-white/10" />}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -84,9 +87,7 @@ export function VisitorJourney({ session, pageViews, viewer }: Props) {
                   </div>
                 </li>
               ))}
-              <li className="cinema-panel rounded-xl p-4 text-center text-xs uppercase tracking-wider text-white/40">
-                Exit
-              </li>
+              <li className="cinema-panel rounded-xl p-4 text-center text-xs uppercase tracking-wider text-white/40">Exit</li>
             </ol>
           )}
         </Section>
