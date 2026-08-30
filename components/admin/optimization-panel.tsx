@@ -54,8 +54,36 @@ export function OptimizationPanel() {
           <div className="cinema-panel rounded-xl p-4 text-sm">
             <p className="text-xs uppercase tracking-wider text-white/45">Summary</p>
             <p className="mt-2">{analysis.summary}</p>
+
+            {analysis.analysisMethod === "ai" ? (
+              <p className="mt-3 flex items-center gap-2 text-xs">
+                <span className="rounded-full bg-primary/15 px-2 py-0.5 font-medium uppercase tracking-wide text-primary">
+                  AI analysis
+                </span>
+                <span className="text-white/50">OpenAI successfully analyzed telemetry.</span>
+              </p>
+            ) : (
+              <p className="mt-3 flex items-center gap-2 text-xs">
+                <span className="rounded-full bg-white/10 px-2 py-0.5 font-medium uppercase tracking-wide text-white/60">
+                  Rule-based analysis
+                </span>
+                <span className="text-white/50">
+                  {analysis.aiError
+                    ? "OpenAI failed and thresholds were used instead."
+                    : "OpenAI was unavailable and thresholds were used."}
+                </span>
+              </p>
+            )}
+
+            {analysis.aiError ? (
+              <div className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.08] px-3 py-2 text-xs text-amber-200">
+                <p className="font-medium">OpenAI request failed</p>
+                <p className="mt-1 break-words text-amber-200/80">{analysis.aiError}</p>
+              </div>
+            ) : null}
+
             <p className="mt-2 text-xs text-white/45">
-              AI available: {analysis.aiAvailable ? "Yes" : "No (rule-based only)"}
+              OPENAI_API_KEY configured: {analysis.aiAvailable ? "Yes" : "No"}
             </p>
           </div>
 

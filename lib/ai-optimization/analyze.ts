@@ -113,54 +113,98 @@ function analyzeErrors(snapshot: TelemetrySnapshot): OptimizationRecommendation[
   return recs;
 }
 
+/**
+ * Result type replaces the old `T | null` return. Returning `null` on
+ * every failure mode (missing key, non-2xx, network error, bad JSON) was
+ * indistinguishable from "AI legitimately found nothing to report" —
+ * that ambiguity is the root cause of "AI available: Yes" sitting next
+ * to a result that was actually rule-based-only with zero visibility
+ * into why. Every branch now carries a reason.
+ */
+type OpenAIAnalysisResult =
+  | { ok: true; recommendations: OptimizationRecommendation[]; summary: string }
+  | { ok: false; reason: "not_configured" }
+  | { ok: false; reason: "request_failed"; error: string };
+
 async function analyzeWithOpenAI(
   snapshot: TelemetrySnapshot,
   baseRecs: OptimizationRecommendation[],
-): Promise<{ recommendations: OptimizationRecommendation[]; summary: string } | null> {
+): Promise<OpenAIAnalysisResult> {
   const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.log("[AI] OPENAI_API_KEY not configured — skipping OpenAI call");
+    return { ok: false, reason: "not_configured" };
+  }
+
+  console.log("[AI] Calling OpenAI...");
+  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
 
   try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
-        temperature: 0.2,
-        max_tokens: 1200,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a web performance engineer. Analyze telemetry and return JSON with keys: summary (string), recommendations (array of {title, description, severity, category, suggestedActions}). Never suggest removing security controls, exposing credentials, or modifying production without review.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              webVitals: snapshot.webVitals,
-              totals: snapshot.totals,
-              byRoute: snapshot.byRoute.slice(0, 10),
-              byTier: snapshot.byTier,
-              existingRecommendations: baseRecs.map((r) => r.title),
-            }),
-          },
-        ],
-        response_format: { type: "json_object" },
-      }),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25_000);
 
-    if (!response.ok) return null;
+    let response: Response;
+    try {
+      response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          max_tokens: 1200,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a web performance engineer. Analyze telemetry and return JSON with keys: summary (string), recommendations (array of {title, description, severity, category, suggestedActions}). Never suggest removing security controls, exposing credentials, or modifying production without review.",
+            },
+            {
+              role: "user",
+              content: JSON.stringify({
+                webVitals: snapshot.webVitals,
+                totals: snapshot.totals,
+                byRoute: snapshot.byRoute.slice(0, 10),
+                byTier: snapshot.byTier,
+                existingRecommendations: baseRecs.map((r) => r.title),
+              }),
+            },
+          ],
+          response_format: { type: "json_object" },
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    if (!response.ok) {
+      // Capture the actual failure — invalid key, rate limit, wrong
+      // model name, etc. — instead of discarding it. The body is
+      // truncated only so a huge HTML error page can't blow up logs;
+      // never truncated to hide anything security-sensitive (the key
+      // itself is never in this response body).
+      const bodyText = await response.text().catch(() => "");
+      const error = `OpenAI request failed: ${response.status} ${response.statusText} — ${bodyText.slice(0, 500)}`;
+      console.error("[AI] OpenAI call failed:", error);
+      return { ok: false, reason: "request_failed", error };
+    }
+
+    console.log("[AI] OpenAI response received");
 
     const data = (await response.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
     const content = data.choices?.[0]?.message?.content;
-    if (!content) return null;
+    if (!content) {
+      const error = "OpenAI response had no message content.";
+      console.error("[AI]", error);
+      return { ok: false, reason: "request_failed", error };
+    }
 
-    const parsed = JSON.parse(content) as {
+    let parsed: {
       summary?: string;
       recommendations?: Array<{
         title?: string;
@@ -170,6 +214,13 @@ async function analyzeWithOpenAI(
         suggestedActions?: string[];
       }>;
     };
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      const error = "OpenAI returned content that was not valid JSON.";
+      console.error("[AI]", error);
+      return { ok: false, reason: "request_failed", error };
+    }
 
     const aiRecs: OptimizationRecommendation[] = (parsed.recommendations ?? [])
       .filter((r) => r.title && r.description)
@@ -190,23 +241,34 @@ async function analyzeWithOpenAI(
         aiGenerated: true,
       }));
 
+    console.log(`[AI] Recommendations generated: ${aiRecs.length}`);
+
     return {
+      ok: true,
       recommendations: [...baseRecs, ...aiRecs],
       summary: parsed.summary ?? "AI-assisted analysis complete.",
     };
-  } catch {
-    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error calling OpenAI.";
+    console.error("[AI] OpenAI call threw:", message);
+    return { ok: false, reason: "request_failed", error: message };
   }
 }
 
 export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<OptimizationAnalysis> {
+  console.log("[AI] Analysis started");
+
   const hasData = snapshot.totals.records > 0;
+  console.log(`[AI] Telemetry records: ${snapshot.totals.records}`);
+  console.log(`[AI] Telemetry source: ${snapshot.retention.mode} (durable store configured: ${snapshot.retention.durableStoreConfigured})`);
+
   if (!hasData) {
     return {
       generatedAt: new Date().toISOString(),
       recommendations: [],
       summary: "No telemetry data available for analysis.",
       aiAvailable: Boolean(process.env.OPENAI_API_KEY),
+      analysisMethod: "rule-based",
       dataSource: "none",
     };
   }
@@ -214,16 +276,22 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
   const baseRecs = [...analyzeWebVitals(snapshot), ...analyzeErrors(snapshot)];
   const aiResult = await analyzeWithOpenAI(snapshot, baseRecs);
 
-  if (aiResult) {
+  if (aiResult.ok) {
     return {
       generatedAt: new Date().toISOString(),
       recommendations: aiResult.recommendations,
       summary: aiResult.summary,
       aiAvailable: true,
+      analysisMethod: "ai",
       dataSource: "telemetry",
     };
   }
 
+  // aiResult.ok === false here — either OpenAI wasn't configured, or it
+  // was configured and the call failed. Either way this is a rule-based
+  // result, and if it failed (not just "not configured"), that failure
+  // is carried through as aiError instead of being discarded — this is
+  // the piece that was previously invisible.
   const summary =
     baseRecs.length > 0
       ? `${baseRecs.length} recommendation(s) from rule-based telemetry analysis.`
@@ -234,6 +302,8 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
     recommendations: baseRecs,
     summary,
     aiAvailable: Boolean(process.env.OPENAI_API_KEY),
+    analysisMethod: "rule-based",
+    aiError: aiResult.reason === "request_failed" ? aiResult.error : undefined,
     dataSource: "telemetry",
   };
 }
