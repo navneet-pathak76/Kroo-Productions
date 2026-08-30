@@ -30,7 +30,7 @@ export const stats = [
 ];
 
 export const founders = [
- {
+  {
     name: "Navneet Pathak",
     role: "Founder",
     image: "/images/navneet.jpeg",
@@ -54,7 +54,6 @@ export const founders = [
     image: "/images/sj.jpeg",
     tone: "from-zinc-100 via-zinc-600 to-black",
   },
-  
 ];
 
 export const services = [
@@ -87,13 +86,12 @@ export const services = [
     span: "lg:col-span-2",
   },
   {
-  title: "AI Content Production",
-  description:
-    "AI-powered visuals, commercials, product renders, virtual worlds, avatars, and branded content.",
-  icon: Bot,
-  span: "lg:col-span-2",
-},
-
+    title: "AI Content Production",
+    description:
+      "AI-powered visuals, commercials, product renders, virtual worlds, avatars, and branded content.",
+    icon: Bot,
+    span: "lg:col-span-2",
+  },
 ];
 
 export const projects = [
@@ -122,7 +120,7 @@ export const projects = [
     href: "/clubs-content",
   },
   {
-    title: "Motion Graphics & Logo Animation",
+    title: "Motion Graphics & Animation",
     category: "2D & 3D animation",
     metric: "Visual FX",
     color: "from-red-700/80 via-orange-900 to-black",
@@ -165,13 +163,6 @@ export const projects = [
     image: "/dm.png",
     href: "/digital-marketing-content",
   },
-  {
-    title: "LOGO & GRAPHICS",
-    category: "Brand Identity",
-    metric: "10",
-    image: "/lg.png",
-    href: "/logo-graphics-content",
-  },
 ];
 
 export const testimonials = [
@@ -196,7 +187,7 @@ export const testimonials = [
 ];
 
 export const brandMarks = [];
-  /*"NIKE",
+/*"NIKE",
   "COCA-COLA",
   "SAMSUNG",
   "AIRTEL",
