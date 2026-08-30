@@ -12,31 +12,25 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AdminVisitorJourneyPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>;
-}) {
-  if (!isAdminAuthConfigured()) {
-    redirect("/admin/login");
-  }
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+type Props = { params: Promise<{ sessionId: string }> };
+
+export default async function AdminVisitorJourneyPage({ params }: Props) {
+  if (!isAdminAuthConfigured()) redirect("/admin/login");
 
   const cookieStore = await cookies();
   const session = getSessionFromToken(cookieStore.get(getSessionCookieName())?.value);
-  if (!session) {
-    redirect("/admin/login?next=/admin/visitors");
-  }
+  if (!session) redirect("/admin/login?next=/admin/visitors");
 
   const { sessionId } = await params;
-
   const [visitorSession, pageViews] = await Promise.all([
     getVisitorSession(sessionId),
     getVisitorPageViews(sessionId),
   ]);
 
-  if (!visitorSession) {
-    notFound();
-  }
+  if (!visitorSession) notFound();
 
   const headerStore = await headers();
   await recordAdminAudit("view_dashboard", {
