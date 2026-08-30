@@ -30,7 +30,7 @@ export type PageViewRecord = {
   timestamp: string;
 };
 
-/** Aggregate session record — one per anonymous visit. Updated on every page view. */
+/** Aggregate session record — one per anonymous visit. */
 export type VisitorSessionRecord = {
   sessionId: string;
   visitorId: string;
@@ -44,6 +44,9 @@ export type VisitorSessionRecord = {
   referrer?: string;
   geo: VisitorGeo;
   client: VisitorClient;
+  /** Raw client IP for authorized admin analytics. */
+  ip?: string;
+  /** One-way IP hash retained for rate limiting/legacy analytics. */
   ipHash?: string;
 };
 
