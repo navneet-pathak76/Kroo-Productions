@@ -7,6 +7,9 @@ import { listRecentVisitorSessions, isDurableVisitorStoreConfigured } from "@/li
 import { extractIpFromHeaderMap, recordAdminAudit } from "@/lib/telemetry/admin-audit";
 import { VisitorsDashboard } from "@/components/admin/visitors-dashboard";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata: Metadata = {
   title: "Visitors — Admin",
   robots: { index: false, follow: false },
