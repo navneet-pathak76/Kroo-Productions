@@ -26,7 +26,7 @@ export const stats = [
   { value: 200, suffix: "+", label: "Projects Delivered", icon: Film },
   { value: 50, suffix: "+", label: "Happy Clients", icon: Users },
   { value: 20, suffix: "M+", label: "Views Generated", icon: Play },
-  { value: 5, suffix: "+", label: "Years Experience", icon: Star },
+  { value: 5, suffix: "+", label: "Years Of Experienced Members", icon: Star },
 ];
 
 export const founders = [
@@ -106,12 +106,13 @@ export const projects = [
   {
     title: "Clothing Content",
     category: "Fashion & lifestyle campaigns",
-    metric: "Lookbooks",
+    metric: "02",
     color: "from-amber-500/80 via-neutral-800 to-black",
     image: "/images/clothing-content.jpg",
     href: "/clothing-content",
   },
   {
+<<<<<<< Updated upstream
     title: "Clubs Content",
     category: "Nightlife & event visuals",
     metric: "Aftermovies",
@@ -128,9 +129,11 @@ export const projects = [
     href: "/motion-graphics-content",
   },
   {
+=======
+>>>>>>> Stashed changes
     title: "Restaurant Content",
     category: "Hospitality brand films",
-    metric: "Food Stories",
+    metric: "03",
     color: "from-orange-600/80 via-amber-900/70 to-black",
     image: "/images/restaurant-content.jpg",
     href: "/restaurant-content",
@@ -138,24 +141,41 @@ export const projects = [
   {
     title: "REAL ESTATE",
     category: "Luxury Properties",
-    metric: "06",
+    metric: "04",
     image: "/re.png",
     href: "/real-estate",
   },
   {
     title: "PRODUCTS",
     category: "Commercial",
-    metric: "07",
+    metric: "05",
     image: "/product.png",
     href: "/product-content",
   },
   {
     title: "AI VIDEOS",
     category: "AI Production",
-    metric: "08",
+    metric: "06",
     image: "/ai.png",
     href: "/ai-content",
   },
+  {
+    title: "Clubs Content",
+    category: "Nightlife & event visuals",
+    metric: "07",
+    color: "from-purple-700/70 via-black to-black",
+    image: "/images/clubs-content.jpg",
+    href: "/clubs-content",
+  },
+  {
+    title: "Motion Graphics & Logos",
+    category: "2D & 3D animation",
+    metric: "08",
+    color: "from-red-700/80 via-orange-900 to-black",
+    image: "/images/motion-graphics.jpg",
+    href: "/motion-graphics-content",
+  },
+
   {
     title: "SOCIAL MEDIA",
     category: "Performance Marketing",
@@ -164,6 +184,8 @@ export const projects = [
     href: "/digital-marketing-content",
   },
 ];
+
+
 
 export const testimonials = [
   {
