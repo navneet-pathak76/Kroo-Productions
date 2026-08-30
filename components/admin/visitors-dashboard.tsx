@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { VisitorListItem } from "@/lib/visitors/types";
 import { MetricCard, Section, EmptyState } from "@/components/admin/ui";
@@ -29,7 +28,6 @@ function formatLocation(item: VisitorListItem): string {
 }
 
 export function VisitorsDashboard({ initialItems, initialCursor, durableStoreConfigured, viewer }: Props) {
-  const router = useRouter();
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -44,7 +42,9 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
     setLoadingMore(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/visitors?cursor=${encodeURIComponent(cursor)}`);
+      const res = await fetch(`/api/admin/visitors?cursor=${encodeURIComponent(cursor)}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error("Failed to load more visitors.");
       const data = (await res.json()) as { items: VisitorListItem[]; nextCursor?: string };
       setItems((prev) => [...prev, ...data.items]);
@@ -57,9 +57,28 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
   }
 
   async function handleRefresh() {
+    if (refreshing) return;
     setRefreshing(true);
-    router.refresh();
-    setTimeout(() => setRefreshing(false), 400);
+    setError(null);
+
+    try {
+      // Do not use router.refresh() here. The dashboard is a client component
+      // and its local `items` state survives a router refresh, which previously
+      // left the counters stuck at the values from the first page load.
+      const res = await fetch("/api/admin/visitors?limit=25", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to refresh visitors.");
+
+      const data = (await res.json()) as { items: VisitorListItem[]; nextCursor?: string };
+      setItems(data.items ?? []);
+      setCursor(data.nextCursor);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh visitors.");
+    } finally {
+      setRefreshing(false);
+    }
   }
 
   return (
@@ -82,7 +101,7 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
             disabled={refreshing}
             className="rounded-lg border border-white/15 px-4 py-2 text-sm hover:bg-white/5 disabled:opacity-60"
           >
-            Refresh
+            {refreshing ? "Refreshing…" : "Refresh"}
           </button>
         </div>
       </header>
