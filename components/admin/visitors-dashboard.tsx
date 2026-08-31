@@ -27,6 +27,14 @@ function formatLocation(item: VisitorListItem): string {
   return parts.length > 0 ? parts.join(", ") : "Unknown";
 }
 
+function cacheVisitorSession(item: VisitorListItem): void {
+  try {
+    window.sessionStorage.setItem(`kroo:visitor:${item.sessionId}`, JSON.stringify(item));
+  } catch {
+    // sessionStorage can be unavailable in hardened/private browser contexts.
+  }
+}
+
 export function VisitorsDashboard({ initialItems, initialCursor, durableStoreConfigured, viewer }: Props) {
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
@@ -163,6 +171,7 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
                       <td className="px-4 py-3 text-right">
                         <Link
                           href={`/admin/visitors/${item.sessionId}`}
+                          onClick={() => cacheVisitorSession(item)}
                           className="text-xs text-primary hover:underline"
                         >
                           View journey
