@@ -4,6 +4,7 @@ import type { RecordPageViewInput, VisitorStorageAdapter } from "@/lib/visitors/
 
 const MAX_SESSIONS = 5_000;
 const MAX_PAGE_VIEWS_PER_SESSION = 500;
+const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 type VisitorMemoryStore = {
   sessions: Map<string, VisitorSessionRecord>;
@@ -18,6 +19,23 @@ const store: VisitorMemoryStore = globalForVisitors.__visitorMemoryStore ?? (glo
   sessionOrder: [],
 });
 const { sessions, pageViews, sessionOrder } = store;
+
+function isWithinRetention(timestamp: string, now = Date.now()): boolean {
+  const time = new Date(timestamp).getTime();
+  return Number.isFinite(time) && time >= now - RETENTION_MS && time <= now;
+}
+
+function purgeExpired(now = Date.now()): void {
+  for (const sessionId of [...sessionOrder]) {
+    const session = sessions.get(sessionId);
+    if (!session || !isWithinRetention(session.lastSeen, now)) {
+      sessions.delete(sessionId);
+      pageViews.delete(sessionId);
+      const idx = sessionOrder.indexOf(sessionId);
+      if (idx !== -1) sessionOrder.splice(idx, 1);
+    }
+  }
+}
 
 function touchOrder(sessionId: string): void {
   const idx = sessionOrder.indexOf(sessionId);
@@ -34,6 +52,7 @@ export class MemoryVisitorAdapter implements VisitorStorageAdapter {
   isConfigured(): boolean { return true; }
 
   async recordPageView(input: RecordPageViewInput): Promise<void> {
+    purgeExpired();
     const existing = sessions.get(input.sessionId);
     if (existing) {
       existing.lastSeen = input.timestamp;
@@ -67,10 +86,19 @@ export class MemoryVisitorAdapter implements VisitorStorageAdapter {
     touchOrder(input.sessionId);
   }
 
-  async getSession(sessionId: string): Promise<VisitorSessionRecord | null> { return sessions.get(sessionId) ?? null; }
-  async getPageViews(sessionId: string, limit = 500): Promise<PageViewRecord[]> { return (pageViews.get(sessionId) ?? []).slice(-limit); }
+  async getSession(sessionId: string): Promise<VisitorSessionRecord | null> {
+    purgeExpired();
+    const session = sessions.get(sessionId);
+    return session && isWithinRetention(session.lastSeen) ? session : null;
+  }
+
+  async getPageViews(sessionId: string, limit = 500): Promise<PageViewRecord[]> {
+    purgeExpired();
+    return (pageViews.get(sessionId) ?? []).filter((view) => isWithinRetention(view.timestamp)).slice(-limit);
+  }
 
   async listRecentSessions(limit: number, cursor?: string): Promise<VisitorListResult> {
+    purgeExpired();
     const ordered = [...sessionOrder].reverse();
     const offset = cursor ? Number.parseInt(Buffer.from(cursor, "base64url").toString("utf8"), 10) : 0;
     const slice = ordered.slice(offset, offset + limit);
@@ -80,11 +108,15 @@ export class MemoryVisitorAdapter implements VisitorStorageAdapter {
   }
 
   async listSessionsInRange(sinceIso: string, untilIso: string): Promise<VisitorSessionRecord[]> {
-    const since = new Date(sinceIso).getTime();
+    purgeExpired();
+    const since = Math.max(new Date(sinceIso).getTime(), Date.now() - RETENTION_MS);
     const until = new Date(untilIso).getTime();
-    return [...sessions.values()].filter((s) => { const t = new Date(s.lastSeen).getTime(); return t >= since && t < until; });
+    return [...sessions.values()].filter((s) => { const t = new Date(s.lastSeen).getTime(); return t >= since && t < until && isWithinRetention(s.lastSeen); });
   }
 }
 
-export function getMemoryVisitorSessions(): VisitorSessionRecord[] { return [...sessions.values()]; }
+export function getMemoryVisitorSessions(): VisitorSessionRecord[] {
+  purgeExpired();
+  return [...sessions.values()];
+}
 export const MEMORY_VISITOR_MAX_SESSIONS = MAX_SESSIONS;
