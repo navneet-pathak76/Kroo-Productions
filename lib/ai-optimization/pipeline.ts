@@ -36,15 +36,15 @@ export async function runOptimizationPipeline(
   );
 
   if (analysis.aiAvailable && analysis.recommendations.some((r) => r.aiGenerated)) {
-    stages.push(stage("openai_review", "completed", "OpenAI recommendations merged with rule-based analysis."));
+    stages.push(stage("gemini_review", "completed", "Gemini recommendations merged with rule-based analysis."));
   } else if (analysis.aiAvailable) {
-    stages.push(stage("openai_review", "completed", "OpenAI available; no additional AI recommendations returned."));
+    stages.push(stage("gemini_review", "completed", "Gemini available; no additional AI recommendations returned."));
   } else {
     stages.push(
       stage(
-        "openai_review",
+        "gemini_review",
         "blocked",
-        "OPENAI_API_KEY not configured — rule-based analysis only.",
+        "GEMINI_API_KEY not configured — rule-based analysis only.",
       ),
     );
   }
