@@ -2,15 +2,12 @@ import "server-only";
 import { randomUUID } from "crypto";
 import type { TelemetrySnapshot } from "@/lib/telemetry/types";
 import type {
-  OpenAiDiagnosticState,
+  GeminiDiagnosticState,
   OptimizationAnalysis,
   OptimizationDiagnostics,
   OptimizationRecommendation,
 } from "./types";
 
-/** Turns TelemetrySnapshot.health into one of the states an admin needs to
- *  distinguish: no AWS creds, no table name, a real DynamoDB error, an
- *  empty-but-reachable table, or genuinely loaded data. */
 function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics["telemetry"] {
   const health = snapshot.health;
 
@@ -26,7 +23,7 @@ function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics
     return {
       state: "table_not_configured",
       message:
-        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present (so DynamoDB shows as reachable elsewhere, e.g. for visitor tracking), but telemetry writes/reads are skipped and only live in short-lived in-memory storage.",
+        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present, but telemetry writes/reads are skipped and only live in short-lived in-memory storage.",
     };
   }
 
@@ -40,7 +37,7 @@ function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics
   if (snapshot.totals.records === 0) {
     return {
       state: "empty",
-      message: `TELEMETRY_DYNAMODB_TABLE is configured and was scanned successfully, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or is writing to a different table/region than this function is reading from.`,
+      message: `TELEMETRY_DYNAMODB_TABLE is configured and was scanned successfully, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or may be writing to a different table/region.`,
     };
   }
 
@@ -160,31 +157,23 @@ function analyzeErrors(snapshot: TelemetrySnapshot): OptimizationRecommendation[
   return recs;
 }
 
-/**
- * Result type replaces the old `T | null` return. Returning `null` on
- * every failure mode (missing key, non-2xx, network error, bad JSON) was
- * indistinguishable from "AI legitimately found nothing to report" —
- * that ambiguity is the root cause of "AI available: Yes" sitting next
- * to a result that was actually rule-based-only with zero visibility
- * into why. Every branch now carries a reason.
- */
-type OpenAIAnalysisResult =
+type GeminiAnalysisResult =
   | { ok: true; recommendations: OptimizationRecommendation[]; summary: string }
   | { ok: false; reason: "not_configured" }
   | { ok: false; reason: "request_failed"; error: string };
 
-async function analyzeWithOpenAI(
+async function analyzeWithGemini(
   snapshot: TelemetrySnapshot,
   baseRecs: OptimizationRecommendation[],
-): Promise<OpenAIAnalysisResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
+): Promise<GeminiAnalysisResult> {
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.log("[AI] OPENAI_API_KEY not configured — skipping OpenAI call");
+    console.log("[AI] GEMINI_API_KEY not configured — skipping Gemini call");
     return { ok: false, reason: "not_configured" };
   }
 
-  console.log("[AI] Calling OpenAI...");
-  const model = process.env.OPENAI_MODEL ?? "gpt-4o-mini";
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
+  console.log(`[AI] Calling Gemini (${model})...`);
 
   try {
     const controller = new AbortController();
@@ -192,61 +181,71 @@ async function analyzeWithOpenAI(
 
     let response: Response;
     try {
-      response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "x-goog-api-key": apiKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            systemInstruction: {
+              parts: [
+                {
+                  text: "You are a web performance engineer. Analyze telemetry and return ONLY valid JSON with keys: summary (string), recommendations (array of {title, description, severity, category, suggestedActions}). severity must be critical, high, medium, or low. category must be performance, media, accessibility, security, or telemetry. Never suggest removing security controls, exposing credentials, or modifying production without review.",
+                },
+              ],
+            },
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      webVitals: snapshot.webVitals,
+                      totals: snapshot.totals,
+                      byRoute: snapshot.byRoute.slice(0, 10),
+                      byTier: snapshot.byTier,
+                      existingRecommendations: baseRecs.map((r) => r.title),
+                    }),
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 1200,
+              responseMimeType: "application/json",
+            },
+          }),
+          signal: controller.signal,
         },
-        body: JSON.stringify({
-          model,
-          temperature: 0.2,
-          max_tokens: 1200,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a web performance engineer. Analyze telemetry and return JSON with keys: summary (string), recommendations (array of {title, description, severity, category, suggestedActions}). Never suggest removing security controls, exposing credentials, or modifying production without review.",
-            },
-            {
-              role: "user",
-              content: JSON.stringify({
-                webVitals: snapshot.webVitals,
-                totals: snapshot.totals,
-                byRoute: snapshot.byRoute.slice(0, 10),
-                byTier: snapshot.byTier,
-                existingRecommendations: baseRecs.map((r) => r.title),
-              }),
-            },
-          ],
-          response_format: { type: "json_object" },
-        }),
-        signal: controller.signal,
-      });
+      );
     } finally {
       clearTimeout(timeout);
     }
 
     if (!response.ok) {
-      // Capture the actual failure — invalid key, rate limit, wrong
-      // model name, etc. — instead of discarding it. The body is
-      // truncated only so a huge HTML error page can't blow up logs;
-      // never truncated to hide anything security-sensitive (the key
-      // itself is never in this response body).
       const bodyText = await response.text().catch(() => "");
-      const error = `OpenAI request failed: ${response.status} ${response.statusText} — ${bodyText.slice(0, 500)}`;
-      console.error("[AI] OpenAI call failed:", error);
+      const error = `Gemini request failed: ${response.status} ${response.statusText} — ${bodyText.slice(0, 500)}`;
+      console.error("[AI] Gemini call failed:", error);
       return { ok: false, reason: "request_failed", error };
     }
 
-    console.log("[AI] OpenAI response received");
-
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>;
+      candidates?: Array<{
+        content?: { parts?: Array<{ text?: string }> };
+      }>;
     };
-    const content = data.choices?.[0]?.message?.content;
+
+    const content = data.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text ?? "")
+      .join("")
+      .trim();
+
     if (!content) {
-      const error = "OpenAI response had no message content.";
+      const error = "Gemini response had no text content.";
       console.error("[AI]", error);
       return { ok: false, reason: "request_failed", error };
     }
@@ -261,10 +260,11 @@ async function analyzeWithOpenAI(
         suggestedActions?: string[];
       }>;
     };
+
     try {
       parsed = JSON.parse(content);
     } catch {
-      const error = "OpenAI returned content that was not valid JSON.";
+      const error = "Gemini returned content that was not valid JSON.";
       console.error("[AI]", error);
       return { ok: false, reason: "request_failed", error };
     }
@@ -282,13 +282,13 @@ async function analyzeWithOpenAI(
           ? r.category
           : "performance") as OptimizationRecommendation["category"],
         affectedRoutes: snapshot.byRoute.slice(0, 3).map((route) => route.route),
-        evidence: ["Derived from OpenAI analysis of live telemetry"],
+        evidence: ["Derived from Gemini analysis of live telemetry"],
         suggestedActions: r.suggestedActions ?? ["Review in admin dashboard before applying"],
         requiresReview: true,
         aiGenerated: true,
       }));
 
-    console.log(`[AI] Recommendations generated: ${aiRecs.length}`);
+    console.log(`[AI] Gemini recommendations generated: ${aiRecs.length}`);
 
     return {
       ok: true,
@@ -296,8 +296,8 @@ async function analyzeWithOpenAI(
       summary: parsed.summary ?? "AI-assisted analysis complete.",
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error calling OpenAI.";
-    console.error("[AI] OpenAI call threw:", message);
+    const message = error instanceof Error ? error.message : "Unknown error calling Gemini.";
+    console.error("[AI] Gemini call threw:", message);
     return { ok: false, reason: "request_failed", error: message };
   }
 }
@@ -312,35 +312,36 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
   console.log(`[AI] Telemetry diagnostic: ${telemetryDiag.state} — ${telemetryDiag.message}`);
 
   if (!hasData) {
-    const openaiDiag: OptimizationDiagnostics["openai"] = {
+    const geminiDiag: OptimizationDiagnostics["gemini"] = {
       state: "skipped_no_telemetry",
-      message: "OpenAI was not called — there is no telemetry data yet to analyze.",
+      message: "Gemini was not called — there is no telemetry data yet to analyze.",
     };
     return {
       generatedAt: new Date().toISOString(),
       recommendations: [],
       summary: "No telemetry data available for analysis.",
-      aiAvailable: Boolean(process.env.OPENAI_API_KEY),
+      aiAvailable: Boolean(process.env.GEMINI_API_KEY),
       analysisMethod: "rule-based",
       dataSource: "none",
-      diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
+      diagnostics: { telemetry: telemetryDiag, gemini: geminiDiag },
     };
   }
 
   const baseRecs = [...analyzeWebVitals(snapshot), ...analyzeErrors(snapshot)];
-  const aiResult = await analyzeWithOpenAI(snapshot, baseRecs);
+  const aiResult = await analyzeWithGemini(snapshot, baseRecs);
 
-  const openaiDiagState: OpenAiDiagnosticState = aiResult.ok
+  const geminiDiagState: GeminiDiagnosticState = aiResult.ok
     ? "succeeded"
     : aiResult.reason === "not_configured"
       ? "key_missing"
       : "request_failed";
-  const openaiDiag: OptimizationDiagnostics["openai"] = {
-    state: openaiDiagState,
+
+  const geminiDiag: OptimizationDiagnostics["gemini"] = {
+    state: geminiDiagState,
     message: aiResult.ok
-      ? `OpenAI returned ${aiResult.recommendations.filter((r) => r.aiGenerated).length} recommendation(s).`
+      ? `Gemini returned ${aiResult.recommendations.filter((r) => r.aiGenerated).length} recommendation(s).`
       : aiResult.reason === "not_configured"
-        ? "OPENAI_API_KEY is not set on the server."
+        ? "GEMINI_API_KEY is not set on the server."
         : aiResult.error,
   };
 
@@ -352,15 +353,10 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
       aiAvailable: true,
       analysisMethod: "ai",
       dataSource: "telemetry",
-      diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
+      diagnostics: { telemetry: telemetryDiag, gemini: geminiDiag },
     };
   }
 
-  // aiResult.ok === false here — either OpenAI wasn't configured, or it
-  // was configured and the call failed. Either way this is a rule-based
-  // result, and if it failed (not just "not configured"), that failure
-  // is carried through as aiError instead of being discarded — this is
-  // the piece that was previously invisible.
   const summary =
     baseRecs.length > 0
       ? `${baseRecs.length} recommendation(s) from rule-based telemetry analysis.`
@@ -370,10 +366,10 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
     generatedAt: new Date().toISOString(),
     recommendations: baseRecs,
     summary,
-    aiAvailable: Boolean(process.env.OPENAI_API_KEY),
+    aiAvailable: Boolean(process.env.GEMINI_API_KEY),
     analysisMethod: "rule-based",
     aiError: aiResult.reason === "request_failed" ? aiResult.error : undefined,
     dataSource: "telemetry",
-    diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
+    diagnostics: { telemetry: telemetryDiag, gemini: geminiDiag },
   };
 }
