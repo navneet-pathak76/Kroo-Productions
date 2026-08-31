@@ -116,7 +116,7 @@ export const projects = [
     category: "Hospitality brand films",
     metric: "03",
     color: "from-orange-600/80 via-amber-900/70 to-black",
-    image: "/images/restaurant-content.jpg",
+    image: "/images/restaurant-content.png",
     href: "/restaurant-content",
   },
   {
