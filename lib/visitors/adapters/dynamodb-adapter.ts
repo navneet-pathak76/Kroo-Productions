@@ -4,11 +4,19 @@ import { getDynamoDocClient, getVisitorTableName } from "@/lib/aws/dynamodb-clie
 import type { PageViewRecord, VisitorListResult, VisitorSessionRecord } from "@/lib/visitors/types";
 import type { RecordPageViewInput, VisitorStorageAdapter } from "@/lib/visitors/storage-adapter";
 
-const RETENTION_DAYS = Number.parseInt(process.env.VISITOR_RETENTION_DAYS ?? "90", 10);
+// Visitor history is intentionally retained for 30 days. The application also
+// enforces this window on reads so expired records are never shown even if
+// DynamoDB TTL cleanup has not run yet.
+const RETENTION_DAYS = 30;
+const RETENTION_MS = RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
 function ttlFor(timestamp: string): number {
-  const days = Number.isFinite(RETENTION_DAYS) && RETENTION_DAYS > 0 ? RETENTION_DAYS : 90;
-  return Math.floor(new Date(timestamp).getTime() / 1000) + days * 24 * 60 * 60;
+  return Math.floor(new Date(timestamp).getTime() / 1000) + RETENTION_DAYS * 24 * 60 * 60;
+}
+
+function isWithinRetention(timestamp: string, now = Date.now()): boolean {
+  const time = new Date(timestamp).getTime();
+  return Number.isFinite(time) && time >= now - RETENTION_MS && time <= now;
 }
 
 function dayBucket(iso: string): string { return iso.slice(0, 10); }
@@ -117,7 +125,9 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
     const tableName = getVisitorTableName();
     if (!client || !tableName) return null;
     const result = await client.send(new GetCommand({ TableName: tableName, Key: { pk: `SESSION#${sessionId}`, sk: "META" } }));
-    return result.Item ? toSession(result.Item) : null;
+    if (!result.Item) return null;
+    const session = toSession(result.Item);
+    return isWithinRetention(session.lastSeen) ? session : null;
   }
 
   async getPageViews(sessionId: string, limit = 500): Promise<PageViewRecord[]> {
@@ -131,12 +141,14 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
       Limit: limit,
       ScanIndexForward: true,
     }));
-    return (result.Items ?? []).map((item) => ({
-      sessionId: item.sessionId as string,
-      path: item.path as string,
-      referrer: item.referrer as string | undefined,
-      timestamp: item.timestamp as string,
-    }));
+    return (result.Items ?? [])
+      .map((item) => ({
+        sessionId: item.sessionId as string,
+        path: item.path as string,
+        referrer: item.referrer as string | undefined,
+        timestamp: item.timestamp as string,
+      }))
+      .filter((view) => isWithinRetention(view.timestamp));
   }
 
   async listRecentSessions(limit: number, cursor?: string): Promise<VisitorListResult> {
@@ -162,7 +174,7 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
         Limit: limit - items.length,
         ExclusiveStartKey: lek as never,
       }));
-      items.push(...(result.Items ?? []).map(toSession));
+      items.push(...(result.Items ?? []).map(toSession).filter((session) => isWithinRetention(session.lastSeen)));
       if (result.LastEvaluatedKey) return { items, nextCursor: encodeCursor({ dayOffset, lek: result.LastEvaluatedKey as Record<string, unknown> }) };
       dayOffset += 1;
       lek = undefined;
@@ -177,6 +189,8 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
     const days = daysBetween(sinceIso, untilIso);
     const since = new Date(sinceIso).getTime();
     const until = new Date(untilIso).getTime();
+    const retentionStart = Date.now() - RETENTION_MS;
+    const effectiveSince = Math.max(since, retentionStart);
     const results = await Promise.all(days.map(async (day) => {
       const out: VisitorSessionRecord[] = [];
       let exclusiveStartKey: Record<string, unknown> | undefined;
@@ -195,7 +209,7 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
     }));
     return results.flat().filter((s) => {
       const t = new Date(s.lastSeen).getTime();
-      return t >= since && t < until;
+      return t >= effectiveSince && t < until && isWithinRetention(s.lastSeen);
     });
   }
 }
