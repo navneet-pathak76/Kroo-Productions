@@ -1996,7 +1996,15 @@ function TestimonialsSection() {
             {testimonial.quote}
           </motion.p>
           <div className="mt-6 flex items-center gap-4 sm:mt-10">
-            <div className="h-14 w-14 rounded-full bg-gradient-to-br from-white/60 via-zinc-600 to-primary/50" />
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-full border border-white/10 bg-black">
+    <Image
+      src={testimonial.logo}
+      alt={testimonial.name}
+      width={56}
+      height={56}
+      className="h-full w-full object-cover"
+    />
+  </div>
             <div>
               <p className="font-black uppercase tracking-[0.08em]">
                 {testimonial.name}
