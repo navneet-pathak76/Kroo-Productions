@@ -171,22 +171,23 @@ export const projects = [
 export const testimonials = [
   {
     quote:
-      "Kroo turned a complicated launch into a film system that felt premium from the first frame to the final cutdown.",
-    name: "Aarav Mehta",
-    company: "Creative Director",
+      "I had a great experience working with Kroo Production. The team did an excellent job and really understood what I was looking for.",
+    name: "Debjit",
+    company: "Founder, Pab Store",
+  },
+    {
+    quote:
+      "Kroo Production got the vibe exactly right. The content came out clean, energetic, and matched my style perfectly. Really enjoyed working with the team.",
+    name: "DJ Mishi",
+    company: "DJ & Artist ",
   },
   {
     quote:
       "The team brought strategy, taste, and speed. Every detail had intention, and the campaign moved exactly the way we hoped.",
-    name: "Ira Sen",
+    name: "SJ STUDIO",
     company: "Brand Lead ",
   },
-  {
-    quote:
-      "Their post-production workflow is surgical. The grade, rhythm, and sound design made the story feel bigger than the brief.",
-    name: "Dev Kapoor",
-    company: "Producer ",
-  },
+
 ];
 
 export const brandMarks = [];
