@@ -30,7 +30,7 @@ let cachedDocClient: DynamoDBDocumentClient | null = null;
  * across every DynamoDB-backed feature (telemetry, media, etc). Callers
  * pick their own table name — see getTelemetryTableName() and
  * getMediaTableName() below — so datasets stay isolated from one another
- * even though they share this client.
+ * when dedicated tables are configured.
  */
 export function getDynamoDocClient(): DynamoDBDocumentClient | null {
   const config = getAwsCredentialsConfig();
@@ -53,18 +53,22 @@ export function getDynamoDocClient(): DynamoDBDocumentClient | null {
 }
 
 /**
- * Table for telemetry/analytics records only. Do not store media
- * metadata here — see getMediaTableName().
+ * Table for telemetry/analytics records only.
+ *
+ * A dedicated TELEMETRY_DYNAMODB_TABLE is preferred. If it has not been
+ * provisioned yet, fall back to the existing visitor table so production
+ * telemetry still persists instead of silently disappearing. Telemetry
+ * records use pk=TELEMETRY, so they remain logically isolated from visitor
+ * session records in the shared table. Once TELEMETRY_DYNAMODB_TABLE is
+ * added, it automatically becomes the preferred destination.
  */
 export function getTelemetryTableName(): string | null {
-  return process.env.TELEMETRY_DYNAMODB_TABLE || null;
+  return process.env.TELEMETRY_DYNAMODB_TABLE || process.env.VISITOR_DYNAMODB_TABLE || null;
 }
 
 /**
  * Table for media library metadata only (records created via the admin
- * upload flow). Kept separate from the telemetry table so the two
- * datasets can be provisioned, scaled, and queried independently, and so
- * a telemetry TTL sweep can never touch media records or vice versa.
+ * upload flow). Kept separate from telemetry when configured.
  */
 export function getMediaTableName(): string | null {
   return process.env.MEDIA_DYNAMODB_TABLE || null;
@@ -72,9 +76,10 @@ export function getMediaTableName(): string | null {
 
 /**
  * Table for anonymous visitor sessions + page views only. Kept separate
- * from telemetry (web-vitals/errors) and media so its own TTL/retention
- * sweep and its GSI1 (date-bucketed queries used by analytics/admin
- * "recent visitors" listings) never interact with the other datasets.
+ * from telemetry when a dedicated telemetry table is configured, so its
+ * own TTL/retention sweep and its GSI1 (date-bucketed queries used by
+ * analytics/admin "recent visitors" listings) never interact with the
+ * telemetry dataset.
  * See docs/visitor-tracking-infra.md for the required table + GSI shape.
  */
 export function getVisitorTableName(): string | null {
