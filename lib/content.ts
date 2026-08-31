@@ -174,20 +174,22 @@ export const testimonials = [
       "I had a great experience working with Kroo Production. The team did an excellent job and really understood what I was looking for.",
     name: "Debjit",
     company: "Founder, Pab Store",
+    logo: "/images/pab.jpg",
   },
-    {
+  {
     quote:
       "Kroo Production got the vibe exactly right. The content came out clean, energetic, and matched my style perfectly. Really enjoyed working with the team.",
     name: "DJ Mishi",
-    company: "DJ & Artist ",
+    company: "DJ & Artist",
+    logo: "/images/djmishi.png",
   },
   {
     quote:
       "The team brought strategy, taste, and speed. Every detail had intention, and the campaign moved exactly the way we hoped.",
-    name: "SJ STUDIO",
-    company: "Brand Lead ",
+    name: "EDITLAB",
+    company: "Creative Venture",
+    logo: "/images/editlab.jpg",
   },
-
 ];
 
 export const brandMarks = [];
