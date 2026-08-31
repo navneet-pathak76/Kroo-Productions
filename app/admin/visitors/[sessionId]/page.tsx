@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { cookies, headers } from "next/headers";
 import { getSessionCookieName, getSessionFromToken } from "@/lib/auth/session";
 import { isAdminAuthConfigured } from "@/lib/auth/config";
@@ -30,8 +30,6 @@ export default async function AdminVisitorJourneyPage({ params }: Props) {
     getVisitorPageViews(sessionId),
   ]);
 
-  if (!visitorSession) notFound();
-
   const headerStore = await headers();
   await recordAdminAudit("view_dashboard", {
     route: `/admin/visitors/${sessionId}`,
@@ -43,6 +41,7 @@ export default async function AdminVisitorJourneyPage({ params }: Props) {
     <VisitorJourney
       session={visitorSession}
       pageViews={pageViews}
+      sessionId={sessionId}
       viewer={{ email: session.email, role: session.role, name: session.name }}
     />
   );
