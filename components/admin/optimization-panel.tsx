@@ -44,7 +44,7 @@ export function OptimizationPanel() {
       </div>
 
       <p className="text-xs text-white/45">
-        Recommendations require admin review before any production changes. AI analysis runs only when OPENAI_API_KEY is configured.
+        Recommendations require admin review before any production changes. AI analysis runs when GEMINI_API_KEY is configured.
       </p>
 
       {error ? <p className="text-sm text-red-400">{error}</p> : null}
@@ -60,7 +60,7 @@ export function OptimizationPanel() {
                 <span className="rounded-full bg-primary/15 px-2 py-0.5 font-medium uppercase tracking-wide text-primary">
                   AI analysis
                 </span>
-                <span className="text-white/50">OpenAI successfully analyzed telemetry.</span>
+                <span className="text-white/50">Gemini successfully analyzed telemetry.</span>
               </p>
             ) : (
               <p className="mt-3 flex items-center gap-2 text-xs">
@@ -69,21 +69,21 @@ export function OptimizationPanel() {
                 </span>
                 <span className="text-white/50">
                   {analysis.aiError
-                    ? "OpenAI failed and thresholds were used instead."
-                    : "OpenAI was unavailable and thresholds were used."}
+                    ? "Gemini failed and thresholds were used instead."
+                    : "Gemini was unavailable and thresholds were used."}
                 </span>
               </p>
             )}
 
             {analysis.aiError ? (
               <div className="mt-2 rounded-lg border border-amber-500/25 bg-amber-500/[0.08] px-3 py-2 text-xs text-amber-200">
-                <p className="font-medium">OpenAI request failed</p>
+                <p className="font-medium">Gemini request failed</p>
                 <p className="mt-1 break-words text-amber-200/80">{analysis.aiError}</p>
               </div>
             ) : null}
 
             <p className="mt-2 text-xs text-white/45">
-              OPENAI_API_KEY configured: {analysis.aiAvailable ? "Yes" : "No"}
+              GEMINI_API_KEY configured: {analysis.aiAvailable ? "Yes" : "No"}
             </p>
 
             <div className="mt-3 space-y-1.5 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs">
@@ -97,12 +97,12 @@ export function OptimizationPanel() {
                 </span>
               </p>
               <p className="text-white/50">
-                <span className="font-medium text-white/70">OpenAI — </span>
+                <span className="font-medium text-white/70">Gemini — </span>
                 <span className="uppercase tracking-wide text-white/40">
-                  {analysis.diagnostics.openai.state}
+                  {analysis.diagnostics.gemini.state}
                 </span>
                 <span className="mt-0.5 block break-words text-white/45">
-                  {analysis.diagnostics.openai.message}
+                  {analysis.diagnostics.gemini.message}
                 </span>
               </p>
             </div>
