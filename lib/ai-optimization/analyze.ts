@@ -23,21 +23,21 @@ function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics
     return {
       state: "table_not_configured",
       message:
-        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present, but telemetry writes/reads are skipped and only live in short-lived in-memory storage.",
+        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present, so telemetry is falling back to the visitor table when available.",
     };
   }
 
   if (health.dynamoReadError) {
     return {
       state: "read_error",
-      message: `DynamoDB scan of TELEMETRY_DYNAMODB_TABLE failed: ${health.dynamoReadError}`,
+      message: `DynamoDB telemetry query failed: ${health.dynamoReadError}`,
     };
   }
 
   if (snapshot.totals.records === 0) {
     return {
       state: "empty",
-      message: `TELEMETRY_DYNAMODB_TABLE is configured and was scanned successfully, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or may be writing to a different table/region.`,
+      message: `Telemetry DynamoDB query succeeded, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or may be writing to a different table/region.`,
     };
   }
 
@@ -162,6 +162,18 @@ type GeminiAnalysisResult =
   | { ok: false; reason: "not_configured" }
   | { ok: false; reason: "request_failed"; error: string };
 
+function resolveGeminiModel(): string {
+  const configured = process.env.GEMINI_MODEL?.trim();
+
+  // Gemini 2.5 Flash-Lite is no longer available to new API users. Keep the
+  // existing Vercel variable harmless if it still contains the retired model.
+  if (!configured || configured === "gemini-2.5-flash-lite") {
+    return "gemini-3.5-flash-lite";
+  }
+
+  return configured;
+}
+
 async function analyzeWithGemini(
   snapshot: TelemetrySnapshot,
   baseRecs: OptimizationRecommendation[],
@@ -172,7 +184,7 @@ async function analyzeWithGemini(
     return { ok: false, reason: "not_configured" };
   }
 
-  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash-lite";
+  const model = resolveGeminiModel();
   console.log(`[AI] Calling Gemini (${model})...`);
 
   try {
@@ -214,7 +226,6 @@ async function analyzeWithGemini(
               },
             ],
             generationConfig: {
-              temperature: 0.2,
               maxOutputTokens: 1200,
               responseMimeType: "application/json",
             },
