@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { VisitorListItem } from "@/lib/visitors/types";
 import { MetricCard, Section, EmptyState } from "@/components/admin/ui";
@@ -41,9 +41,53 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState(true);
 
   const uniqueVisitorCount = new Set(items.map((i) => i.visitorId)).size;
   const newVisitorCount = items.filter((i) => i.isNewVisitor).length;
+
+  async function refreshVisitors(silent = false) {
+    if (refreshing) return;
+    if (!silent) setRefreshing(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/admin/visitors?limit=25", {
+        cache: "no-store",
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) throw new Error("Failed to refresh visitors.");
+
+      const data = (await res.json()) as { items: VisitorListItem[]; nextCursor?: string };
+      const freshItems = data.items ?? [];
+
+      // Keep any additional sessions already loaded while replacing the newest
+      // page with the latest server state. This prevents auto-refresh from
+      // unexpectedly removing sessions loaded with "Load more".
+      setItems((prev) => {
+        const freshIds = new Set(freshItems.map((item) => item.sessionId));
+        const olderLoaded = prev.filter((item) => !freshIds.has(item.sessionId));
+        return [...freshItems, ...olderLoaded].sort(
+          (a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime(),
+        );
+      });
+      setCursor(data.nextCursor);
+    } catch (err) {
+      if (!silent) setError(err instanceof Error ? err.message : "Failed to refresh visitors.");
+    } finally {
+      if (!silent) setRefreshing(false);
+    }
+  }
+
+  // Keep the admin visitor dashboard live. A request is made every second so
+  // new visitors and updated sessions appear without a manual page refresh.
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void refreshVisitors(true);
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [refreshing]);
 
   async function handleLoadMore() {
     if (!cursor || loadingMore) return;
@@ -65,28 +109,7 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
   }
 
   async function handleRefresh() {
-    if (refreshing) return;
-    setRefreshing(true);
-    setError(null);
-
-    try {
-      // Do not use router.refresh() here. The dashboard is a client component
-      // and its local `items` state survives a router refresh, which previously
-      // left the counters stuck at the values from the first page load.
-      const res = await fetch("/api/admin/visitors?limit=25", {
-        cache: "no-store",
-        headers: { Accept: "application/json" },
-      });
-      if (!res.ok) throw new Error("Failed to refresh visitors.");
-
-      const data = (await res.json()) as { items: VisitorListItem[]; nextCursor?: string };
-      setItems(data.items ?? []);
-      setCursor(data.nextCursor);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to refresh visitors.");
-    } finally {
-      setRefreshing(false);
-    }
+    await refreshVisitors(false);
   }
 
   return (
@@ -94,7 +117,15 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
       <header className="mb-8 flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-primary">Kroo Production</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Visitors</h1>
+          <div className="mt-1 flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Visitors</h1>
+            {live && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-primary">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-primary" />
+                Live
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-sm text-white/50">
             {viewer.name ?? viewer.email} · {viewer.role}
           </p>
@@ -116,6 +147,7 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
 
       <div className="mb-6 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3 text-xs text-white/55">
         Storage: {durableStoreConfigured ? "dynamodb (DynamoDB configured)" : "memory — set VISITOR_DYNAMODB_TABLE for production"}
+        <span className="ml-3 text-primary/80">· Live updates every second</span>
       </div>
 
       <div className="space-y-10">
