@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "crypto";
-import { PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamoDocClient, getTelemetryTableName } from "@/lib/aws/dynamodb-client";
 import { isAdminAuthConfigured } from "@/lib/auth/config";
 import type { TelemetryPayload, TelemetryRecord, TelemetrySnapshot } from "./types";
@@ -24,16 +24,6 @@ function isErrorKind(kind: TelemetryRecord["kind"]): boolean {
   );
 }
 
-/**
- * Whether telemetry can actually reach DynamoDB. Generic AWS credentials
- * being present is not enough — TELEMETRY_DYNAMODB_TABLE must also be
- * set, since it is provisioned independently of the visitor-tracking and
- * media-library tables that share the same AWS account/credentials.
- * (Previously this was computed as `getDynamoDocClient() !== null`
- * alone, which made the admin dashboard report "DynamoDB connected"
- * even when TELEMETRY_DYNAMODB_TABLE was unset — the reads/writes below
- * were then silently no-op'd.)
- */
 function isTelemetryDurableConfigured(): boolean {
   return getDynamoDocClient() !== null && getTelemetryTableName() !== null;
 }
@@ -194,9 +184,6 @@ async function writeToDynamo(record: TelemetryRecord): Promise<void> {
   const client = getDynamoDocClient();
   const tableName = getTelemetryTableName();
   if (!client || !tableName) {
-    // Previously a silent no-op. Log once per warm instance so this is
-    // visible in Vercel function logs instead of only manifesting later
-    // as "no telemetry data" with no explanation.
     if (!loggedMissingTableOnWrite) {
       loggedMissingTableOnWrite = true;
       console.warn(
@@ -238,12 +225,16 @@ async function readFromDynamo(limit = MEMORY_MAX_RECORDS): Promise<TelemetryReco
     return [];
   }
 
+  // Telemetry records are all written with the same partition key. Querying
+  // that partition avoids Scan, which is intentionally not granted to the
+  // production IAM user used by the visitor-tracking table.
   const result = await client.send(
-    new ScanCommand({
+    new QueryCommand({
       TableName: tableName,
-      FilterExpression: "pk = :pk",
+      KeyConditionExpression: "pk = :pk",
       ExpressionAttributeValues: { ":pk": "TELEMETRY" },
       Limit: limit,
+      ScanIndexForward: false,
     }),
   );
 
@@ -298,10 +289,6 @@ async function loadTelemetryRecords(
   let dynamoRecords: TelemetryRecord[] = [];
   let dynamoReadError: string | undefined;
 
-  // Only attempt DynamoDB when it's actually fully configured (credentials
-  // AND table name) — this mirrors the health check surfaced to the admin
-  // dashboard so "durable store configured: yes" and "we actually tried
-  // DynamoDB" can never disagree again.
   if (isTelemetryDurableConfigured()) {
     try {
       dynamoRecords = await readFromDynamo(MEMORY_MAX_RECORDS);
