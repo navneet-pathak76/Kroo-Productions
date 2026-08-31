@@ -13,6 +13,28 @@ export type OptimizationRecommendation = {
   aiGenerated: boolean;
 };
 
+/** Why telemetry is (or isn't) feeding this analysis. Computed from
+ *  TelemetrySnapshot.health so the admin never has to guess between
+ *  "table missing", "table empty", and "read failed". */
+export type TelemetryDiagnosticState =
+  | "credentials_not_configured" // D (partial) — no AWS creds at all
+  | "table_not_configured" // D — TELEMETRY_DYNAMODB_TABLE unset
+  | "read_error" // errors surfaced, not swallowed
+  | "empty" // E — table reachable, 0 records
+  | "ok"; // records loaded
+
+/** Why OpenAI was or wasn't used for this run. */
+export type OpenAiDiagnosticState =
+  | "key_missing" // C
+  | "skipped_no_telemetry" // no data to send, OpenAI never called
+  | "request_failed" // B
+  | "succeeded"; // A / G
+
+export type OptimizationDiagnostics = {
+  telemetry: { state: TelemetryDiagnosticState; message: string };
+  openai: { state: OpenAiDiagnosticState; message: string };
+};
+
 export type OptimizationAnalysis = {
   generatedAt: string;
   recommendations: OptimizationRecommendation[];
@@ -29,6 +51,9 @@ export type OptimizationAnalysis = {
    *  failed, so the failure is visible instead of silently swallowed. */
   aiError?: string;
   dataSource: "telemetry" | "none";
+  /** Precise, non-secret machine-readable reason for the telemetry and
+   *  OpenAI outcomes on this run — powers the diagnostic panel in the UI. */
+  diagnostics: OptimizationDiagnostics;
 };
 
 export type OptimizationPipelineStage =

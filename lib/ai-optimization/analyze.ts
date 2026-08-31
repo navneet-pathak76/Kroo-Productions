@@ -1,7 +1,54 @@
 import "server-only";
 import { randomUUID } from "crypto";
 import type { TelemetrySnapshot } from "@/lib/telemetry/types";
-import type { OptimizationAnalysis, OptimizationRecommendation } from "./types";
+import type {
+  OpenAiDiagnosticState,
+  OptimizationAnalysis,
+  OptimizationDiagnostics,
+  OptimizationRecommendation,
+} from "./types";
+
+/** Turns TelemetrySnapshot.health into one of the states an admin needs to
+ *  distinguish: no AWS creds, no table name, a real DynamoDB error, an
+ *  empty-but-reachable table, or genuinely loaded data. */
+function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics["telemetry"] {
+  const health = snapshot.health;
+
+  if (!health.awsCredentialsConfigured) {
+    return {
+      state: "credentials_not_configured",
+      message:
+        "AWS_REGION / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are not set — telemetry is only using in-process memory, which does not persist across serverless invocations.",
+    };
+  }
+
+  if (!health.telemetryTableConfigured) {
+    return {
+      state: "table_not_configured",
+      message:
+        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present (so DynamoDB shows as reachable elsewhere, e.g. for visitor tracking), but telemetry writes/reads are skipped and only live in short-lived in-memory storage.",
+    };
+  }
+
+  if (health.dynamoReadError) {
+    return {
+      state: "read_error",
+      message: `DynamoDB scan of TELEMETRY_DYNAMODB_TABLE failed: ${health.dynamoReadError}`,
+    };
+  }
+
+  if (snapshot.totals.records === 0) {
+    return {
+      state: "empty",
+      message: `TELEMETRY_DYNAMODB_TABLE is configured and was scanned successfully, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or is writing to a different table/region than this function is reading from.`,
+    };
+  }
+
+  return {
+    state: "ok",
+    message: `${snapshot.totals.records} telemetry record(s) loaded (${health.dynamoRecordCount} from DynamoDB, ${health.memoryRecordCount} from in-memory buffer, deduplicated).`,
+  };
+}
 
 function analyzeWebVitals(snapshot: TelemetrySnapshot): OptimizationRecommendation[] {
   const recs: OptimizationRecommendation[] = [];
@@ -258,11 +305,17 @@ async function analyzeWithOpenAI(
 export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<OptimizationAnalysis> {
   console.log("[AI] Analysis started");
 
+  const telemetryDiag = diagnoseTelemetry(snapshot);
   const hasData = snapshot.totals.records > 0;
   console.log(`[AI] Telemetry records: ${snapshot.totals.records}`);
   console.log(`[AI] Telemetry source: ${snapshot.retention.mode} (durable store configured: ${snapshot.retention.durableStoreConfigured})`);
+  console.log(`[AI] Telemetry diagnostic: ${telemetryDiag.state} — ${telemetryDiag.message}`);
 
   if (!hasData) {
+    const openaiDiag: OptimizationDiagnostics["openai"] = {
+      state: "skipped_no_telemetry",
+      message: "OpenAI was not called — there is no telemetry data yet to analyze.",
+    };
     return {
       generatedAt: new Date().toISOString(),
       recommendations: [],
@@ -270,11 +323,26 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
       aiAvailable: Boolean(process.env.OPENAI_API_KEY),
       analysisMethod: "rule-based",
       dataSource: "none",
+      diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
     };
   }
 
   const baseRecs = [...analyzeWebVitals(snapshot), ...analyzeErrors(snapshot)];
   const aiResult = await analyzeWithOpenAI(snapshot, baseRecs);
+
+  const openaiDiagState: OpenAiDiagnosticState = aiResult.ok
+    ? "succeeded"
+    : aiResult.reason === "not_configured"
+      ? "key_missing"
+      : "request_failed";
+  const openaiDiag: OptimizationDiagnostics["openai"] = {
+    state: openaiDiagState,
+    message: aiResult.ok
+      ? `OpenAI returned ${aiResult.recommendations.filter((r) => r.aiGenerated).length} recommendation(s).`
+      : aiResult.reason === "not_configured"
+        ? "OPENAI_API_KEY is not set on the server."
+        : aiResult.error,
+  };
 
   if (aiResult.ok) {
     return {
@@ -284,6 +352,7 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
       aiAvailable: true,
       analysisMethod: "ai",
       dataSource: "telemetry",
+      diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
     };
   }
 
@@ -305,5 +374,6 @@ export async function analyzePerformance(snapshot: TelemetrySnapshot): Promise<O
     analysisMethod: "rule-based",
     aiError: aiResult.reason === "request_failed" ? aiResult.error : undefined,
     dataSource: "telemetry",
+    diagnostics: { telemetry: telemetryDiag, openai: openaiDiag },
   };
 }

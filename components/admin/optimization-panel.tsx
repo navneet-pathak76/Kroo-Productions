@@ -85,6 +85,27 @@ export function OptimizationPanel() {
             <p className="mt-2 text-xs text-white/45">
               OPENAI_API_KEY configured: {analysis.aiAvailable ? "Yes" : "No"}
             </p>
+
+            <div className="mt-3 space-y-1.5 rounded-lg border border-white/10 bg-white/[0.02] px-3 py-2 text-xs">
+              <p className="text-white/50">
+                <span className="font-medium text-white/70">Telemetry — </span>
+                <span className="uppercase tracking-wide text-white/40">
+                  {analysis.diagnostics.telemetry.state}
+                </span>
+                <span className="mt-0.5 block break-words text-white/45">
+                  {analysis.diagnostics.telemetry.message}
+                </span>
+              </p>
+              <p className="text-white/50">
+                <span className="font-medium text-white/70">OpenAI — </span>
+                <span className="uppercase tracking-wide text-white/40">
+                  {analysis.diagnostics.openai.state}
+                </span>
+                <span className="mt-0.5 block break-words text-white/45">
+                  {analysis.diagnostics.openai.message}
+                </span>
+              </p>
+            </div>
           </div>
 
           {analysis.recommendations.length === 0 ? (

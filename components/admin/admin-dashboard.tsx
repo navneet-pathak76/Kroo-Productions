@@ -99,6 +99,17 @@ export function AdminDashboard({ snapshot, viewer, mediaCdnBase }: Props) {
                 <li>Telemetry API: {snapshot.health.telemetryApi}</li>
                 <li>Admin auth: {snapshot.health.adminAuthConfigured ? "configured" : "missing"}</li>
                 <li>Durable store: {snapshot.health.durableStoreConfigured ? "connected" : "not configured"}</li>
+                {!snapshot.health.durableStoreConfigured ? (
+                  <li className="text-white/45">
+                    {!snapshot.health.awsCredentialsConfigured
+                      ? "— AWS credentials missing"
+                      : "— TELEMETRY_DYNAMODB_TABLE not set"}
+                  </li>
+                ) : (
+                  <li className="text-white/45">
+                    — {snapshot.health.dynamoRecordCount} record(s) from DynamoDB, {snapshot.health.memoryRecordCount} from memory
+                  </li>
+                )}
               </ul>
             </div>
             <div className="cinema-panel rounded-xl p-4 text-sm sm:col-span-2">

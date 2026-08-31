@@ -24,8 +24,30 @@ function isErrorKind(kind: TelemetryRecord["kind"]): boolean {
   );
 }
 
-function buildSnapshot(records: TelemetryRecord[]): TelemetrySnapshot {
-  const durableConfigured = getDynamoDocClient() !== null;
+/**
+ * Whether telemetry can actually reach DynamoDB. Generic AWS credentials
+ * being present is not enough — TELEMETRY_DYNAMODB_TABLE must also be
+ * set, since it is provisioned independently of the visitor-tracking and
+ * media-library tables that share the same AWS account/credentials.
+ * (Previously this was computed as `getDynamoDocClient() !== null`
+ * alone, which made the admin dashboard report "DynamoDB connected"
+ * even when TELEMETRY_DYNAMODB_TABLE was unset — the reads/writes below
+ * were then silently no-op'd.)
+ */
+function isTelemetryDurableConfigured(): boolean {
+  return getDynamoDocClient() !== null && getTelemetryTableName() !== null;
+}
+
+type TelemetryReadDiagnostics = {
+  dynamoRecordCount: number;
+  memoryRecordCount: number;
+  dynamoReadError?: string;
+};
+
+function buildSnapshot(records: TelemetryRecord[], diag: TelemetryReadDiagnostics): TelemetrySnapshot {
+  const awsCredentialsConfigured = getDynamoDocClient() !== null;
+  const telemetryTableConfigured = getTelemetryTableName() !== null;
+  const durableConfigured = awsCredentialsConfigured && telemetryTableConfigured;
   const webVitalBuckets: Record<string, number[]> = {
     LCP: [],
     INP: [],
@@ -112,8 +134,13 @@ function buildSnapshot(records: TelemetryRecord[]): TelemetrySnapshot {
     health: {
       telemetryApi: "ok",
       adminAuthConfigured: isAdminAuthConfigured(),
+      awsCredentialsConfigured,
+      telemetryTableConfigured,
       durableStoreConfigured: durableConfigured,
       hasRecentData: records.length > 0,
+      dynamoRecordCount: diag.dynamoRecordCount,
+      memoryRecordCount: diag.memoryRecordCount,
+      dynamoReadError: diag.dynamoReadError,
     },
     retention: {
       mode: durableConfigured ? "dynamodb" : "memory",
@@ -121,7 +148,9 @@ function buildSnapshot(records: TelemetryRecord[]): TelemetrySnapshot {
       durableStoreConfigured: durableConfigured,
       durableStoreRequired: durableConfigured
         ? undefined
-        : "TELEMETRY_DYNAMODB_TABLE + AWS credentials",
+        : !awsCredentialsConfigured
+          ? "AWS_REGION + AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY"
+          : "TELEMETRY_DYNAMODB_TABLE",
     },
     totals: {
       records: records.length,
@@ -159,10 +188,25 @@ function buildSnapshot(records: TelemetryRecord[]): TelemetrySnapshot {
   };
 }
 
+let loggedMissingTableOnWrite = false;
+
 async function writeToDynamo(record: TelemetryRecord): Promise<void> {
   const client = getDynamoDocClient();
   const tableName = getTelemetryTableName();
-  if (!client || !tableName) return;
+  if (!client || !tableName) {
+    // Previously a silent no-op. Log once per warm instance so this is
+    // visible in Vercel function logs instead of only manifesting later
+    // as "no telemetry data" with no explanation.
+    if (!loggedMissingTableOnWrite) {
+      loggedMissingTableOnWrite = true;
+      console.warn(
+        `[telemetry] Skipping DynamoDB write — ${
+          !client ? "AWS credentials are not configured" : "TELEMETRY_DYNAMODB_TABLE is not set"
+        }. Falling back to in-memory storage only (does not persist across serverless invocations).`,
+      );
+    }
+    return;
+  }
 
   await client.send(
     new PutCommand({
@@ -177,10 +221,22 @@ async function writeToDynamo(record: TelemetryRecord): Promise<void> {
   );
 }
 
+let loggedMissingTableOnRead = false;
+
 async function readFromDynamo(limit = MEMORY_MAX_RECORDS): Promise<TelemetryRecord[]> {
   const client = getDynamoDocClient();
   const tableName = getTelemetryTableName();
-  if (!client || !tableName) return [];
+  if (!client || !tableName) {
+    if (!loggedMissingTableOnRead) {
+      loggedMissingTableOnRead = true;
+      console.warn(
+        `[telemetry] Skipping DynamoDB read — ${
+          !client ? "AWS credentials are not configured" : "TELEMETRY_DYNAMODB_TABLE is not set"
+        }.`,
+      );
+    }
+    return [];
+  }
 
   const result = await client.send(
     new ScanCommand({
@@ -236,24 +292,42 @@ function mergeTelemetryRecords(primary: TelemetryRecord[], secondary: TelemetryR
   );
 }
 
-export async function getRecentTelemetry(limit = 100): Promise<TelemetryRecord[]> {
+async function loadTelemetryRecords(
+  limit: number,
+): Promise<{ records: TelemetryRecord[] } & TelemetryReadDiagnostics> {
   let dynamoRecords: TelemetryRecord[] = [];
+  let dynamoReadError: string | undefined;
 
-  if (getDynamoDocClient()) {
+  // Only attempt DynamoDB when it's actually fully configured (credentials
+  // AND table name) — this mirrors the health check surfaced to the admin
+  // dashboard so "durable store configured: yes" and "we actually tried
+  // DynamoDB" can never disagree again.
+  if (isTelemetryDurableConfigured()) {
     try {
       dynamoRecords = await readFromDynamo(MEMORY_MAX_RECORDS);
     } catch (error) {
-      console.error("[telemetry] DynamoDB read failed:", error instanceof Error ? error.message : "unknown");
+      dynamoReadError = error instanceof Error ? error.message : "Unknown DynamoDB read error.";
+      console.error("[telemetry] DynamoDB read failed:", dynamoReadError);
     }
   }
 
   const merged = mergeTelemetryRecords(dynamoRecords, memoryRecords);
-  return merged.slice(0, limit);
+  return {
+    records: merged.slice(0, limit),
+    dynamoRecordCount: dynamoRecords.length,
+    memoryRecordCount: memoryRecords.length,
+    dynamoReadError,
+  };
+}
+
+export async function getRecentTelemetry(limit = 100): Promise<TelemetryRecord[]> {
+  const { records } = await loadTelemetryRecords(MEMORY_MAX_RECORDS);
+  return records.slice(0, limit);
 }
 
 export async function getTelemetrySnapshot(): Promise<TelemetrySnapshot> {
-  const records = await getRecentTelemetry(MEMORY_MAX_RECORDS);
-  return buildSnapshot(records);
+  const { records, ...diag } = await loadTelemetryRecords(MEMORY_MAX_RECORDS);
+  return buildSnapshot(records, diag);
 }
 
 export async function getTelemetryByRoute(route: string): Promise<TelemetryRecord[]> {
@@ -277,5 +351,5 @@ export async function getTelemetryByTier(tier: string): Promise<TelemetryRecord[
 }
 
 export function isDurableStoreConfigured(): boolean {
-  return getDynamoDocClient() !== null;
+  return isTelemetryDurableConfigured();
 }
