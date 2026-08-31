@@ -173,19 +173,19 @@ export const testimonials = [
     quote:
       "Kroo turned a complicated launch into a film system that felt premium from the first frame to the final cutdown.",
     name: "Aarav Mehta",
-    company: "Creative Director, Nova Auto",
+    company: "Creative Director",
   },
   {
     quote:
       "The team brought strategy, taste, and speed. Every detail had intention, and the campaign moved exactly the way we hoped.",
     name: "Ira Sen",
-    company: "Brand Lead, Forma",
+    company: "Brand Lead ",
   },
   {
     quote:
       "Their post-production workflow is surgical. The grade, rhythm, and sound design made the story feel bigger than the brief.",
     name: "Dev Kapoor",
-    company: "Producer, Eastline",
+    company: "Producer ",
   },
 ];
 
