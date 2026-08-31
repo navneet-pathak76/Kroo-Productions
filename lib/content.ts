@@ -153,7 +153,7 @@ export const projects = [
     category: "2D & 3D animation",
     metric: "08",
     color: "from-red-700/80 via-orange-900 to-black",
-    image: "/images/motion-graphics.jpg",
+    image: "/images/motion-graphics.png",
     href: "/motion-graphics-content",
   },
 
