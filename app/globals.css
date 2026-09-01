@@ -130,6 +130,7 @@ textarea {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
+
   /* film-grain/noise overlay removed to produce a clean luxury black background */
 
   .grid-mask {
@@ -181,6 +182,7 @@ html[data-reduced-motion="true"] .animate-project-marquee,
 html[data-save-data="true"] .animate-project-marquee {
   animation-duration: 70s;
 }
+
 /* ============================= */
 /* PROJECTS MARQUEE ANIMATION */
 /* ============================= */
@@ -202,4 +204,37 @@ html[data-save-data="true"] .animate-project-marquee {
 
 .animate-project-marquee:hover {
   animation-play-state: paused;
+}
+
+/* ============================= */
+/* SHARED SECTION ALIGNMENT */
+/* ============================= */
+/*
+ * Keep section headings, supporting copy, and their content grids on one
+ * vertical rail. The previous homepage markup gave Services' intro an
+ * extra horizontal inset and gave the Team intro a wider container than
+ * its founder-card grid. Both made sections look visually off-scale.
+ * Desktop uses the same 1480px content rail everywhere; the existing
+ * section-level mobile padding remains untouched.
+ */
+@media (min-width: 1024px) {
+  #services > div:first-child,
+  #services > div:first-child > div {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  #services > div:first-child,
+  #services > div:nth-child(2) {
+    width: 100%;
+    max-width: 1480px;
+  }
+
+  #team > div:first-child,
+  #team > div:last-child {
+    width: 100%;
+    max-width: 1480px !important;
+    padding-left: 0;
+    padding-right: 0;
+  }
 }
