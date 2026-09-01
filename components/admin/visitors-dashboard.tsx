@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { VisitorListItem } from "@/lib/visitors/types";
 import { MetricCard, Section, EmptyState } from "@/components/admin/ui";
@@ -29,9 +29,12 @@ function formatLocation(item: VisitorListItem): string {
 
 function cacheVisitorSession(item: VisitorListItem): void {
   try {
-    window.sessionStorage.setItem(`kroo:visitor:${item.sessionId}`, JSON.stringify(item));
+    window.localStorage.setItem(
+      `kroo:visitor:${item.sessionId}`,
+      JSON.stringify({ cachedAt: Date.now(), item }),
+    );
   } catch {
-    // sessionStorage can be unavailable in hardened/private browser contexts.
+    // localStorage can be unavailable in hardened/private browser contexts.
   }
 }
 
@@ -42,12 +45,14 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [live, setLive] = useState(true);
+  const refreshingRef = useRef(false);
 
   const uniqueVisitorCount = new Set(items.map((i) => i.visitorId)).size;
   const newVisitorCount = items.filter((i) => i.isNewVisitor).length;
 
   async function refreshVisitors(silent = false) {
-    if (refreshing) return;
+    if (refreshingRef.current) return;
+    refreshingRef.current = true;
     if (!silent) setRefreshing(true);
     setError(null);
 
@@ -75,19 +80,21 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
     } catch (err) {
       if (!silent) setError(err instanceof Error ? err.message : "Failed to refresh visitors.");
     } finally {
+      refreshingRef.current = false;
       if (!silent) setRefreshing(false);
     }
   }
 
-  // Keep the admin visitor dashboard live. A request is made every second so
-  // new visitors and updated sessions appear without a manual page refresh.
+  // The UI remains live every second, but the API itself coalesces repeated
+  // reads for a short window. This prevents overlapping requests and avoids
+  // turning an open admin tab into a constant DynamoDB read workload.
   useEffect(() => {
     const interval = window.setInterval(() => {
       void refreshVisitors(true);
     }, 1000);
 
     return () => window.clearInterval(interval);
-  }, [refreshing]);
+  }, []);
 
   async function handleLoadMore() {
     if (!cursor || loadingMore) return;
