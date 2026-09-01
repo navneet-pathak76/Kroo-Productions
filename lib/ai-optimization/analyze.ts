@@ -165,8 +165,7 @@ type GeminiAnalysisResult =
 function resolveGeminiModel(): string {
   const configured = process.env.GEMINI_MODEL?.trim();
 
-  // Gemini 2.5 Flash-Lite is no longer available to new API users. Keep the
-  // existing Vercel variable harmless if it still contains the retired model.
+  // Keep compatibility with an old Vercel env value while using the current working model.
   if (!configured || configured === "gemini-2.5-flash-lite") {
     return "gemini-3.5-flash-lite";
   }
