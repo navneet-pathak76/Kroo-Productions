@@ -1,5 +1,5 @@
 import "server-only";
-import { GetCommand, PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { GetCommand, PutCommand, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamoDocClient, getVisitorTableName } from "@/lib/aws/dynamodb-client";
 import type { PageViewRecord, VisitorListResult, VisitorSessionRecord } from "@/lib/visitors/types";
 import type { RecordPageViewInput, VisitorStorageAdapter } from "@/lib/visitors/storage-adapter";
@@ -71,38 +71,68 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
     const tableName = getVisitorTableName();
     if (!client || !tableName) return;
 
-    const existing = await this.getSession(input.sessionId);
-    const firstSeen = existing?.firstSeen ?? input.timestamp;
-    const pageCount = (existing?.pageCount ?? 0) + 1;
-    const durationMs = Math.max(0, new Date(input.timestamp).getTime() - new Date(firstSeen).getTime());
-
-    const sessionItem: VisitorSessionRecord = {
+    // Keep the hot path to two writes. The previous implementation performed
+    // a Get before every page view, which added a round trip and made a busy
+    // visitor generate unnecessary DynamoDB reads. UpdateCommand atomically
+    // creates the session on the first event and updates it thereafter.
+    const nowMs = new Date(input.timestamp).getTime();
+    const sessionItem = {
+      pk: `SESSION#${input.sessionId}`,
+      sk: "META",
+      gsi1pk: `DAY#${dayBucket(input.timestamp)}`,
+      gsi1sk: `${input.timestamp}#${input.sessionId}`,
       sessionId: input.sessionId,
       visitorId: input.visitorId,
-      isNewVisitor: !existing,
-      firstSeen,
-      lastSeen: input.timestamp,
-      entryPage: existing?.entryPage ?? input.path,
-      exitPage: input.path,
-      pageCount,
-      durationMs,
-      referrer: existing?.referrer ?? input.referrer,
-      geo: existing?.geo ?? input.geo,
-      client: existing?.client ?? input.client,
-      ip: existing?.ip ?? input.ip,
-      ipHash: existing?.ipHash ?? input.ipHash,
+      path: input.path,
+      referrer: input.referrer,
+      geo: input.geo,
+      client: input.client,
+      ip: input.ip,
+      ipHash: input.ipHash,
+      timestamp: input.timestamp,
+      ttl: ttlFor(input.timestamp),
+      nowMs,
     };
 
     await Promise.all([
-      client.send(new PutCommand({
+      client.send(new UpdateCommand({
         TableName: tableName,
-        Item: {
-          pk: `SESSION#${input.sessionId}`,
-          sk: "META",
-          gsi1pk: `DAY#${dayBucket(input.timestamp)}`,
-          gsi1sk: `${input.timestamp}#${input.sessionId}`,
-          ...sessionItem,
-          ttl: ttlFor(input.timestamp),
+        Key: { pk: sessionItem.pk, sk: sessionItem.sk },
+        UpdateExpression: [
+          "SET firstSeen = if_not_exists(firstSeen, :timestamp)",
+          "firstSeenMs = if_not_exists(firstSeenMs, :nowMs)",
+          "lastSeen = :timestamp",
+          "entryPage = if_not_exists(entryPage, :path)",
+          "exitPage = :path",
+          "pageCount = if_not_exists(pageCount, :zero) + :one",
+          "durationMs = :nowMs - if_not_exists(firstSeenMs, :nowMs)",
+          "visitorId = if_not_exists(visitorId, :visitorId)",
+          "isNewVisitor = if_not_exists(isNewVisitor, :true)",
+          "referrer = if_not_exists(referrer, :referrer)",
+          "geo = if_not_exists(geo, :geo)",
+          "client = if_not_exists(client, :client)",
+          "ip = if_not_exists(ip, :ip)",
+          "ipHash = if_not_exists(ipHash, :ipHash)",
+          "gsi1pk = :gsi1pk",
+          "gsi1sk = :gsi1sk",
+          "ttl = :ttl",
+        ].join(", "),
+        ExpressionAttributeValues: {
+          ":timestamp": sessionItem.timestamp,
+          ":nowMs": sessionItem.nowMs,
+          ":path": sessionItem.path,
+          ":zero": 0,
+          ":one": 1,
+          ":visitorId": sessionItem.visitorId,
+          ":true": true,
+          ":referrer": sessionItem.referrer,
+          ":geo": sessionItem.geo,
+          ":client": sessionItem.client,
+          ":ip": sessionItem.ip,
+          ":ipHash": sessionItem.ipHash,
+          ":gsi1pk": sessionItem.gsi1pk,
+          ":gsi1sk": sessionItem.gsi1sk,
+          ":ttl": sessionItem.ttl,
         },
       })),
       client.send(new PutCommand({
