@@ -16,7 +16,6 @@ export type { ProjectVideo };
 type ProjectDetail = {
   title: string;
   copy: string;
-  /** Icon *component*, e.g. `Sparkles` — never a rendered `<Sparkles />` element. */
   icon: LucideIcon;
 };
 
@@ -57,24 +56,25 @@ export type ProjectPageConfig = {
 };
 
 function SectionIntro({
-  eyebrow,
   title,
   copy,
   titleClassName,
 }: {
-  eyebrow: string;
   title: ReactNode;
   copy: string;
   titleClassName?: string;
 }) {
   return (
-    <div className="mx-auto mb-10 max-w-[1480px] px-5 sm:px-8 lg:mb-14">
-      <div data-reveal className="max-w-[1100px]">
-        <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
-          {eyebrow}
+    <div className="mx-auto mb-10 w-full max-w-[1480px] lg:mb-14">
+      <div data-reveal className="max-w-[1280px]">
+        <h2
+          className={`section-title text-balance ${titleClassName ?? ""}`}
+        >
+          {title}
+        </h2>
+        <p className="mt-7 max-w-[760px] text-base leading-7 text-white/60">
+          {copy}
         </p>
-        <h2 className={`section-title ${titleClassName ?? ""}`}>{title}</h2>
-        <p className="mt-8 max-w-[760px] text-base leading-7 text-white/60">{copy}</p>
       </div>
     </div>
   );
@@ -84,7 +84,7 @@ function ProjectInfo({ items }: { items: ProjectInfoItem[] }) {
   return (
     <section className="relative z-10 px-5 pb-14 sm:px-8 lg:pb-20">
       <div className="absolute left-1/2 top-1/2 -z-20 h-[420px] w-[1300px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.07)_34%,transparent_72%)] blur-[120px] opacity-80" />
-      <div className="cinema-panel mx-auto grid max-w-[1480px] gap-4 overflow-hidden rounded-[28px] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_80px_rgba(255,77,18,0.08)] sm:p-5 md:grid-cols-2 lg:grid-cols-5">
+      <div className="cinema-panel mx-auto grid w-full max-w-[1480px] gap-4 overflow-hidden rounded-[28px] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_80px_rgba(255,77,18,0.08)] sm:p-5 md:grid-cols-2 lg:grid-cols-5">
         {items.map((item) => (
           <div
             key={item.label}
@@ -112,12 +112,12 @@ function AboutProject({ about }: { about: ProjectPageConfig["about"] }) {
   return (
     <section id="about" className="relative scroll-mt-28 px-5 py-16 sm:px-8 lg:py-24">
       <div className="pointer-events-none absolute left-0 top-0 h-[34rem] w-[34rem] rounded-full bg-primary/10 blur-[120px]" />
-      <div className="mx-auto max-w-[1480px]">
-        <div data-reveal className="max-w-[1660px]">
+      <div className="mx-auto w-full max-w-[1480px]">
+        <div data-reveal className="max-w-[1280px]">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
             About the project
           </p>
-          <h2 className="text-[clamp(3.6rem,4.8vw,5rem)] font-black uppercase leading-[0.92] tracking-tight">
+          <h2 className="text-balance text-[clamp(3rem,4.2vw,4.7rem)] font-black uppercase leading-[0.94] tracking-tight">
             About This Production
           </h2>
           <p className="mt-7 max-w-[700px] text-base leading-7 text-white/60">{about.intro}</p>
@@ -167,11 +167,11 @@ function ProjectCTA({ cta }: { cta?: ProjectPageConfig["cta"] }) {
     <section id="contact" className="relative scroll-mt-28 overflow-hidden px-5 py-20 sm:px-8 lg:py-28">
       <div className="absolute inset-x-0 bottom-0 h-80 bg-[radial-gradient(ellipse_at_50%_100%,rgba(255,77,18,0.3),transparent_66%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_28%,black_74%,transparent)]" />
-      <div data-reveal className="relative mx-auto max-w-[1320px] border-y border-white/10 py-16 text-center">
+      <div data-reveal className="relative mx-auto w-full max-w-[1320px] border-y border-white/10 py-16 text-center">
         <p className="mb-4 text-xs font-black uppercase tracking-[0.32em] text-primary">
           Start project
         </p>
-        <h2 className="section-title max-w-none whitespace-nowrap">{content.title}</h2>
+        <h2 className="section-title max-w-none text-balance">{content.title}</h2>
         <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-white/64 sm:text-lg">
           {content.copy}
         </p>
@@ -196,7 +196,7 @@ function ProjectFooter() {
 
   return (
     <footer className="relative border-t border-white/10 px-5 py-10 sm:px-8">
-      <div className="mx-auto grid max-w-[1480px] gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
+      <div className="mx-auto grid w-full max-w-[1480px] gap-8 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(0,0.8fr)]">
         <div>
           <div className="mb-5 flex items-center gap-3">
             <span className="text-4xl font-black text-primary">K</span>
@@ -251,17 +251,6 @@ function ProjectFooter() {
   );
 }
 
-/**
- * Server Component. Fetches nothing itself (each page-level file does that
- * via `getFolderMedia`) but owns the whole static shell: hero copy, info
- * grid, about section, CTA and footer are all rendered here, on the server.
- *
- * Icons and JSX authored in `config` (by the individual `*-content-page.tsx`
- * files, which are themselves Server Components) are only ever resolved
- * into elements *inside* Server Components. The two Client Components below
- * (`ProjectHero`, `ProjectGallery`) only ever receive plain strings/numbers
- * or already-rendered `ReactNode`s — never a raw icon component reference.
- */
 export default function ProjectContentPage({ config }: { config: ProjectPageConfig }) {
   const HeroIcon = config.hero.icon;
   const AccentIcon = config.hero.accentIcon ?? Activity;
@@ -287,11 +276,10 @@ export default function ProjectContentPage({ config }: { config: ProjectPageConf
 
         <ProjectInfo items={config.info} />
 
-        <section id="work" className="relative scroll-mt-28 overflow-visible px-2 py-16 sm:px-8 lg:py-20">
+        <section id="work" className="relative scroll-mt-28 overflow-visible px-5 py-16 sm:px-8 lg:py-20">
           <SectionIntro
-            eyebrow="Featured Videos"
             title={config.gallery.title}
-            titleClassName="max-w-[1100px] text-[clamp(2.4rem,3.6vw,4.2rem)] leading-[0.92]"
+            titleClassName="max-w-[1280px] text-[clamp(2.1rem,3vw,3.6rem)] leading-[0.95] tracking-tight"
             copy={config.gallery.copy}
           />
           <ProjectGallery videos={config.videos} />
