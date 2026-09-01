@@ -6,7 +6,9 @@ import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
 import { getDeviceCapability } from "@/lib/device-capability";
 import type { TelemetryPayload } from "@/lib/telemetry/types";
 
-const FLUSH_INTERVAL_MS = 5_000;
+// Telemetry is diagnostic data, not a real-time feature. Flush in batches so
+// analytics never competes with the public site's rendering/network budget.
+const FLUSH_INTERVAL_MS = 10_000;
 const MAX_QUEUE = 20;
 
 function buildCapability() {
@@ -197,15 +199,18 @@ export function TelemetryCollector() {
       void sendEvents(batch);
     };
 
-    document.addEventListener("visibilitychange", () => {
+    const onVisibilityChange = () => {
       if (document.visibilityState === "hidden") flushOnHide();
-    });
+    };
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
       window.fetch = originalFetch;
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
       document.removeEventListener("error", onMediaError, true);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       window.clearInterval(flushTimer);
       flushOnHide();
     };
