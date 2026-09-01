@@ -16,6 +16,11 @@ type Props = {
 
 const JOURNEY_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
+type CachedJourney = {
+  cachedAt?: number;
+  item?: VisitorSessionRecord;
+};
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.round(ms / 1000);
   if (totalSeconds < 60) return `${totalSeconds}s`;
@@ -36,11 +41,9 @@ function readCachedSession(sessionId: string): VisitorSessionRecord | null {
 
     // Current cache format stores an explicit timestamp. Accept the older
     // direct-object format too so existing cached journeys do not break.
-    const parsed = JSON.parse(raw) as
-      | { cachedAt?: number; item?: VisitorSessionRecord }
-      | VisitorSessionRecord;
-    const cachedAt = "cachedAt" in parsed ? parsed.cachedAt : undefined;
-    const item = "item" in parsed ? parsed.item : parsed;
+    const parsed = JSON.parse(raw) as CachedJourney & Partial<VisitorSessionRecord>;
+    const cachedAt = parsed.cachedAt;
+    const item = parsed.item ?? (parsed.sessionId ? (parsed as VisitorSessionRecord) : undefined);
 
     if (cachedAt && Date.now() - cachedAt > JOURNEY_CACHE_TTL_MS) {
       window.localStorage.removeItem(`kroo:visitor:${sessionId}`);
