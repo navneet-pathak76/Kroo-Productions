@@ -110,25 +110,25 @@ const nextConfig: NextConfig = {
     ],
   },
 
-images: {
-  formats: ["image/avif", "image/webp"],
-  // Every project page's hero thumbnail (public/images/*/hero-thumb.svg)
-  // is a local SVG rendered through next/image. Next's built-in image
-  // optimizer refuses SVG sources by default and returns a 400 — this
-  // is what was actually behind hero images failing to load, not a
-  // missing-asset problem on most pages. These are our own static
-  // assets (never user-uploaded), so allowing SVG here is safe; the
-  // sandboxed CSP below is the standard Next.js-recommended hardening
-  // for this setting regardless.
-  dangerouslyAllowSVG: true,
-  contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-  remotePatterns: [
-    {
-      protocol: "https",
-      hostname: mediaHostname,
-    },
-  ],
-},
+  images: {
+    formats: ["image/avif", "image/webp"],
+    // Every project page's hero thumbnail (public/images/*/hero-thumb.svg)
+    // is a local SVG rendered through next/image. Next's built-in image
+    // optimizer refuses SVG sources by default and returns a 400 — this
+    // is what was actually behind hero images failing to load, not a
+    // missing-asset problem on most pages. These are our own static
+    // assets (never user-uploaded), so allowing SVG here is safe; the
+    // sandboxed CSP below is the standard Next.js-recommended hardening
+    // for this setting regardless.
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: mediaHostname,
+      },
+    ],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -139,8 +139,29 @@ images: {
       return [];
     }
 
-    // ✅ Enable CSP only in production
+    // Static Next.js assets are content-hashed, so they are safe to keep in
+    // the browser/CDN cache for a year. Public image assets use a shorter
+    // cache because their paths can be intentionally replaced without a new
+    // Next build. API/admin responses are deliberately not covered here.
     return [
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, stale-while-revalidate=86400",
+          },
+        ],
+      },
       {
         source: "/(.*)",
         headers: securityHeaders,
