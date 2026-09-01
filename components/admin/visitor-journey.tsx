@@ -14,6 +14,8 @@ type Props = {
   viewer: Viewer;
 };
 
+const JOURNEY_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+
 function formatDuration(ms: number): string {
   const totalSeconds = Math.round(ms / 1000);
   if (totalSeconds < 60) return `${totalSeconds}s`;
@@ -29,10 +31,23 @@ function formatLocation(session: VisitorSessionRecord): string {
 
 function readCachedSession(sessionId: string): VisitorSessionRecord | null {
   try {
-    const raw = window.sessionStorage.getItem(`kroo:visitor:${sessionId}`);
+    const raw = window.localStorage.getItem(`kroo:visitor:${sessionId}`);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as VisitorSessionRecord;
-    return parsed?.sessionId === sessionId ? parsed : null;
+
+    // Current cache format stores an explicit timestamp. Accept the older
+    // direct-object format too so existing cached journeys do not break.
+    const parsed = JSON.parse(raw) as
+      | { cachedAt?: number; item?: VisitorSessionRecord }
+      | VisitorSessionRecord;
+    const cachedAt = "cachedAt" in parsed ? parsed.cachedAt : undefined;
+    const item = "item" in parsed ? parsed.item : parsed;
+
+    if (cachedAt && Date.now() - cachedAt > JOURNEY_CACHE_TTL_MS) {
+      window.localStorage.removeItem(`kroo:visitor:${sessionId}`);
+      return null;
+    }
+
+    return item?.sessionId === sessionId ? item : null;
   } catch {
     return null;
   }
@@ -48,8 +63,9 @@ export function VisitorJourney({ session: initialSession, pageViews: initialPage
 
     async function loadJourney() {
       // The visitors list already contains the complete session record. Keep
-      // it locally so the journey page still works when a serverless request
-      // lands on another instance and the in-memory fallback is unavailable.
+      // it locally for 30 days so the journey still renders immediately when
+      // a request lands on another serverless instance or the database is
+      // temporarily unavailable. The server remains the source of truth.
       const cached = readCachedSession(sessionId);
       if (cached && !cancelled) setSession((current) => current ?? cached);
 
