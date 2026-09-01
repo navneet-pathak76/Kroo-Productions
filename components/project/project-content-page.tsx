@@ -66,9 +66,15 @@ function SectionIntro({
 }) {
   return (
     <div className="mx-auto mb-10 w-full max-w-[1480px] lg:mb-14">
-      <div data-reveal className="max-w-[1280px]">
+      <div data-reveal className="max-w-[1400px]">
         <h2
-          className={`section-title text-balance ${titleClassName ?? ""}`}
+          className={`section-title text-balance [&_br]:hidden ${titleClassName ?? ""}`}
+          style={{
+            display: "-webkit-box",
+            WebkitBoxOrient: "vertical",
+            WebkitLineClamp: 2,
+            overflow: "hidden",
+          }}
         >
           {title}
         </h2>
@@ -274,12 +280,10 @@ export default function ProjectContentPage({ config }: { config: ProjectPageConf
           accentIcon={<AccentIcon size={32} />}
         />
 
-        <ProjectInfo items={config.info} />
-
         <section id="work" className="relative scroll-mt-28 overflow-visible px-5 py-16 sm:px-8 lg:py-20">
           <SectionIntro
             title={config.gallery.title}
-            titleClassName="max-w-[1280px] text-[clamp(2.1rem,3vw,3.6rem)] leading-[0.95] tracking-tight"
+            titleClassName="max-w-[1400px] text-[clamp(2.1rem,3vw,3.6rem)] leading-[0.95] tracking-tight"
             copy={config.gallery.copy}
           />
           <ProjectGallery videos={config.videos} />
