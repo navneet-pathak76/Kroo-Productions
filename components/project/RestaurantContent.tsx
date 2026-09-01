@@ -36,7 +36,7 @@ export default async function RestaurantContentPage() {
     videos,
     featuredButtonLabel: "View projects",
     gallery: {
-      title: <><span>A CURATED COLLECTION OF OUR</span><br />CINEMATIC RESTAURANT PRODUCTIONS</>,
+      title: <>A CURATED COLLECTION OF OUR<br />CINEMATIC RESTAURANT PRODUCTIONS</>,
       copy: "Brand films, chef stories and food-forward social edits built to make every dish feel irresistible.",
     },
     about: {
