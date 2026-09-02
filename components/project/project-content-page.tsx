@@ -36,6 +36,8 @@ export type ProjectPageConfig = {
     label: string;
     visualTitle: string;
   };
+  // Retained in the config shape for compatibility with existing project
+  // definitions, but intentionally not rendered on project detail pages.
   info: ProjectInfoItem[];
   videos: ProjectVideo[];
   gallery: {
@@ -66,13 +68,13 @@ function SectionIntro({
 }) {
   return (
     <div className="mx-auto mb-10 w-full max-w-[1480px] lg:mb-14">
-      <div data-reveal className="max-w-[1400px]">
+      <div data-reveal className="max-w-[1500px]">
         <h2
           className={`section-title text-balance [&_br]:hidden ${titleClassName ?? ""}`}
           style={{
-            display: "-webkit-box",
-            WebkitBoxOrient: "vertical",
-            WebkitLineClamp: 2,
+            display: "block",
+            lineHeight: 0.95,
+            maxHeight: "1.9em",
             overflow: "hidden",
           }}
         >
@@ -83,34 +85,6 @@ function SectionIntro({
         </p>
       </div>
     </div>
-  );
-}
-
-function ProjectInfo({ items }: { items: ProjectInfoItem[] }) {
-  return (
-    <section className="relative z-10 px-5 pb-14 sm:px-8 lg:pb-20">
-      <div className="absolute left-1/2 top-1/2 -z-20 h-[420px] w-[1300px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.07)_34%,transparent_72%)] blur-[120px] opacity-80" />
-      <div className="cinema-panel mx-auto grid w-full max-w-[1480px] gap-4 overflow-hidden rounded-[28px] p-4 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_80px_rgba(255,77,18,0.08)] sm:p-5 md:grid-cols-2 lg:grid-cols-5">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            data-reveal
-            className="group min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-5 transition duration-500 hover:-translate-y-1 hover:border-primary/60 hover:shadow-glow"
-          >
-            <item.icon
-              className="mb-6 text-white/55 transition duration-300 group-hover:text-primary"
-              size={24}
-            />
-            <p className="mb-3 text-[0.68rem] font-black uppercase tracking-[0.24em] text-primary">
-              {item.label}
-            </p>
-            <p className="text-sm font-black uppercase leading-6 tracking-[0.1em] text-white sm:text-base">
-              {item.value}
-            </p>
-          </div>
-        ))}
-      </div>
-    </section>
   );
 }
 
@@ -183,7 +157,7 @@ function ProjectCTA({ cta }: { cta?: ProjectPageConfig["cta"] }) {
         </p>
         <div className="mt-9 flex flex-col justify-center gap-3 sm:flex-row">
           <Button size="lg" asChild>
-            <a href="mailto:team@krooproduction.com">
+            <a href="mailto:team@krooproduction.in">
               {content.primaryLabel}
               <ArrowUpRight size={17} />
             </a>
@@ -283,7 +257,7 @@ export default function ProjectContentPage({ config }: { config: ProjectPageConf
         <section id="work" className="relative scroll-mt-28 overflow-visible px-5 py-16 sm:px-8 lg:py-20">
           <SectionIntro
             title={config.gallery.title}
-            titleClassName="max-w-[1400px] text-[clamp(2.1rem,3vw,3.6rem)] leading-[0.95] tracking-tight"
+            titleClassName="max-w-[1500px] text-[clamp(2.1rem,3vw,3.6rem)] leading-[0.95] tracking-tight"
             copy={config.gallery.copy}
           />
           <ProjectGallery videos={config.videos} />
