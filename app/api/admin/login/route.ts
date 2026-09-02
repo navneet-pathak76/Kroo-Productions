@@ -35,25 +35,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
     }
 
-   const admin = findAdminByEmail(email);
-const ip = extractClientIp(request);
+    const admin = findAdminByEmail(email);
+    const ip = extractClientIp(request);
+    const passwordValid = admin
+      ? await verifyPassword(password, admin.passwordHash)
+      : false;
 
-console.log("[ADMIN DEBUG]", {
-  receivedEmail: JSON.stringify(email),
-  adminFound: Boolean(admin),
-  adminEmail: admin ? JSON.stringify(admin.email) : null,
-  role: admin?.role ?? null,
-  hashExists: Boolean(admin?.passwordHash),
-});
-
-const passwordValid = admin
-  ? await verifyPassword(password, admin.passwordHash)
-  : false;
-
-console.log("[ADMIN DEBUG] passwordValid:", passwordValid);
-
-if (!admin || !passwordValid) {
-      await recordAdminAudit("login_failed", {
+    if (!admin || !passwordValid) {
+      // Audit logging must never add authentication latency or turn an
+      // otherwise-correct login response into a 5xx when telemetry storage
+      // is unavailable. recordAdminAudit handles its own persistence errors.
+      void recordAdminAudit("login_failed", {
         route: "/admin/login",
         adminEmail: email,
         ip,
@@ -63,7 +55,7 @@ if (!admin || !passwordValid) {
     }
 
     const session = createAdminSession(admin.email, admin.role, admin.name);
-    await recordAdminAudit("login", {
+    void recordAdminAudit("login", {
       route: "/admin/login",
       adminEmail: admin.email,
       ip,
