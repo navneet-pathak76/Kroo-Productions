@@ -7,6 +7,8 @@ import type { TelemetryPayload, TelemetryRecord, TelemetrySnapshot } from "./typ
 
 const MEMORY_MAX_RECORDS = 5_000;
 const memoryRecords: TelemetryRecord[] = [];
+const DYNAMO_FAILURE_COOLDOWN_MS = 30_000;
+let dynamoDisabledUntil = 0;
 
 function percentile75(values: number[]): number | undefined {
   if (values.length === 0) return undefined;
@@ -195,17 +197,31 @@ async function writeToDynamo(record: TelemetryRecord): Promise<void> {
     return;
   }
 
-  await client.send(
-    new PutCommand({
-      TableName: tableName,
-      Item: {
-        pk: "TELEMETRY",
-        sk: `${record.timestamp}#${record.id}`,
-        ...record,
-        ttl: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
-      },
-    }),
-  );
+  if (Date.now() < dynamoDisabledUntil) return;
+
+  try {
+    await client.send(
+      new PutCommand({
+        TableName: tableName,
+        Item: {
+          pk: "TELEMETRY",
+          sk: `${record.timestamp}#${record.id}`,
+          ...record,
+          ttl: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+        },
+      }),
+    );
+    dynamoDisabledUntil = 0;
+  } catch (error) {
+    // A permission/configuration failure should not turn every client event
+    // into another slow DynamoDB request and another error log. Keep the
+    // in-memory record and retry automatically after a short cooldown.
+    dynamoDisabledUntil = Date.now() + DYNAMO_FAILURE_COOLDOWN_MS;
+    console.error(
+      "[telemetry] DynamoDB write failed; backing off for 30s:",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
 }
 
 let loggedMissingTableOnRead = false;
@@ -225,9 +241,6 @@ async function readFromDynamo(limit = MEMORY_MAX_RECORDS): Promise<TelemetryReco
     return [];
   }
 
-  // Telemetry records are all written with the same partition key. Querying
-  // that partition avoids Scan, which is intentionally not granted to the
-  // production IAM user used by the visitor-tracking table.
   const result = await client.send(
     new QueryCommand({
       TableName: tableName,
@@ -263,13 +276,7 @@ export async function recordTelemetry(
   };
 
   writeToMemory(record);
-
-  try {
-    await writeToDynamo(record);
-  } catch (error) {
-    console.error("[telemetry] DynamoDB write failed:", error instanceof Error ? error.message : "unknown");
-  }
-
+  await writeToDynamo(record);
   return record;
 }
 
