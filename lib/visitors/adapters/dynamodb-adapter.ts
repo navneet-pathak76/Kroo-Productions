@@ -94,6 +94,11 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
       nowMs,
     };
 
+    // DynamoDB rejects undefined expression values even when the document
+    // client's removeUndefinedValues option is enabled. Normalize optional
+    // referrers before putting them into ExpressionAttributeValues.
+    const referrer = sessionItem.referrer ?? "";
+
     await Promise.all([
       client.send(new UpdateCommand({
         TableName: tableName,
@@ -115,8 +120,11 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
           "ipHash = if_not_exists(ipHash, :ipHash)",
           "gsi1pk = :gsi1pk",
           "gsi1sk = :gsi1sk",
-          "ttl = :ttl",
+          "#ttl = :ttl",
         ].join(", "),
+        ExpressionAttributeNames: {
+          "#ttl": "ttl",
+        },
         ExpressionAttributeValues: {
           ":timestamp": sessionItem.timestamp,
           ":nowMs": sessionItem.nowMs,
@@ -125,7 +133,7 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
           ":one": 1,
           ":visitorId": sessionItem.visitorId,
           ":true": true,
-          ":referrer": sessionItem.referrer,
+          ":referrer": referrer,
           ":geo": sessionItem.geo,
           ":client": sessionItem.client,
           ":ip": sessionItem.ip,
@@ -202,7 +210,7 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
         ExpressionAttributeValues: { ":pk": `DAY#${dayStr}` },
         ScanIndexForward: false,
         Limit: limit - items.length,
-        ExclusiveStartKey: lek as never,
+        ...(lek ? { ExclusiveStartKey: lek } : {}),
       }));
       items.push(...(result.Items ?? []).map(toSession).filter((session) => isWithinRetention(session.lastSeen)));
       if (result.LastEvaluatedKey) return { items, nextCursor: encodeCursor({ dayOffset, lek: result.LastEvaluatedKey as Record<string, unknown> }) };
@@ -230,7 +238,7 @@ export class DynamoVisitorAdapter implements VisitorStorageAdapter {
           IndexName: "gsi1",
           KeyConditionExpression: "gsi1pk = :pk",
           ExpressionAttributeValues: { ":pk": `DAY#${day}` },
-          ExclusiveStartKey: exclusiveStartKey as never,
+          ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
         }));
         out.push(...(result.Items ?? []).map(toSession));
         exclusiveStartKey = result.LastEvaluatedKey as Record<string, unknown> | undefined;
