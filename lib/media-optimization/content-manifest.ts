@@ -17,13 +17,6 @@ const memoryItems: MediaItemRecord[] = [];
  * Thrown when MEDIA_DYNAMODB_TABLE *is* configured but a DynamoDB
  * operation against it fails (network error, throttling, bad
  * permissions, etc).
- *
- * This must never be caught and swallowed into an empty list or a
- * silent no-op write — that is exactly how "upload succeeds, list
- * returns []" bugs happen. Callers (API routes) should let this
- * propagate and turn it into a 5xx response. It is intentionally a
- * different situation from "storage not configured", which is a valid,
- * expected state in local development (see warnMissingMediaTableOnce).
  */
 export class MediaStorageUnavailableError extends Error {
   constructor(message: string, cause?: unknown) {
@@ -41,15 +34,12 @@ function warnMissingMediaTableOnce(): void {
   if (warnedMissingMediaTable) return;
   warnedMissingMediaTable = true;
 
-  if (process.env.NODE_ENV === "production") {
-    console.error(
-      "[media-manifest] MEDIA_DYNAMODB_TABLE is not configured. Media metadata is NOT durable in this environment — uploads will be lost on restart or across server instances. Set MEDIA_DYNAMODB_TABLE (and the shared AWS_REGION/AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY credentials) to enable persistent storage.",
-    );
-  } else {
-    console.warn(
-      "[media-manifest] MEDIA_DYNAMODB_TABLE is not set. Using in-memory storage, which is fine for local development but will NOT persist across restarts.",
-    );
-  }
+  // S3 remains the source of truth for public media. The optional DynamoDB
+  // manifest stores admin metadata only, so its absence is a configuration
+  // warning rather than a production application error.
+  console.warn(
+    "[media-manifest] MEDIA_DYNAMODB_TABLE is not configured. Admin media metadata will use the in-memory fallback and will not survive a server restart. Public S3 media is unaffected.",
+  );
 }
 
 function toSafeTitle(value: string): string {
@@ -98,14 +88,6 @@ function writeToMemory(record: MediaItemRecord): void {
   }
 }
 
-/**
- * Resolves the Dynamo doc client for a MEDIA_DYNAMODB_TABLE operation.
- * Returns null only when the table itself isn't configured (a valid
- * "no durable storage in this environment" state). If the table IS
- * configured but the shared AWS credentials are missing, that's a
- * misconfiguration, not an absence of intent to use Dynamo — so it
- * throws instead of silently no-op'ing.
- */
 function requireMediaClient(): { client: DynamoDBDocumentClient; tableName: string } | null {
   const tableName = getMediaTableName();
   if (!tableName) {
@@ -144,17 +126,6 @@ async function writeToDynamo(record: MediaItemRecord): Promise<void> {
   }
 }
 
-/**
- * Hard-deletes a media item's DynamoDB record. Not currently wired into
- * the admin API (which soft-deletes via status="archived" — see
- * deleteMediaItem below) but kept correct and available for a future
- * permanent-delete path.
- *
- * IMPORTANT: the sort key must include the item's projectSlug — the key
- * used to WRITE a record (`${projectSlug}#${id}`) must be the exact key
- * used to delete it. Deleting with a partial key like `#${id}` silently
- * fails to match any item.
- */
 async function removeFromDynamo(id: string, projectSlug: string): Promise<void> {
   const resolved = requireMediaClient();
   if (!resolved) return;
@@ -190,7 +161,7 @@ async function readFromDynamo(): Promise<MediaItemRecord[]> {
           TableName: tableName,
           KeyConditionExpression: "pk = :pk",
           ExpressionAttributeValues: { ":pk": "MEDIA" },
-          ExclusiveStartKey: exclusiveStartKey,
+          ...(exclusiveStartKey ? { ExclusiveStartKey: exclusiveStartKey } : {}),
         }),
       );
       items.push(...((result.Items ?? []) as MediaItemRecord[]));
@@ -210,11 +181,6 @@ export async function listMediaItems(options?: {
   search?: string;
   sort?: "newest" | "oldest" | "name" | "order";
 }): Promise<MediaItemRecord[]> {
-  // Deliberately NOT wrapped in try/catch here: if MEDIA_DYNAMODB_TABLE
-  // is configured but the query fails, readFromDynamo throws
-  // MediaStorageUnavailableError and that must propagate to the caller
-  // (the API route), which turns it into a 5xx. Swallowing it here would
-  // reintroduce "upload succeeded, list silently comes back empty."
   const dynamoItems = await readFromDynamo();
   const merged = mergeRecords(dynamoItems, memoryItems.slice());
 
@@ -319,15 +285,8 @@ export async function createMediaItem(input: {
     replacedById: input.replaceMediaId,
   };
 
-  // Write memory first so local dev (no table configured) still works,
-  // then persist to Dynamo. The Dynamo write is intentionally NOT
-  // wrapped in a catch-and-log here — if MEDIA_DYNAMODB_TABLE is
-  // configured, a failed write must surface as a failed upload (the API
-  // route catches this and returns 5xx), not a silent "succeeded" that
-  // later turns out not to have persisted.
   writeToMemory(record);
   await writeToDynamo(record);
-
   return record;
 }
 
@@ -367,12 +326,6 @@ export async function deleteMediaItem(id: string): Promise<boolean> {
   const current = records.find((item) => item.id === id);
   if (!current) return false;
 
-  // Soft delete (archive) rather than a hard delete, so the item stays
-  // recoverable and reorder/publish history isn't lost. Uses
-  // writeToDynamo with the FULL record, so the key is always
-  // `${projectSlug}#${id}` — the same key it was written with. (See
-  // removeFromDynamo above for the hard-delete path and its own key
-  // fix, kept correct even though it isn't called from here.)
   const archived: MediaItemRecord = { ...current, status: "archived", updatedAt: new Date().toISOString() };
   writeToMemory(archived);
   await writeToDynamo(archived);
@@ -404,6 +357,4 @@ export function getProjectOptionBySlug(slug: string): MediaProjectOption | undef
   return PROJECT_OPTIONS.find((option) => option.slug === normalizeProjectSlug(slug));
 }
 
-// Exposed for callers (e.g. a future hard-delete admin action) that need
-// the fixed-key Dynamo delete without going through the soft-delete flow.
 export { removeFromDynamo as hardDeleteMediaItemFromDynamo };
