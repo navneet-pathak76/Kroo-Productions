@@ -38,13 +38,31 @@ function cacheVisitorSession(item: VisitorListItem): void {
   }
 }
 
+function sameVisitorList(a: VisitorListItem[], b: VisitorListItem[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+    if (
+      left.sessionId !== right.sessionId ||
+      left.lastSeen !== right.lastSeen ||
+      left.pageCount !== right.pageCount ||
+      left.durationMs !== right.durationMs ||
+      left.entryPage !== right.entryPage
+    ) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function VisitorsDashboard({ initialItems, initialCursor, durableStoreConfigured, viewer }: Props) {
   const [items, setItems] = useState(initialItems);
   const [cursor, setCursor] = useState(initialCursor);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [live, setLive] = useState(true);
+  const [live] = useState(true);
   const refreshingRef = useRef(false);
 
   const uniqueVisitorCount = new Set(items.map((i) => i.visitorId)).size;
@@ -54,7 +72,7 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
     if (refreshingRef.current) return;
     refreshingRef.current = true;
     if (!silent) setRefreshing(true);
-    setError(null);
+    if (!silent) setError(null);
 
     try {
       const res = await fetch("/api/admin/visitors?limit=25", {
@@ -67,16 +85,18 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
       const freshItems = data.items ?? [];
 
       // Keep any additional sessions already loaded while replacing the newest
-      // page with the latest server state. This prevents auto-refresh from
-      // unexpectedly removing sessions loaded with "Load more".
+      // page with the latest server state. Avoid a React state update when the
+      // actual visitor data did not change; this is important for a one-second
+      // live poll because a no-op poll should cost essentially zero rendering.
       setItems((prev) => {
         const freshIds = new Set(freshItems.map((item) => item.sessionId));
         const olderLoaded = prev.filter((item) => !freshIds.has(item.sessionId));
-        return [...freshItems, ...olderLoaded].sort(
+        const next = [...freshItems, ...olderLoaded].sort(
           (a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime(),
         );
+        return sameVisitorList(prev, next) ? prev : next;
       });
-      setCursor(data.nextCursor);
+      setCursor((prev) => (prev === data.nextCursor ? prev : data.nextCursor));
     } catch (err) {
       if (!silent) setError(err instanceof Error ? err.message : "Failed to refresh visitors.");
     } finally {
@@ -85,15 +105,22 @@ export function VisitorsDashboard({ initialItems, initialCursor, durableStoreCon
     }
   }
 
-  // The UI remains live every second, but the API itself coalesces repeated
-  // reads for a short window. This prevents overlapping requests and avoids
-  // turning an open admin tab into a constant DynamoDB read workload.
+  // Keep one-second freshness while the dashboard is visible, but do not
+  // generate background requests or rerenders while the admin tab is hidden.
   useEffect(() => {
-    const interval = window.setInterval(() => {
-      void refreshVisitors(true);
-    }, 1000);
+    const refreshIfVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshVisitors(true);
+      }
+    };
 
-    return () => window.clearInterval(interval);
+    const interval = window.setInterval(refreshIfVisible, 1000);
+    document.addEventListener("visibilitychange", refreshIfVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", refreshIfVisible);
+    };
   }, []);
 
   async function handleLoadMore() {
