@@ -7,6 +7,13 @@ import type { PageViewRecord, VisitorListResult, VisitorSessionRecord } from "@/
 const memoryAdapter = new MemoryVisitorAdapter();
 let dynamoAdapter: DynamoVisitorAdapter | null = null;
 
+// If AWS rejects the visitor table because of credentials/permissions, do not
+// retry the same failed write for every page-view beacon in a warm instance.
+// The short cooldown keeps the public site responsive while still recovering
+// automatically after the IAM configuration is corrected.
+const DYNAMO_FAILURE_COOLDOWN_MS = 30_000;
+let dynamoDisabledUntil = 0;
+
 function getDynamoAdapter(): DynamoVisitorAdapter {
   if (!dynamoAdapter) dynamoAdapter = new DynamoVisitorAdapter();
   return dynamoAdapter;
@@ -20,15 +27,17 @@ export async function recordVisitorPageView(input: RecordPageViewInput): Promise
   await memoryAdapter.recordPageView(input);
 
   const dynamo = getDynamoAdapter();
-  if (dynamo.isConfigured()) {
-    try {
-      await dynamo.recordPageView(input);
-    } catch (error) {
-      console.error(
-        "[visitors] DynamoDB write failed:",
-        error instanceof Error ? error.message : "unknown",
-      );
-    }
+  if (!dynamo.isConfigured() || Date.now() < dynamoDisabledUntil) return;
+
+  try {
+    await dynamo.recordPageView(input);
+    dynamoDisabledUntil = 0;
+  } catch (error) {
+    dynamoDisabledUntil = Date.now() + DYNAMO_FAILURE_COOLDOWN_MS;
+    console.error(
+      "[visitors] DynamoDB write failed; backing off for 30s:",
+      error instanceof Error ? error.message : "unknown",
+    );
   }
 }
 
