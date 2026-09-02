@@ -26,7 +26,7 @@ export const stats = [
   { value: 200, suffix: "+", label: "Projects Delivered", icon: Film },
   { value: 50, suffix: "+", label: "Happy Clients", icon: Users },
   { value: 20, suffix: "M+", label: "Views Generated", icon: Play },
-  { value: 5, suffix: "+", label: "Years Of Experienced Members", icon: Star },
+  { value: 5, suffix: "+", label: "Years of Experience", icon: Star },
 ];
 
 export const founders = [
@@ -156,7 +156,6 @@ export const projects = [
     image: "/images/motion-graphics.png",
     href: "/motion-graphics-content",
   },
-
   {
     title: "SOCIAL MEDIA",
     category: "Performance Marketing",
@@ -165,8 +164,6 @@ export const projects = [
     href: "/digital-marketing-content",
   },
 ];
-
-
 
 export const testimonials = [
   {
@@ -193,15 +190,6 @@ export const testimonials = [
 ];
 
 export const brandMarks = [];
-/*"NIKE",
-  "COCA-COLA",
-  "SAMSUNG",
-  "AIRTEL",
-  "ZARA",
-  "H&M",
-  "AMAZON",
-  "ADIDAS",
-];*/
 
 export const capabilities = [
   { label: "Cinematic Direction", icon: Aperture },
