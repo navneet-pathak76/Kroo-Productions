@@ -11,16 +11,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  console.log(`[AI] Run Analysis triggered by ${session.email}`);
-
   try {
     const snapshot = await getTelemetrySnapshot();
     const analysis = await analyzePerformance(snapshot);
 
-    await recordAdminAudit("request_optimization", {
+    // Do not make an audit DynamoDB write part of the user-visible response.
+    // A failed/slow audit store must never delay the optimization result.
+    void recordAdminAudit("request_optimization", {
       route: "/admin/optimize",
       adminEmail: session.email,
       ip: extractClientIp(request),
+    }).catch((error) => {
+      console.error(
+        "[admin/optimize] audit write failed:",
+        error instanceof Error ? error.message : "unknown",
+      );
     });
 
     return NextResponse.json({ analysis });
