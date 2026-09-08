@@ -6,9 +6,11 @@ import { isAdminAuthConfigured } from "@/lib/auth/config";
 import type { TelemetryPayload, TelemetryRecord, TelemetrySnapshot } from "./types";
 
 const MEMORY_MAX_RECORDS = 5_000;
+const SNAPSHOT_MAX_RECORDS = 500;
 const memoryRecords: TelemetryRecord[] = [];
 const DYNAMO_FAILURE_COOLDOWN_MS = 30_000;
 let dynamoDisabledUntil = 0;
+let loggedDynamoReadError = false;
 
 function percentile75(values: number[]): number | undefined {
   if (values.length === 0) return undefined;
@@ -213,9 +215,6 @@ async function writeToDynamo(record: TelemetryRecord): Promise<void> {
     );
     dynamoDisabledUntil = 0;
   } catch (error) {
-    // A permission/configuration failure should not turn every client event
-    // into another slow DynamoDB request and another error log. Keep the
-    // in-memory record and retry automatically after a short cooldown.
     dynamoDisabledUntil = Date.now() + DYNAMO_FAILURE_COOLDOWN_MS;
     console.error(
       "[telemetry] DynamoDB write failed; backing off for 30s:",
@@ -226,7 +225,7 @@ async function writeToDynamo(record: TelemetryRecord): Promise<void> {
 
 let loggedMissingTableOnRead = false;
 
-async function readFromDynamo(limit = MEMORY_MAX_RECORDS): Promise<TelemetryRecord[]> {
+async function readFromDynamo(limit = SNAPSHOT_MAX_RECORDS): Promise<TelemetryRecord[]> {
   const client = getDynamoDocClient();
   const tableName = getTelemetryTableName();
   if (!client || !tableName) {
@@ -298,10 +297,13 @@ async function loadTelemetryRecords(
 
   if (isTelemetryDurableConfigured()) {
     try {
-      dynamoRecords = await readFromDynamo(MEMORY_MAX_RECORDS);
+      dynamoRecords = await readFromDynamo(Math.min(limit, SNAPSHOT_MAX_RECORDS));
     } catch (error) {
       dynamoReadError = error instanceof Error ? error.message : "Unknown DynamoDB read error.";
-      console.error("[telemetry] DynamoDB read failed:", dynamoReadError);
+      if (!loggedDynamoReadError) {
+        loggedDynamoReadError = true;
+        console.error("[telemetry] DynamoDB read failed; using in-memory telemetry fallback.");
+      }
     }
   }
 
@@ -315,12 +317,12 @@ async function loadTelemetryRecords(
 }
 
 export async function getRecentTelemetry(limit = 100): Promise<TelemetryRecord[]> {
-  const { records } = await loadTelemetryRecords(MEMORY_MAX_RECORDS);
+  const { records } = await loadTelemetryRecords(Math.min(limit, MEMORY_MAX_RECORDS));
   return records.slice(0, limit);
 }
 
 export async function getTelemetrySnapshot(): Promise<TelemetrySnapshot> {
-  const { records, ...diag } = await loadTelemetryRecords(MEMORY_MAX_RECORDS);
+  const { records, ...diag } = await loadTelemetryRecords(SNAPSHOT_MAX_RECORDS);
   return buildSnapshot(records, diag);
 }
 
