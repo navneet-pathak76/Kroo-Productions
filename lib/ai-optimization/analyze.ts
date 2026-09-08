@@ -15,7 +15,7 @@ function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics
     return {
       state: "credentials_not_configured",
       message:
-        "AWS_REGION / AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY are not set — telemetry is only using in-process memory, which does not persist across serverless invocations.",
+        "AWS credentials are not configured. Telemetry is using the in-process buffer and will not persist across serverless invocations.",
     };
   }
 
@@ -23,27 +23,30 @@ function diagnoseTelemetry(snapshot: TelemetrySnapshot): OptimizationDiagnostics
     return {
       state: "table_not_configured",
       message:
-        "TELEMETRY_DYNAMODB_TABLE is not set. AWS credentials are present, so telemetry is falling back to the visitor table when available.",
+        "No telemetry table is configured. The application is using the visitor-table fallback when available.",
     };
   }
 
   if (health.dynamoReadError) {
     return {
       state: "read_error",
-      message: `DynamoDB telemetry query failed: ${health.dynamoReadError}`,
+      message:
+        health.memoryRecordCount > 0
+          ? `Durable telemetry storage is temporarily unavailable. Analysis is continuing with ${health.memoryRecordCount} in-memory record(s).`
+          : "Durable telemetry storage is temporarily unavailable. No persistent telemetry records could be loaded for this run.",
     };
   }
 
   if (snapshot.totals.records === 0) {
     return {
       state: "empty",
-      message: `Telemetry DynamoDB query succeeded, but returned 0 records (in-memory buffer also had ${health.memoryRecordCount}). The public site may not have generated events yet, or may be writing to a different table/region.`,
+      message: "Telemetry storage is reachable, but there are no records available for analysis yet.",
     };
   }
 
   return {
     state: "ok",
-    message: `${snapshot.totals.records} telemetry record(s) loaded (${health.dynamoRecordCount} from DynamoDB, ${health.memoryRecordCount} from in-memory buffer, deduplicated).`,
+    message: `${snapshot.totals.records} telemetry record(s) loaded (${health.dynamoRecordCount} from durable storage, ${health.memoryRecordCount} from memory, deduplicated).`,
   };
 }
 
@@ -164,12 +167,9 @@ type GeminiAnalysisResult =
 
 function resolveGeminiModel(): string {
   const configured = process.env.GEMINI_MODEL?.trim();
-
-  // Keep compatibility with an old Vercel env value while using the current working model.
   if (!configured || configured === "gemini-2.5-flash-lite") {
     return "gemini-3.5-flash-lite";
   }
-
   return configured;
 }
 
