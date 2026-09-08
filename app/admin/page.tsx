@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { getSessionCookieName, getSessionFromToken } from "@/lib/auth/session";
 import { isAdminAuthConfigured } from "@/lib/auth/config";
 import { getTelemetrySnapshot } from "@/lib/telemetry/store";
 import { getMediaCdnBase } from "@/lib/media-optimization/pipeline";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
-import { extractIpFromHeaderMap, recordAdminAudit } from "@/lib/telemetry/admin-audit";
 
 export default async function AdminPage() {
   if (!isAdminAuthConfigured()) {
@@ -28,13 +27,9 @@ export default async function AdminPage() {
     redirect("/admin/login");
   }
 
-  const headerStore = await headers();
-  await recordAdminAudit("view_dashboard", {
-    route: "/admin",
-    adminEmail: session.email,
-    ip: extractIpFromHeaderMap((name) => headerStore.get(name)),
-  });
-
+  // Keep the dashboard request focused on authentication + the data it needs.
+  // Audit telemetry is recorded from explicit admin actions instead of adding a
+  // blocking DynamoDB write to every /admin page render.
   const snapshot = await getTelemetrySnapshot();
 
   return (
