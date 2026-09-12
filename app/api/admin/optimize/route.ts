@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { analyzePerformance } from "@/lib/ai-optimization/analyze";
 import { getTelemetrySnapshot } from "@/lib/telemetry/store";
+import { getCachedTelemetrySnapshot } from "@/lib/telemetry/snapshot-cache";
 import { extractClientIp } from "@/lib/telemetry/ip";
 import { recordAdminAudit } from "@/lib/telemetry/admin-audit";
 
@@ -12,11 +13,9 @@ export async function POST(request: Request) {
   }
 
   try {
-    const snapshot = await getTelemetrySnapshot();
+    const snapshot = await getCachedTelemetrySnapshot(getTelemetrySnapshot);
     const analysis = await analyzePerformance(snapshot);
 
-    // Do not make an audit DynamoDB write part of the user-visible response.
-    // A failed/slow audit store must never delay the optimization result.
     void recordAdminAudit("request_optimization", {
       route: "/admin/optimize",
       adminEmail: session.email,
@@ -42,7 +41,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const snapshot = await getTelemetrySnapshot();
+    const snapshot = await getCachedTelemetrySnapshot(getTelemetrySnapshot);
     const analysis = await analyzePerformance(snapshot);
     return NextResponse.json({ analysis });
   } catch (error) {
