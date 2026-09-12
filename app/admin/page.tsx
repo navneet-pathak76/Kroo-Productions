@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { getSessionCookieName, getSessionFromToken } from "@/lib/auth/session";
 import { isAdminAuthConfigured } from "@/lib/auth/config";
 import { getTelemetrySnapshot } from "@/lib/telemetry/store";
+import { getCachedTelemetrySnapshot } from "@/lib/telemetry/snapshot-cache";
 import { getMediaCdnBase } from "@/lib/media-optimization/pipeline";
 import { AdminDashboard } from "@/components/admin/admin-dashboard";
 
@@ -27,10 +28,7 @@ export default async function AdminPage() {
     redirect("/admin/login");
   }
 
-  // Keep the dashboard request focused on authentication + the data it needs.
-  // Audit telemetry is recorded from explicit admin actions instead of adding a
-  // blocking DynamoDB write to every /admin page render.
-  const snapshot = await getTelemetrySnapshot();
+  const snapshot = await getCachedTelemetrySnapshot(getTelemetrySnapshot);
 
   return (
     <AdminDashboard
