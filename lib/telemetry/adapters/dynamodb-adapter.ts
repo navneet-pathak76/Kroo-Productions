@@ -1,8 +1,10 @@
 import "server-only";
-import { PutCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { getDynamoDocClient, getTelemetryTableName } from "@/lib/aws/dynamodb-client";
 import type { TelemetryRecord } from "@/lib/telemetry/types";
 import type { TelemetryStorageAdapter } from "@/lib/telemetry/storage-adapter";
+
+const TTL_SECONDS = 60 * 60 * 24 * 30;
 
 export class DynamoTelemetryAdapter implements TelemetryStorageAdapter {
   readonly mode = "dynamodb" as const;
@@ -23,7 +25,7 @@ export class DynamoTelemetryAdapter implements TelemetryStorageAdapter {
           pk: "TELEMETRY",
           sk: `${record.timestamp}#${record.id}`,
           ...record,
-          ttl: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30,
+          ttl: Math.floor(Date.now() / 1000) + TTL_SECONDS,
         },
       }),
     );
@@ -35,11 +37,12 @@ export class DynamoTelemetryAdapter implements TelemetryStorageAdapter {
     if (!client || !tableName) return [];
 
     const result = await client.send(
-      new ScanCommand({
+      new QueryCommand({
         TableName: tableName,
-        FilterExpression: "pk = :pk",
+        KeyConditionExpression: "pk = :pk",
         ExpressionAttributeValues: { ":pk": "TELEMETRY" },
-        Limit: limit,
+        Limit: Math.min(Math.max(limit, 1), 500),
+        ScanIndexForward: false,
       }),
     );
 
