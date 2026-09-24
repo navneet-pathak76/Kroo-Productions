@@ -232,6 +232,29 @@ export async function locatePopulatedPrefix(
     }
   }
   return prefixes.length > 0 ? { prefix: prefixes[0], objects: [] } : null;
+}export async function locatePopulatedPrefix(
+  prefixes: string[],
+): Promise<{ prefix: string; objects: S3Object[] } | null> {
+  for (const prefix of prefixes) {
+    const listed = await listAllObjects(prefix);
+    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
+    if (listed.length > 0) {
+      return { prefix, objects: listed };
+    }
+  }
+  return prefixes.length > 0 ? { prefix: prefixes[0], objects: [] } : null;
+}
+/** Loads every populated candidate prefix so legacy videos/ and newer media/ uploads are both visible. */
+export async function locateAllPopulatedPrefixes(
+  prefixes: string[],
+): Promise<{ prefix: string; objects: S3Object[] }[]> {
+  const results: { prefix: string; objects: S3Object[] }[] = [];
+  for (const prefix of prefixes) {
+    const listed = await listAllObjects(prefix);
+    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
+    if (listed.length > 0) results.push({ prefix, objects: listed });
+  }
+  return results;
 }
 
 function isOrderManifestKey(key: string): boolean {
@@ -413,9 +436,9 @@ export async function getFolderMedia(
 
   console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
 
-  let located: { prefix: string; objects: S3Object[] } | null;
+  let locatedPrefixes: { prefix: string; objects: S3Object[] }[];
   try {
-    located = await locatePopulatedPrefix(prefixes);
+    locatedPrefixes = await locateAllPopulatedPrefixes(prefixes);
   } catch (error) {
     const err = error as { name?: string; message?: string };
     console.warn(
@@ -424,14 +447,29 @@ export async function getFolderMedia(
     return [];
   }
 
-  if (!located || located.objects.length === 0) {
+  if (locatedPrefixes.length === 0) {
     console.warn(`[media] No S3 objects found under any tried prefix for "${projectSlug}" — rendering empty state.`);
     return [];
   }
 
-  const { prefix: usedPrefix, objects } = located;
-  const entries = buildMediaEntries(objects, usedPrefix, projectFolder);
-  const orderList = await readOrderManifest(usedPrefix);
+  // Merge legacy videos/ media and newer admin uploads under media/.
+  // The S3 object key is the identity, so the same object is never rendered twice.
+  const mergedObjects = new Map<string, { object: S3Object; prefix: string }>();
+  for (const location of locatedPrefixes) {
+    for (const object of location.objects) {
+      if (!object.Key) continue;
+      if (!mergedObjects.has(object.Key)) mergedObjects.set(object.Key, { object, prefix: location.prefix });
+    }
+  }
+
+  const entries = [...mergedObjects.values()].flatMap(({ object, prefix }) =>
+    buildMediaEntries([object], prefix, projectFolder),
+  );
+
+  const orderLists = await Promise.all(
+    locatedPrefixes.map(({ prefix }) => readOrderManifest(prefix)),
+  );
+  const orderList = orderLists.flat();
   const orderedEntries = applySavedOrder(entries, orderList);
 
   return orderedEntries.map((entry, index) => ({
