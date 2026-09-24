@@ -4,7 +4,7 @@ import { PROJECT_OPTIONS } from "@/lib/media-optimization/media-manifest-types";
 import { checkRateLimit } from "@/lib/telemetry/rate-limit";
 
 const ALLOWED_TOP_LEVEL = new Set(["media", "videos", "thumbnails"]);
-const ALLOWED_FOLDERS = new Set(PROJECT_OPTIONS.map((project) => project.folder));
+const ALLOWED_FOLDERS = new Set([...PROJECT_OPTIONS.map((project) => project.folder), "PRODUCT ADS", "AI VIDEOS", "logo & graphics", "FOOD"]);
 
 function isKeySafe(key: string): boolean {
   if (!key || key.length > 512) return false;
