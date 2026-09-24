@@ -468,12 +468,12 @@ export async function getFolderMedia(
   const allObjects = [...mergedObjects.values()];
   const processedStems = new Set(
     allObjects
-      .filter(({ prefix }) => /\/web\/$/.test(prefix))
+      .filter(({ object }) => (object.Key ?? "").includes("/web/"))
       .map(({ object }) => processedStem(object.Key ?? "")),
   );
   const publicObjects = allObjects.filter(({ object, prefix }) => {
     const key = object.Key ?? "";
-    if (/\/web\/$/.test(prefix)) return true;
+    if (key.includes("/web/")) return true;
     const stem = sourceStem(key);
     return !processedStems.has(stem);
   });
