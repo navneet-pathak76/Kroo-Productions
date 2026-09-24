@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { headObject } from "@/lib/aws/s3-client";
 import { getMediaCdnBase } from "@/lib/media-optimization/pipeline";
+import { submitWebCompatibleTranscode, getWebVideoOutputKey } from "@/lib/aws/media-convert";
 import { createMediaItem, MediaStorageUnavailableError } from "@/lib/media-optimization/content-manifest";
 
 export async function POST(request: Request) {
@@ -39,6 +40,17 @@ export async function POST(request: Request) {
 
     const cdnUrl = `${getMediaCdnBase().replace(/\/$/, "")}/${objectKey.replace(/^\//, "")}`;
 
+    let transcode: Awaited<ReturnType<typeof submitWebCompatibleTranscode>> = null;
+    if (metadata.mediaKind === "video") {
+      transcode = await submitWebCompatibleTranscode(objectKey);
+      if (!transcode) {
+        return NextResponse.json(
+          { error: "Video uploaded, but browser-compatible transcoding is not configured. Set AWS_MEDIACONVERT_ROLE_ARN in Vercel before publishing videos." },
+          { status: 503 },
+        );
+      }
+    }
+
     const item = await createMediaItem({
       projectSlug: metadata.projectSlug,
       projectTitle: metadata.projectTitle,
@@ -52,7 +64,7 @@ export async function POST(request: Request) {
       mimeType: metadata.mimeType,
       fileName: metadata.fileName,
       s3Key: objectKey,
-      cdnUrl,
+      cdnUrl: transcode ? `${getMediaCdnBase().replace(/\/$/, "")}/${transcode.outputKey}` : cdnUrl,
       fileSize: info.contentLength,
       status: "draft",
       uploadedBy: session.email,
@@ -61,7 +73,7 @@ export async function POST(request: Request) {
 
     if (item.route) revalidatePath(item.route);
     revalidatePath("/admin");
-    return NextResponse.json({ item });
+    return NextResponse.json({ item, transcode: transcode ? { jobId: transcode.jobId, outputKey: transcode.outputKey } : null });
   } catch (error) {
     console.error("[admin/media/complete] failed", error);
     const message =
