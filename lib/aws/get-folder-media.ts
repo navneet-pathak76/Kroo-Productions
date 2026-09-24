@@ -232,18 +232,7 @@ export async function locatePopulatedPrefix(
     }
   }
   return prefixes.length > 0 ? { prefix: prefixes[0], objects: [] } : null;
-}export async function locatePopulatedPrefix(
-  prefixes: string[],
-): Promise<{ prefix: string; objects: S3Object[] } | null> {
-  for (const prefix of prefixes) {
-    const listed = await listAllObjects(prefix);
-    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-    if (listed.length > 0) {
-      return { prefix, objects: listed };
-    }
-  }
-  return prefixes.length > 0 ? { prefix: prefixes[0], objects: [] } : null;
-}
+} 
 /** Loads every populated candidate prefix so legacy videos/ and newer media/ uploads are both visible. */
 export async function locateAllPopulatedPrefixes(
   prefixes: string[],
@@ -408,6 +397,16 @@ export function applySavedOrder<T extends { filename: string }>(entries: T[], or
 
   const remaining = entries.filter((entry) => !seen.has(entry.filename));
   return [...ordered, ...remaining];
+}
+
+function sourceStem(key: string): string {
+  const file = key.split("/").pop() ?? key;
+  return getBaseName(file);
+}
+
+function processedStem(key: string): string {
+  const base = getBaseName(key);
+  return base.endsWith("_web") ? base.slice(0, -4) : base;
 }
 
 /**
