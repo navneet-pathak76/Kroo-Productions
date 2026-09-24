@@ -462,7 +462,23 @@ export async function getFolderMedia(
     }
   }
 
-  const entries = [...mergedObjects.values()].flatMap(({ object, prefix }) =>
+  // If a newer upload has a browser-compatible /web/ transcode, hide its
+  // original source object from the public gallery. This prevents HEVC,
+  // ProRes, unusual MOV containers, etc. from reaching the browser.
+  const allObjects = [...mergedObjects.values()];
+  const processedStems = new Set(
+    allObjects
+      .filter(({ prefix }) => /\/web\/$/.test(prefix))
+      .map(({ object }) => processedStem(object.Key ?? "")),
+  );
+  const publicObjects = allObjects.filter(({ object, prefix }) => {
+    const key = object.Key ?? "";
+    if (/\/web\/$/.test(prefix)) return true;
+    const stem = sourceStem(key);
+    return !processedStems.has(stem);
+  });
+
+  const entries = publicObjects.flatMap(({ object, prefix }) =>
     buildMediaEntries([object], prefix, projectFolder),
   );
 
