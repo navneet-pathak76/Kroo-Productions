@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { getSessionFromRequest } from "@/lib/auth/session";
 import { headObject } from "@/lib/aws/s3-client";
 import { getMediaCdnBase } from "@/lib/media-optimization/pipeline";
-import { submitWebCompatibleTranscode, getWebVideoOutputKey } from "@/lib/aws/media-convert";
+import { submitWebCompatibleTranscode } from "@/lib/aws/media-convert";
 import { createMediaItem, MediaStorageUnavailableError } from "@/lib/media-optimization/content-manifest";
 
 export async function POST(request: Request) {
