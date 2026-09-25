@@ -320,7 +320,9 @@ function SpatialCardStack<T>({
     reducedMotion ||
     capability.reducedMotion ||
     capability.performanceTier === "LOW" ||
-    capability.saveData;
+    capability.saveData ||
+    capability.touch ||
+    capability.pointer === "coarse";
   const canUseMouseParallax =
     allowsCinematicPointerEffects(capability) && !effectiveReducedMotion;
   const canUseWheelNavigation =
