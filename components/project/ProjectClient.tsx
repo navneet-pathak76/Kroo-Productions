@@ -112,7 +112,9 @@ export function ProjectHero({
   const reduceEffects =
     capability.reducedMotion ||
     capability.performanceTier === "LOW" ||
-    capability.saveData;
+    capability.saveData ||
+    capability.touch ||
+    capability.pointer === "coarse";
 
   return (
     <section
@@ -290,10 +292,13 @@ function VideoThumbnail({
   src,
   active,
   previewing = false,
+  eagerOnMobile = false,
 }: {
   src: string;
   active: boolean;
   previewing?: boolean;
+  /** Keep only the first couple of mobile cards warm; the rest load on tap. */
+  eagerOnMobile?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -301,10 +306,15 @@ function VideoThumbnail({
   const [nativeAspect, setNativeAspect] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const { effectiveSrc, tryFallback } = useResilientMediaSrc(src);
+  const capability = useDeviceCapability();
+  const isMobilePerformance =
+    capability.touch ||
+    capability.pointer === "coarse" ||
+    capability.viewportWidth <= 768;
 
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
-    rootMargin: "400px",
+    rootMargin: isMobilePerformance ? "80px" : "400px",
   });
 
   useEffect(() => {
@@ -366,7 +376,7 @@ function VideoThumbnail({
     if (video.videoWidth > 0 && video.videoHeight > 0) {
       setNativeAspect(video.videoWidth / video.videoHeight);
     }
-    if (video.currentTime === 0) video.currentTime = 0.1;
+    if ((active || previewing) && video.currentTime === 0) video.currentTime = 0.1;
   };
 
   const handleVideoError = (event: React.SyntheticEvent<HTMLVideoElement>) => {
@@ -500,13 +510,21 @@ function VideoThumbnail({
           transition: `width 320ms ${PREVIEW_EASE}, height 320ms ${PREVIEW_EASE}, box-shadow 320ms ${PREVIEW_EASE}`,
         }}
       >
-        {inView && effectiveSrc && (
+        {inView &&
+          effectiveSrc &&
+          (!isMobilePerformance || active || previewing || eagerOnMobile) && (
           <video
             key={effectiveSrc}
             ref={setVideoRef}
             loop
             playsInline
-            preload={active || previewing ? "auto" : "metadata"}
+            preload={
+              active || previewing
+                ? "auto"
+                : isMobilePerformance
+                  ? "metadata"
+                  : "metadata"
+            }
             aria-hidden
             tabIndex={-1}
             onLoadedMetadata={handleLoadedMetadata}
@@ -610,10 +628,12 @@ function VideoCard({
   video,
   isActive,
   onToggle,
+  eagerOnMobile = false,
 }: {
   video: ProjectVideo;
   isActive: boolean;
   onToggle: () => void;
+  eagerOnMobile?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
 
@@ -680,6 +700,7 @@ function VideoCard({
             src={video.video!}
             active={isActive}
             previewing={isPreviewing}
+            eagerOnMobile={eagerOnMobile}
           />
         )}
       </div>
@@ -704,11 +725,12 @@ export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
 
   return (
     <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 sm:gap-4 lg:gap-5">
-      {videos.map((video) => (
+      {videos.map((video, index) => (
         <VideoCard
           key={video.id}
           video={video}
           isActive={activeId === video.id}
+          eagerOnMobile={index < 2}
           onToggle={() =>
             setActiveId((prev) => (prev === video.id ? null : video.id))
           }
