@@ -100,6 +100,17 @@ textarea {
         linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.025)),
         rgba(7, 7, 7, 0.86);
     }
+
+    /* Mobile GPUs should not continuously composite large translucent blur layers. */
+    .backdrop-blur-sm,
+    .backdrop-blur,
+    .backdrop-blur-md,
+    .backdrop-blur-lg,
+    .backdrop-blur-xl,
+    .backdrop-blur-2xl {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
   }
 
   html[data-performance-tier="low"] .cinema-panel,
