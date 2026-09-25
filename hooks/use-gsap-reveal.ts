@@ -9,7 +9,9 @@ export function useGsapReveal() {
     const reduced =
       capability.reducedMotion ||
       capability.performanceTier === "LOW" ||
-      capability.saveData;
+      capability.saveData ||
+      capability.touch ||
+      capability.pointer === "coarse";
 
     if (reduced) return;
 
