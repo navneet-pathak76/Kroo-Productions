@@ -299,6 +299,7 @@ function VideoThumbnail({
   previewing?: boolean;
   /** Keep only the first couple of mobile cards warm; the rest load on tap. */
   eagerOnMobile?: boolean;
+  mobilePerformance?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -306,11 +307,8 @@ function VideoThumbnail({
   const [nativeAspect, setNativeAspect] = useState<number | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const { effectiveSrc, tryFallback } = useResilientMediaSrc(src);
-  const capability = useDeviceCapability();
-  const isMobilePerformance =
-    capability.touch ||
-    capability.pointer === "coarse" ||
-    capability.viewportWidth <= 768;
+
+  const isMobilePerformance = Boolean(mobilePerformance);
 
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
@@ -634,6 +632,7 @@ function VideoCard({
   isActive: boolean;
   onToggle: () => void;
   eagerOnMobile?: boolean;
+  mobilePerformance?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
 
@@ -701,6 +700,7 @@ function VideoCard({
             active={isActive}
             previewing={isPreviewing}
             eagerOnMobile={eagerOnMobile}
+            mobilePerformance={mobilePerformance}
           />
         )}
       </div>
@@ -714,6 +714,11 @@ function VideoCard({
  */
 export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
   const [activeId, setActiveId] = useState<number | null>(null);
+  const capability = useDeviceCapability();
+  const mobilePerformance =
+    capability.touch ||
+    capability.pointer === "coarse" ||
+    capability.viewportWidth <= 768;
 
   if (videos.length === 0) {
     return (
