@@ -293,6 +293,7 @@ function VideoThumbnail({
   active,
   previewing = false,
   eagerOnMobile = false,
+  mobilePerformance = false,
 }: {
   src: string;
   active: boolean;
@@ -736,6 +737,7 @@ export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
           video={video}
           isActive={activeId === video.id}
           eagerOnMobile={index < 2}
+          mobilePerformance={mobilePerformance}
           onToggle={() =>
             setActiveId((prev) => (prev === video.id ? null : video.id))
           }
