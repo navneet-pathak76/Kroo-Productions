@@ -628,6 +628,7 @@ function VideoCard({
   isActive,
   onToggle,
   eagerOnMobile = false,
+  mobilePerformance = false,
 }: {
   video: ProjectVideo;
   isActive: boolean;
