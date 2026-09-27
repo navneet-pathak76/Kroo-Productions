@@ -15,12 +15,12 @@ export default async function ClothingContentPage() {
   );
 
   const config = {
-    title: "Clothing Content",
+    title: "Fashion Content",
     description:
       "Premium fashion campaigns, apparel commercials, lifestyle storytelling and product films. Every edit is designed to increase engagement, brand value and conversions.",
     hero: {
       thumbnail: "/images/clothing-content.jpg",
-      alt: "Clothing Content project thumbnail",
+      alt: "Fashion Content project thumbnail",
       icon: Shirt,
       label: "Commercial Production",
       visualTitle: "Fashion Visual System",
@@ -34,12 +34,12 @@ export default async function ClothingContentPage() {
     ],
     videos,
     gallery: {
-      title: <><span>A CURATED COLLECTION OF OUR</span><br />CINEMATIC CLOTHING PRODUCTIONS</>,
+      title: <><span>A CURATED COLLECTION OF OUR</span><br />CINEMATIC FASHION PRODUCTIONS</>,
       copy: "Campaign films, social edits and lifestyle stories built with rhythm, contrast and premium fashion intent.",
     },
     about: {
       intro:
-        "This section will later contain final client-approved details. For now, it reflects the intended production approach for a premium clothing content system.",
+        "This section will later contain final client-approved details. For now, it reflects the intended production approach for a premium fashion content system.",
       details: [
         { title: "Creative Direction", copy: "The visual direction leans into elevated styling, premium contrast and sharp brand recall. Each sequence is planned around the movement of the garment and the commercial message behind the campaign.", icon: Target },
         { title: "Camera And Lighting", copy: "Dynamic gimbal movement, locked-off product frames and controlled practical lighting create a polished fashion environment without losing the texture of real fabric.", icon: Film },
