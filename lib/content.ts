@@ -104,7 +104,7 @@ export const projects = [
     href: "/gym-content",
   },
   {
-    title: "Clothing Content",
+    title: "Fashion Content",
     category: "Fashion & lifestyle campaigns",
     metric: "02",
     color: "from-amber-500/80 via-neutral-800 to-black",
