@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import ClothingContentPage from "@/components/project/clothing-content-page";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Fashion Content",
   description:
@@ -9,7 +11,7 @@ export const metadata: Metadata = {
     title: "Fashion Content | Kroo Production",
     description:
       "A premium project showcase for cinematic fashion productions and fashion campaign content.",
-    url: "https://krooproduction.com/projects/clothing-content",
+    url: "https://www.krooproduction.in/clothing-content",
     siteName: "Kroo Production",
     type: "website",
   },
