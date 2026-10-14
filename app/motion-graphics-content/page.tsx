@@ -4,6 +4,7 @@ import MotionGraphicsContentPage from "@/components/project/motion-graphics-cont
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/motion-graphics-content" },
   title: "Motion Graphics & Logo Animation",
   description:
     "2D & 3D motion graphics, brand animations, title sequences and digital motion design by Kroo Production.",
