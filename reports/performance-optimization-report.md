@@ -16,9 +16,11 @@ The tests use different devices, network throttles and Lighthouse versions. Scor
 
 ## Changes in this patch
 
-### 1. Removed the blocking full-screen intro from the homepage
+### 1. Removed blocking introductory and hero entrance delays
 - Removed the `Loader` import/render from the homepage.
-- Removed the hero copy's initial staggered opacity transition and scroll transform; removed the hero logo's initial blur and horizontal entrance animation.
+- Converted the hero eyebrow, LCP paragraph, CTA row and capabilities wrapper to plain elements instead of animated `motion` variants.
+- Removed the hero copy's scroll transform and the hero logo's initial blur/horizontal entrance animation.
+- Removed the 1.85-second delayed initial appearance of the fixed site navigation; the header is visible immediately, while hide-on-scroll behavior remains.
 - **Reason:** the mobile report identified 2.77 seconds of LCP element render delay, and the page was putting a full-screen overlay and entrance effects between the visitor and the main content.
 - **Expected outcome:** hero content can paint immediately instead of waiting for an intro animation. The change is intended to improve initial rendering and LCP; the exact score change is not yet measured.
 
@@ -29,7 +31,7 @@ The tests use different devices, network throttles and Lighthouse versions. Scor
 - **Expected outcome:** less competition between the showreel and critical first-screen assets; potentially lower initial transfer size. GTmetrix's 12.4 MB total is not assumed to be entirely caused by this video; that must be checked in the Waterfall.
 
 ### 3. Improved responsive image source selection for the hero and portfolio cards
-- Marked the above-the-fold brand mark as a priority image and adjusted its responsive `sizes`/quality.
+- Marked the above-the-fold brand mark as a priority image and adjusted its responsive `sizes`/quality; corrected the mobile size hint to reflect the near-full-width rendered logo.
 - Matched the carousel image `sizes` declaration to its responsive card width.
 - **Reason:** the supplied mobile report flagged the logo and Gym Content thumbnail as larger than displayed dimensions required.
 - **Expected outcome:** earlier loading of the visible logo and a better chance of selecting a closer-sized portfolio image. Confirm the requested `/_next/image` widths in the retest.

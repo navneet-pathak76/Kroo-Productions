@@ -1430,12 +1430,9 @@ function HeroSection() {
         <div
           className="relative z-10 min-w-0 order-2 [container-type:inline-size] lg:order-1"
         >
-          <motion.p
-            variants={fadeUp}
-            className="mb-5 text-xs font-black uppercase tracking-[0.48em] text-primary sm:text-sm"
-          >
+          <p className="mb-5 text-xs font-black uppercase tracking-[0.48em] text-primary sm:text-sm">
             We bring
-          </motion.p>
+          </p>
 <h1
   className="
     leading-[0.99]
@@ -1452,18 +1449,10 @@ WE MAKE BRANDS
   <br />
   
 </h1>
-          <motion.p
-            variants={fadeUp}
-            custom={4}
-            className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8"
-          >
+          <p className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8">
             From commercial films to social content, we create cinematic visuals built to capture attention, shape perception and move people to act.
-          </motion.p>
-         <motion.div
-          variants={fadeUp}
-          custom={6}
-          className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2"
-          >
+          </p>
+         <div className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
             <Button size="lg" asChild>
               <a href="#work">
                 <Play size={18} fill="currentColor" />
@@ -1476,17 +1465,13 @@ WE MAKE BRANDS
                 <ArrowRight size={18} />
               </a>
             </Button>
-          </motion.div>
+          </div>
 
-          <motion.div
-            variants={fadeUp}
-            custom={6}
-            className="mt-6 grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-4"
-          >
+          <div className="mt-6 grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-4">
             {capabilities.map((item) => (
               <CapabilityCard key={item.label} item={item} />
             ))}
-          </motion.div>
+          </div>
         </div>
 
         <div
