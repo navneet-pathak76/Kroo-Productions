@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { onCLS, onFCP, onINP, onLCP, onTTFB, type Metric } from "web-vitals";
+import type { Metric } from "web-vitals";
 import { getDeviceCapability } from "@/lib/device-capability";
 import type { TelemetryPayload } from "@/lib/telemetry/types";
 
@@ -54,6 +54,14 @@ export function TelemetryCollector() {
   }, [pathname]);
 
   useEffect(() => {
+    let webVitalsCancelled = false;
+    let webVitalsIdleId: number | undefined;
+    let webVitalsFallbackTimer: number | undefined;
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void, options?: { timeout?: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
     const enqueue = (payload: TelemetryPayload) => {
       queueRef.current.push(payload);
       if (queueRef.current.length >= MAX_QUEUE) {
@@ -121,11 +129,36 @@ export function TelemetryCollector() {
       });
     };
 
-    onLCP(reportWebVital);
-    onINP(reportWebVital);
-    onCLS(reportWebVital);
-    onFCP(reportWebVital);
-    onTTFB(reportWebVital);
+    const registerWebVitals = async () => {
+      try {
+        const { onCLS, onFCP, onINP, onLCP, onTTFB } = await import("web-vitals");
+        if (webVitalsCancelled) return;
+        onLCP(reportWebVital);
+        onINP(reportWebVital);
+        onCLS(reportWebVital);
+        onFCP(reportWebVital);
+        onTTFB(reportWebVital);
+      } catch {
+        // Performance telemetry is optional; it must never affect the site.
+      }
+    };
+
+    const scheduleWebVitals = () => {
+      if (typeof idleWindow.requestIdleCallback === "function") {
+        webVitalsIdleId = idleWindow.requestIdleCallback(
+          () => void registerWebVitals(),
+          { timeout: 5000 },
+        );
+      } else {
+        webVitalsFallbackTimer = window.setTimeout(() => void registerWebVitals(), 1500);
+      }
+    };
+
+    if (document.readyState === "complete") {
+      scheduleWebVitals();
+    } else {
+      window.addEventListener("load", scheduleWebVitals, { once: true });
+    }
 
     const onError = (event: ErrorEvent) => {
       enqueue({
@@ -206,6 +239,10 @@ export function TelemetryCollector() {
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
+      webVitalsCancelled = true;
+      window.removeEventListener("load", scheduleWebVitals);
+      if (webVitalsIdleId !== undefined) idleWindow.cancelIdleCallback?.(webVitalsIdleId);
+      if (webVitalsFallbackTimer !== undefined) window.clearTimeout(webVitalsFallbackTimer);
       window.fetch = originalFetch;
       window.removeEventListener("error", onError);
       window.removeEventListener("unhandledrejection", onRejection);
