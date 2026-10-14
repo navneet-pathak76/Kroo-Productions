@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import RestaurantContent from "@/components/project/RestaurantContent";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Restaurant Content",
   description:
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
     title: "Restaurant Content | Kroo Production",
     description:
       "Premium restaurant commercials, food cinematography and hospitality storytelling.",
-    url: "https://krooproduction.in/restaurant-content",
+    url: "https://www.krooproduction.in/restaurant-content",
     siteName: "Kroo Production",
     type: "website",
     locale: "en_US",
