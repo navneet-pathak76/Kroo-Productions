@@ -13,7 +13,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
       },
     ],
-    host: "https://krooproduction.in",
-    sitemap: "https://krooproduction.in/sitemap.xml",
+    host: "https://www.krooproduction.in",
+    sitemap: "https://www.krooproduction.in/sitemap.xml",
   };
 }
