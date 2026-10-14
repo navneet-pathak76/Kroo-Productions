@@ -10,6 +10,7 @@ import { getS3RuntimeConfig } from "@/lib/aws/s3-client";
 export type WebVideoTranscode = {
   inputKey: string;
   outputKey: string;
+  thumbnailKey: string;
   jobId: string;
 };
 
@@ -54,6 +55,8 @@ export async function submitWebCompatibleTranscode(inputKey: string): Promise<We
   const base = dot > 0 ? file.slice(0, dot) : file;
   const outputKey = `${dir}web/${base}_web.mp4`;
   const outputPrefix = outputKey.slice(0, outputKey.lastIndexOf("/") + 1);
+  const thumbnailKey = `${dir}thumbnails/${base}-thumb.0000000.jpg`;
+  const thumbnailPrefix = thumbnailKey.slice(0, thumbnailKey.lastIndexOf("/") + 1);
 
   const settings: CreateJobCommandInput["Settings"] = {
     OutputGroups: [{
@@ -71,7 +74,7 @@ export async function submitWebCompatibleTranscode(inputKey: string): Promise<We
             H264Settings: {
               RateControlMode: "QVBR",
               QvbrSettings: { QvbrQualityLevel: 7 },
-              MaxBitrate: 12000000,
+              MaxBitrate: 6000000,
               CodecProfile: "MAIN",
               CodecLevel: "AUTO",
               FramerateControl: "INITIALIZE_FROM_SOURCE",
@@ -95,6 +98,30 @@ export async function submitWebCompatibleTranscode(inputKey: string): Promise<We
         }],
         ContainerSettings: { Container: "MP4", Mp4Settings: { MoovPlacement: "PROGRESSIVE_DOWNLOAD" } },
       }],
+    }, {
+      Name: "Portfolio Thumbnail",
+      OutputGroupSettings: {
+        Type: "FILE_GROUP_SETTINGS",
+        FileGroupSettings: { Destination: `s3://${config.bucket}/${thumbnailPrefix}` },
+      },
+      Outputs: [{
+        NameModifier: "-thumb",
+        Extension: "jpg",
+        ContainerSettings: { Container: "RAW" },
+        VideoDescription: {
+          CodecSettings: {
+            Codec: "FRAME_CAPTURE",
+            FrameCaptureSettings: {
+              FramerateNumerator: 1,
+              FramerateDenominator: 10,
+              MaxCaptures: 1,
+              Quality: 80,
+            },
+          },
+          Width: 640,
+          ScalingBehavior: "FIT",
+        },
+      }],
     }],
     Inputs: [{
       FileInput: `s3://${config.bucket}/${inputKey}`,
@@ -112,7 +139,7 @@ export async function submitWebCompatibleTranscode(inputKey: string): Promise<We
   }));
 
   if (!response.Job?.Id) throw new Error("MediaConvert did not return a job ID.");
-  return { inputKey, outputKey, jobId: response.Job.Id };
+  return { inputKey, outputKey, thumbnailKey, jobId: response.Job.Id };
 }
 
 export function getWebVideoOutputKey(inputKey: string): string {

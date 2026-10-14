@@ -66,8 +66,9 @@ export function KrooMark() {
           alt="Kroo Production Logo"
           width={800}
           height={800}
-          quality={80}
-          sizes="(max-width: 1100px) 72vw, (max-width: 1736px) 50vw, 520px"
+          priority
+          quality={75}
+          sizes="(max-width: 767px) 92vw, (max-width: 1023px) 45vw, (max-width: 1640px) 48vw, 768px"
           className="aspect-square h-auto w-[clamp(44rem,90vw,48rem)] max-w-full object-contain select-none drop-shadow-[0_0_120px_rgba(255,100,0,0.20)]"
         />
       </motion.div>

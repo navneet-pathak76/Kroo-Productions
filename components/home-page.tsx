@@ -30,7 +30,6 @@ import { Ambient } from "@/components/ambient";
 import { mediaUrl } from "@/lib/media-config";
 import { useResilientMediaSrc } from "@/lib/media-fallback";
 import { CursorFollower } from "@/components/cursor-follower";
-import { Loader } from "@/components/loader";
 import { KrooMark } from "@/components/scene/kroo-mark";
 import { SiteNav } from "@/components/site-nav";
 import { Button } from "@/components/ui/button";
@@ -1405,19 +1404,9 @@ function CapabilityCard({ item }: { item: (typeof capabilities)[number] }) {
 }
 
 function HeroSection() {
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-
-  const y = useTransform(scrollYProgress, [0, 1], [0, 92]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.965]);
-
   return (
    <section
     id="home"
-    ref={ref}
     className="relative min-h-[85svh] scroll-mt-28 overflow-hidden px-5 pb-16 pt-28 sm:min-h-[90svh] sm:px-8 lg:min-h-0 lg:pt-36 xl:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-16 h-[42rem] w-[42rem] rounded-full bg-primary/20 blur-[120px]" />
@@ -1438,19 +1427,12 @@ function HeroSection() {
        xl:gap-4
        "
       >
-        <motion.div
+        <div
           className="relative z-10 min-w-0 order-2 [container-type:inline-size] lg:order-1"
-          initial="hidden"
-          animate="visible"
-          transition={{ staggerChildren: 0.075 }}
-          style={{ y, scale }}
         >
-          <motion.p
-            variants={fadeUp}
-            className="mb-5 text-xs font-black uppercase tracking-[0.48em] text-primary sm:text-sm"
-          >
+          <p className="mb-5 text-xs font-black uppercase tracking-[0.48em] text-primary sm:text-sm">
             We bring
-          </motion.p>
+          </p>
 <h1
   className="
     leading-[0.99]
@@ -1467,18 +1449,10 @@ WE MAKE BRANDS
   <br />
   
 </h1>
-          <motion.p
-            variants={fadeUp}
-            custom={4}
-            className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8"
-          >
+          <p className="mt-5 max-w-[560px] text-base leading-7 text-white/70 sm:text-lg lg:text-lg lg:leading-8">
             From commercial films to social content, we create cinematic visuals built to capture attention, shape perception and move people to act.
-          </motion.p>
-         <motion.div
-          variants={fadeUp}
-          custom={6}
-          className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2"
-          >
+          </p>
+         <div className="mt-8 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
             <Button size="lg" asChild>
               <a href="#work">
                 <Play size={18} fill="currentColor" />
@@ -1491,27 +1465,20 @@ WE MAKE BRANDS
                 <ArrowRight size={18} />
               </a>
             </Button>
-          </motion.div>
+          </div>
 
-          <motion.div
-            variants={fadeUp}
-            custom={6}
-            className="mt-6 grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-4"
-          >
+          <div className="mt-6 grid max-w-2xl grid-cols-1 gap-2 sm:grid-cols-4">
             {capabilities.map((item) => (
               <CapabilityCard key={item.label} item={item} />
             ))}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
-        <motion.div
+        <div
           className="relative z-10 flex min-w-0 items-center justify-center order-1 lg:order-2"
-          initial={{ opacity: 0, x: 48, filter: "blur(18px)" }}
-          animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
-          transition={{ delay: 0.32, duration: 1.08, ease: revealEase }}
         >
           <KrooMark />
-        </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -1552,6 +1519,7 @@ const SHOWREEL_SRC = mediaUrl("/TCF_LANSCAPE_4K_30FPS.mp4");
 function ShowreelSection() {
   const { effectiveSrc, tryFallback } = useResilientMediaSrc(SHOWREEL_SRC);
   const [failed, setFailed] = useState(false);
+  const [started, setStarted] = useState(false);
 
   const handleError = (event: React.SyntheticEvent<HTMLVideoElement>) => {
     const video = event.currentTarget;
@@ -1570,20 +1538,18 @@ function ShowreelSection() {
   return (
     <section className="relative scroll-mt-28 px-2 py-4 sm:px-16 sm:py-10 lg:px-24 lg:py-32">
       <div className="mx-auto mb-6 max-w-[1480px] px-5 sm:mb-10 sm:px-8">
-  <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
-    SHOWREEL
-  </p>
-
-  <h2 className="section-title max-w-[1500px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
-    THIS ISN&apos;T A SHOWREEL.
-    <br />
-    IT&apos;S A REASON TO HIRE US.
-  </h2>
-
-  <p className="mt-6 max-w-md text-base leading-17 text-white/60">
-    Commercials, brand films, social campaigns and visual content crafted to turn attention into brand value.
-  </p>
-</div>
+        <p className="mb-2 text-xs font-black uppercase tracking-[0.32em] text-primary">
+          SHOWREEL
+        </p>
+        <h2 className="section-title max-w-[1500px] text-[clamp(1.05rem,5.6vw,3.75rem)] leading-[1.18] sm:text-[clamp(1.3rem,5vw,3.75rem)] sm:leading-[1.14] lg:text-[clamp(1.6rem,6.4vw,3.75rem)] lg:leading-[1.12]">
+          THIS ISN&apos;T A SHOWREEL.
+          <br />
+          IT&apos;S A REASON TO HIRE US.
+        </h2>
+        <p className="mt-6 max-w-md text-base leading-17 text-white/60">
+          Commercials, brand films, social campaigns and visual content crafted to turn attention into brand value.
+        </p>
+      </div>
       <div
         data-reveal
         data-scale-on-scroll
@@ -1591,26 +1557,46 @@ function ShowreelSection() {
       >
         <div className="relative aspect-[16/9] min-h-[120px] overflow-hidden sm:min-h-[220px]">
           {effectiveSrc && !failed ? (
-            <video
-              key={effectiveSrc}
-              controls
-              preload="metadata"
-              playsInline
-              controlsList="nodownload"
-              className="h-full w-full bg-black object-cover rounded-[inherit]"
-              onError={handleError}
-              onClick={(event) => {
-                const video = event.currentTarget;
-
-                if (video.paused) {
-                  void video.play();
-                } else {
-                  video.pause();
-                }
-              }}
-            >
-              <source src={effectiveSrc} type="video/mp4" />
-            </video>
+            started ? (
+              <video
+                key={effectiveSrc}
+                controls
+                autoPlay
+                preload="none"
+                poster="/images/showreel-poster.svg"
+                playsInline
+                controlsList="nodownload"
+                className="h-full w-full rounded-[inherit] bg-black object-cover"
+                onError={handleError}
+              >
+                <source src={effectiveSrc} type="video/mp4" />
+              </video>
+            ) : (
+              <button
+                type="button"
+                aria-label="Play Kroo Production showreel"
+                onClick={() => setStarted(true)}
+                className="absolute inset-0 flex h-full w-full items-center justify-center overflow-hidden text-left"
+              >
+                <Image
+                  src="/images/showreel-poster.svg"
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 92vw, (max-width: 1280px) 84vw, 1280px"
+                  className="object-cover"
+                />
+                <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-black/25" />
+                <span className="relative z-10 flex items-center gap-4 px-6">
+                  <span className="flex h-14 w-14 items-center justify-center rounded-full border border-white/70 bg-primary text-white shadow-lg transition-transform duration-300 group-hover:scale-105 sm:h-16 sm:w-16">
+                    <Play size={22} fill="currentColor" aria-hidden="true" />
+                  </span>
+                  <span className="flex flex-col gap-1">
+                    <span className="text-xs font-black uppercase tracking-[0.24em] text-primary">Kroo Production</span>
+                    <span className="text-lg font-black uppercase tracking-wide text-white sm:text-2xl">Play showreel</span>
+                  </span>
+                </span>
+              </button>
+            )
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-white/[0.03] text-sm text-white/40">
               Showreel unavailable — please refresh or check back shortly.
@@ -1883,7 +1869,7 @@ function ProjectsSection() {
                 src={project.image}
                 alt={project.title}
                 fill
-                sizes="(max-width:768px) 100vw, 700px"
+                sizes="(max-width: 768px) 82vw, 640px"
                 className="object-cover transition duration-700 group-hover:scale-105"
               />
 
@@ -2225,7 +2211,6 @@ function Footer() {
               alt="Kroo Production"
               width={170}
               height={60}
-              priority
               className="h-12 w-auto"
             />
           </div>
@@ -2370,7 +2355,6 @@ export default function HomePage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020202] text-white">
       <Ambient />
-      <Loader />
       <CursorFollower />
       <SiteNav />
       <div className="relative z-10">

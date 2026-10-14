@@ -1,40 +1,27 @@
 import type { MetadataRoute } from "next";
 
-const baseUrl = "https://krooproduction.in";
+const baseUrl = "https://www.krooproduction.in";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
-  return [
-    {
-      url: baseUrl,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: `${baseUrl}/gym-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/clubs-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/clothing-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/motion-graphics-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
+  const routes: Array<{ path: string; priority: number; changeFrequency: "weekly" | "monthly" }> = [
+    { path: "/", priority: 1, changeFrequency: "weekly" },
+    { path: "/gym-content", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/clothing-content", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/clubs-content", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/motion-graphics-content", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/restaurant-content", priority: 0.9, changeFrequency: "monthly" },
+    { path: "/digital-marketing-content", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/real-estate", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/product-content", priority: 0.7, changeFrequency: "monthly" },
+    { path: "/ai-content", priority: 0.7, changeFrequency: "monthly" },
   ];
+
+  return routes.map(({ path, priority, changeFrequency }) => ({
+    url: `${baseUrl}${path === "/" ? "" : path}`,
+    lastModified,
+    changeFrequency,
+    priority,
+  }));
 }

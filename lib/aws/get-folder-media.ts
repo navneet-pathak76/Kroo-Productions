@@ -1,5 +1,4 @@
 import "server-only";
-import { unstable_noStore as noStore } from "next/cache";
 import {
   GetObjectCommand,
   ListObjectsV2Command,
@@ -237,13 +236,20 @@ export async function locatePopulatedPrefix(
 export async function locateAllPopulatedPrefixes(
   prefixes: string[],
 ): Promise<{ prefix: string; objects: S3Object[] }[]> {
-  const results: { prefix: string; objects: S3Object[] }[] = [];
-  for (const prefix of prefixes) {
-    const listed = await listAllObjects(prefix);
-    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-    if (listed.length > 0) results.push({ prefix, objects: listed });
+  // Probe candidate prefixes concurrently. Promise.all preserves input order,
+  // keeping merge order deterministic while avoiding sequential S3 waits.
+  const listedByPrefix = await Promise.all(
+    prefixes.map(async (prefix) => ({
+      prefix,
+      objects: await listAllObjects(prefix),
+    })),
+  );
+
+  for (const { prefix, objects } of listedByPrefix) {
+    console.log(`[getFolderMedia] "${prefix}" -> ${objects.length} object(s)`);
   }
-  return results;
+
+  return listedByPrefix.filter(({ objects }) => objects.length > 0);
 }
 
 function isOrderManifestKey(key: string): boolean {
@@ -429,8 +435,6 @@ export async function getFolderMedia(
   folder: string,
   meta: { category: string; client: string; services: string[] },
 ): Promise<MediaItem[]> {
-  noStore();
-
   const { projectSlug, projectFolder, prefixes } = resolveMediaPrefixes(folder);
 
   console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
@@ -461,36 +465,62 @@ export async function getFolderMedia(
     }
   }
 
-  // If a newer upload has a browser-compatible /web/ transcode, hide its
-  // original source object from the public gallery. This prevents HEVC,
-  // ProRes, unusual MOV containers, etc. from reaching the browser.
+  // Build a lookup for processed MP4s and generated poster frames. Thumbnail
+  // objects are assets, not portfolio cards. A video is public only when both
+  // its browser-compatible transcode and poster frame exist in the S3 listing.
   const allObjects = [...mergedObjects.values()];
-  const processedStems = new Set(
-    allObjects
-      .filter(({ object }) => (object.Key ?? "").includes("/web/"))
-      .map(({ object }) => processedStem(object.Key ?? "")),
-  );
-  const publicObjects = allObjects.filter(({ object, prefix }) => {
-    const key = object.Key ?? "";
-    if (key.includes("/web/")) return true;
-    const stem = sourceStem(key);
-    return !processedStems.has(stem);
-  });
+  const webByStem = new Map<string, { object: S3Object; prefix: string }>();
+  const thumbnailByStem = new Map<string, { object: S3Object; prefix: string }>();
 
-  const entries = publicObjects.flatMap(({ object, prefix }) =>
-    buildMediaEntries([object], prefix, projectFolder),
-  );
+  for (const entry of allObjects) {
+    const key = entry.object.Key ?? "";
+    if (key.includes("/web/") && getExtension(key) === "mp4") {
+      webByStem.set(processedStem(key), entry);
+    }
+    if (key.includes("/thumbnails/") && /-thumb(?:\\.0000000)?$/i.test(getBaseName(key))) {
+      thumbnailByStem.set(getBaseName(key).replace(/-thumb(?:\\.0000000)?$/i, ""), entry);
+    }
+  }
+
+  const publicEntries: Array<{ entry: MediaEntry; thumbnail?: string }> = [];
+  for (const { object, prefix } of allObjects) {
+    const key = object.Key ?? "";
+    if (!key || key.includes("/web/") || key.includes("/thumbnails/")) continue;
+    const ext = getExtension(key);
+    if (IMAGE_EXTENSIONS.has(ext)) {
+      const built = buildMediaEntries([object], prefix, projectFolder);
+      if (built[0]) publicEntries.push({ entry: built[0], thumbnail: built[0].url });
+      continue;
+    }
+    if (!VIDEO_EXTENSIONS.has(ext)) continue;
+
+    const stem = sourceStem(key);
+    const processed = webByStem.get(stem);
+    const poster = thumbnailByStem.get(stem);
+    // Never show originals, unfinished jobs, or cards with no real thumbnail.
+    if (!processed || !poster) continue;
+
+    const built = buildMediaEntries([processed.object], processed.prefix, projectFolder);
+    if (built[0]) {
+      publicEntries.push({
+        entry: { ...built[0], mediaType: "video", title: toTitle(stem, toFolderLabel(projectFolder)) },
+        thumbnail: toPublicUrl(poster.object.Key!),
+      });
+    }
+  }
 
   const orderLists = await Promise.all(
     locatedPrefixes.map(({ prefix }) => readOrderManifest(prefix)),
   );
-  const orderList = orderLists.flat();
-  const orderedEntries = applySavedOrder(entries, orderList);
+  const orderedEntries = applySavedOrder(
+    publicEntries.map(({ entry, thumbnail }) => ({ ...entry, thumbnail })),
+    orderLists.flat(),
+  );
 
   return orderedEntries.map((entry, index) => ({
     id: index + 1,
     title: entry.title,
-    thumbnail: entry.mediaType === "image" ? entry.url : undefined,
+    thumbnail: entry.thumbnail,
     video: entry.mediaType === "video" ? entry.url : undefined,
     mediaType: entry.mediaType,
     duration: "",

@@ -61,7 +61,6 @@ export function SiteNav() {
    * mid-transition, and reappears instantly whenever they want the nav.
    */
   const [headerHidden, setHeaderHidden] = useState(false);
-  const [hasEntered, setHasEntered] = useState(false);
   const headerHiddenRef = useRef(false);
   const lastScrollY = useRef(0);
   const openRef = useRef(open);
@@ -158,14 +157,9 @@ export function SiteNav() {
         // padding — this is a touch/mobile-only fix.
         reduceEffects && "bg-black/[0.96]",
       )}
-      initial={{ y: -28, opacity: 0 }}
+      initial={false}
       animate={{ y: headerHidden ? -120 : 0, opacity: headerHidden ? 0 : 1 }}
-      transition={
-        hasEntered
-          ? { duration: 0.32, ease: [0.22, 1, 0.36, 1] }
-          : { duration: 0.75, delay: 1.85, ease: [0.22, 1, 0.36, 1] }
-      }
-      onAnimationComplete={() => setHasEntered(true)}
+      transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
     >
       <nav
         className={cn(

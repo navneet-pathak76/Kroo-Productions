@@ -1,4 +1,5 @@
-import { GoogleAnalytics } from "@next/third-parties/google";
+import Script from "next/script";
+import { LazyGoogleAnalytics } from "@/components/lazy-google-analytics";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { CapabilityRoot } from "@/components/capability-root";
@@ -159,13 +160,15 @@ export default function RootLayout({
       </head>
 
       <body>
+        <Script id="google-analytics-bootstrap" strategy="beforeInteractive">
+          {`window.dataLayer = window.dataLayer || []; window.gtag = function(){window.dataLayer.push(arguments);};`}
+        </Script>
         <CapabilityRoot />
         <TelemetryCollector />
         <VisitorTracker />
         {children}
+        <LazyGoogleAnalytics gaId="G-9WBJV41K0G" />
       </body>
-
-      <GoogleAnalytics gaId="G-9WBJV41K0G" />
     </html>
   );
 }
