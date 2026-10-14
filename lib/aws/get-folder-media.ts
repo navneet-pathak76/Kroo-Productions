@@ -1,5 +1,4 @@
 import "server-only";
-import { unstable_noStore as noStore } from "next/cache";
 import {
   GetObjectCommand,
   ListObjectsV2Command,
@@ -237,13 +236,20 @@ export async function locatePopulatedPrefix(
 export async function locateAllPopulatedPrefixes(
   prefixes: string[],
 ): Promise<{ prefix: string; objects: S3Object[] }[]> {
-  const results: { prefix: string; objects: S3Object[] }[] = [];
-  for (const prefix of prefixes) {
-    const listed = await listAllObjects(prefix);
-    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-    if (listed.length > 0) results.push({ prefix, objects: listed });
+  // Probe candidate prefixes concurrently. Promise.all preserves input order,
+  // keeping merge order deterministic while avoiding sequential S3 waits.
+  const listedByPrefix = await Promise.all(
+    prefixes.map(async (prefix) => ({
+      prefix,
+      objects: await listAllObjects(prefix),
+    })),
+  );
+
+  for (const { prefix, objects } of listedByPrefix) {
+    console.log(`[getFolderMedia] "${prefix}" -> ${objects.length} object(s)`);
   }
-  return results;
+
+  return listedByPrefix.filter(({ objects }) => objects.length > 0);
 }
 
 function isOrderManifestKey(key: string): boolean {
@@ -429,8 +435,6 @@ export async function getFolderMedia(
   folder: string,
   meta: { category: string; client: string; services: string[] },
 ): Promise<MediaItem[]> {
-  noStore();
-
   const { projectSlug, projectFolder, prefixes } = resolveMediaPrefixes(folder);
 
   console.log(`[getFolderMedia] "${projectSlug}" — trying prefixes: ${prefixes.join(", ")}`);
