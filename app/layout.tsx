@@ -1,6 +1,7 @@
 import { GoogleAnalytics } from "@next/third-parties/google";
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { CapabilityRoot } from "@/components/capability-root";
 import { TelemetryCollector } from "@/components/telemetry-collector";
 import { VisitorTracker } from "@/components/visitor-tracker";
@@ -163,6 +164,7 @@ export default function RootLayout({
         <TelemetryCollector />
         <VisitorTracker />
         {children}
+        <SpeedInsights />
       </body>
 
       <GoogleAnalytics gaId="G-9WBJV41K0G" />
