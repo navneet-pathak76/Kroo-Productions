@@ -4,6 +4,7 @@ import ClothingContentPage from "@/components/project/clothing-content-page";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/clothing-content" },
   title: "Fashion Content",
   description:
     "Premium fashion campaigns, apparel commercials, lifestyle storytelling and product films by Kroo Production.",
