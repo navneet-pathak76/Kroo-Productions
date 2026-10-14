@@ -4,6 +4,7 @@ import ProductContentPage from "@/components/project/product-content-page";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/product-content" },
   title: "Products",
   description:
     "Premium cinematic product content created for brands, e-commerce stores and launch campaigns by Kroo Production.",
