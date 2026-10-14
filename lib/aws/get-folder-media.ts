@@ -469,7 +469,6 @@ export async function getFolderMedia(
   // objects are assets, not portfolio cards. A video is public only when both
   // its browser-compatible transcode and poster frame exist in the S3 listing.
   const allObjects = [...mergedObjects.values()];
-  const byKey = new Map(allObjects.map(({ object, prefix }) => [object.Key!, { object, prefix }]));
   const webByStem = new Map<string, { object: S3Object; prefix: string }>();
   const thumbnailByStem = new Map<string, { object: S3Object; prefix: string }>();
 
