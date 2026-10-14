@@ -4,6 +4,7 @@ import RestaurantContent from "@/components/project/RestaurantContent";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/restaurant-content" },
   title: "Restaurant Content",
   description:
     "Premium restaurant films, food cinematography, café branding, luxury dining visuals and hospitality storytelling by Kroo Production.",
