@@ -2225,7 +2225,6 @@ function Footer() {
               alt="Kroo Production"
               width={170}
               height={60}
-              priority
               className="h-12 w-auto"
             />
           </div>
