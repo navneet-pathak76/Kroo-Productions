@@ -106,6 +106,7 @@ export async function submitWebCompatibleTranscode(inputKey: string): Promise<We
       },
       Outputs: [{
         NameModifier: "-thumb",
+        Extension: "jpg",
         ContainerSettings: { Container: "RAW" },
         VideoDescription: {
           CodecSettings: {
