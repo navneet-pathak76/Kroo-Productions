@@ -4,6 +4,7 @@ import ClubsContentPage from "@/components/project/clubs-content-page";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/clubs-content" },
   title: "Clubs Content",
   description:
     "Nightlife promotions, DJ events, concerts, cinematic club films and aftermovies by Kroo Production.",
