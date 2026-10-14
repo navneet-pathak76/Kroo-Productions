@@ -4,6 +4,7 @@ import DigitalMarketingContentPage from "@/components/project/digital-marketing-
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/digital-marketing-content" },
   title: "Social Media",
   description:
     "Premium social media video content created for brands, agencies and marketing teams by Kroo Production.",
