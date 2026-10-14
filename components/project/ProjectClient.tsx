@@ -290,12 +290,14 @@ function KrooWatermark() {
 
 function VideoThumbnail({
   src,
+  poster,
   active,
   previewing = false,
   eagerOnMobile = false,
   mobilePerformance = false,
 }: {
   src: string;
+  poster?: string;
   active: boolean;
   previewing?: boolean;
   /** Keep only the first couple of mobile cards warm; the rest load on tap. */
@@ -517,13 +519,8 @@ function VideoThumbnail({
             ref={setVideoRef}
             loop
             playsInline
-            preload={
-              active || previewing
-                ? "auto"
-                : isMobilePerformance
-                  ? "metadata"
-                  : "metadata"
-            }
+            poster={poster}
+            preload={active || previewing ? "auto" : "none"}
             aria-hidden
             tabIndex={-1}
             onLoadedMetadata={handleLoadedMetadata}
@@ -699,6 +696,7 @@ function VideoCard({
         ) : (
           <VideoThumbnail
             src={video.video!}
+            poster={video.thumbnail}
             active={isActive}
             previewing={isPreviewing}
             eagerOnMobile={eagerOnMobile}
