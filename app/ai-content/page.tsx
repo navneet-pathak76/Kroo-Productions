@@ -4,6 +4,7 @@ import AiContentPage from "@/components/project/ai-content-page";
 export const revalidate = 300;
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/ai-content" },
   title: "AI Video Production",
   description:
     "Premium AI-generated video content created for brands, agencies and product launches by Kroo Production.",
