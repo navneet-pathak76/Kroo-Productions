@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import RealEstateContentPage from "@/components/project/real-estate-content-page";
 
+export const revalidate = 300;
+
 export const metadata: Metadata = {
   title: "Real Estate Content",
   description:
@@ -9,7 +11,7 @@ export const metadata: Metadata = {
     title: "Real Estate Content | Kroo Production",
     description:
       "A premium project showcase for cinematic real estate walkthroughs and commercial property content.",
-    url: "https://krooproduction.com/projects/real-estate-content",
+    url: "https://www.krooproduction.in/real-estate",
     siteName: "Kroo Production",
     type: "website",
   },
