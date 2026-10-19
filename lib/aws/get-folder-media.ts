@@ -237,13 +237,21 @@ export async function locatePopulatedPrefix(
 export async function locateAllPopulatedPrefixes(
   prefixes: string[],
 ): Promise<{ prefix: string; objects: S3Object[] }[]> {
-  const results: { prefix: string; objects: S3Object[] }[] = [];
-  for (const prefix of prefixes) {
-    const listed = await listAllObjects(prefix);
-    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-    if (listed.length > 0) results.push({ prefix, objects: listed });
-  }
-  return results;
+  // Public project pages must inspect all candidate prefixes to preserve the
+  // live S3 source-of-truth behavior. Run the independent list operations in
+  // parallel instead of paying the network latency of up to six sequential
+  // S3 round trips on every page request. Promise.all preserves input order.
+  const results = await Promise.all(
+    prefixes.map(async (prefix) => {
+      const listed = await listAllObjects(prefix);
+      console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
+      return listed.length > 0 ? { prefix, objects: listed } : null;
+    }),
+  );
+
+  return results.filter(
+    (result): result is { prefix: string; objects: S3Object[] } => result !== null,
+  );
 }
 
 function isOrderManifestKey(key: string): boolean {
