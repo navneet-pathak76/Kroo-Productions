@@ -235,9 +235,6 @@ function getVideoMimeType(src: string): string {
  * being served in place of the video) are worth retrying via the
  * signed-URL fallback.
  */
-function isRetryableMediaError(code: number | undefined): boolean {
-  return code !== 3;
-}
 
 function describeMediaFailure(video: HTMLVideoElement, src: string): string {
   const code = video.error?.code;
@@ -389,15 +386,13 @@ function VideoThumbnail({
       readyState: video.readyState,
     });
 
-    // One-shot fallback: if this looks like a CloudFront delivery
-    // failure (403/404/CORS/etc — anything that surfaces as a load
-    // error rather than a decode error), retry the exact same object
-    // straight from S3 via a short-lived signed URL before giving up.
-    // A genuine decode error (code 3) is a codec/container problem —
-    // the same bytes will fail the same way from any URL, so skip the
-    // network round trip and surface the real failure immediately.
-    const retry = isRetryableMediaError(video.error?.code) ? tryFallback() : Promise.resolve(false);
-    void retry.then((switched) => {
+    // Always try the signed S3 URL once before declaring playback broken.
+    // Browsers can report CDN 403/404 XML responses and invalid range/content
+    // responses as decode errors (code 3), so using the error code to skip
+    // fallback can make every video appear unavailable even when S3 is fine.
+    // If the bytes really are codec-incompatible, the signed retry will fail
+    // too and the second error will surface normally.
+    void tryFallback().then((switched) => {
       if (switched) return;
       setMediaError(message);
       void reportClientTelemetry({
