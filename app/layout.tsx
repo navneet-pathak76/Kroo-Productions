@@ -163,9 +163,8 @@ export default function RootLayout({
         <TelemetryCollector />
         <VisitorTracker />
         {children}
+        <GoogleAnalytics gaId="G-9WBJV41K0G" />
       </body>
-
-      <GoogleAnalytics gaId="G-9WBJV41K0G" />
     </html>
   );
 }
