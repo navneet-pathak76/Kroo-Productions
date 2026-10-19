@@ -42,12 +42,13 @@ export async function POST(request: Request) {
 
     let transcode: Awaited<ReturnType<typeof submitWebCompatibleTranscode>> = null;
     if (metadata.mediaKind === "video") {
-      transcode = await submitWebCompatibleTranscode(objectKey);
-      if (!transcode) {
-        return NextResponse.json(
-          { error: "Video uploaded, but browser-compatible transcoding is not configured. Set AWS_MEDIACONVERT_ROLE_ARN in Vercel before publishing videos." },
-          { status: 503 },
-        );
+      try {
+        transcode = await submitWebCompatibleTranscode(objectKey);
+      } catch (transcodeError) {
+        // Transcoding is an enhancement, not a reason to lose an otherwise
+        // valid upload. Keep the original as the playable fallback and log
+        // the job-submission failure for diagnosis.
+        console.error("[admin/media/complete] MediaConvert submission failed; retaining original upload", transcodeError);
       }
     }
 
