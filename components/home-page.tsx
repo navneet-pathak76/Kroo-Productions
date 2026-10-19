@@ -1879,12 +1879,13 @@ function ProjectsSection() {
               separately hoverable/clickable target.
             */}
             <div className="pointer-events-none relative aspect-[1.15] overflow-hidden">
-              <Image
+              <img
                 src={project.image}
                 alt={project.title}
-                fill
-                sizes="(max-width:768px) 100vw, 700px"
-                className="object-cover transition duration-700 group-hover:scale-105"
+                loading={isActive ? "eager" : "lazy"}
+                decoding="async"
+                className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
+                draggable={false}
               />
 
               <div className="absolute inset-0 bg-black/35" />
