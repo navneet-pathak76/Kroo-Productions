@@ -1889,6 +1889,20 @@ function ProjectsSection() {
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
                 draggable={false}
+                onError={(event) => {
+                  // Keep a visible project thumbnail if a large legacy PNG
+                  // fails to decode or the image optimizer cannot serve it.
+                  const fallbackByTitle: Record<string, string> = {
+                    PRODUCTS: "/images/projects/products.svg",
+                    "REAL ESTATE": "/images/projects/real-estate.svg",
+                  };
+                  const fallback = fallbackByTitle[project.title];
+                  if (fallback && event.currentTarget.dataset.fallbackApplied !== "true") {
+                    event.currentTarget.dataset.fallbackApplied = "true";
+                    event.currentTarget.src = fallback;
+                    event.currentTarget.srcset = "";
+                  }
+                }}
               />
 
               <div className="absolute inset-0 bg-black/35" />
