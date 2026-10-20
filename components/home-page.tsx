@@ -1879,13 +1879,30 @@ function ProjectsSection() {
               separately hoverable/clickable target.
             */}
             <div className="pointer-events-none relative aspect-[1.15] overflow-hidden">
-              <img
+              <Image
                 src={project.image}
                 alt={project.title}
+                fill
+                sizes="(max-width: 640px) 90vw, (max-width: 1024px) 60vw, 35vw"
+                quality={80}
                 loading={isActive ? "eager" : "lazy"}
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
                 draggable={false}
+                onError={(event) => {
+                  // Keep a visible project thumbnail if a large legacy PNG
+                  // fails to decode or the image optimizer cannot serve it.
+                  const fallbackByTitle: Record<string, string> = {
+                    PRODUCTS: "/images/projects/products.svg",
+                    "REAL ESTATE": "/images/projects/real-estate.svg",
+                  };
+                  const fallback = fallbackByTitle[project.title];
+                  if (fallback && event.currentTarget.dataset.fallbackApplied !== "true") {
+                    event.currentTarget.dataset.fallbackApplied = "true";
+                    event.currentTarget.src = fallback;
+                    event.currentTarget.srcset = "";
+                  }
+                }}
               />
 
               <div className="absolute inset-0 bg-black/35" />
@@ -2226,7 +2243,7 @@ function Footer() {
               alt="Kroo Production"
               width={170}
               height={60}
-              priority
+              loading="lazy"
               className="h-12 w-auto"
             />
           </div>
