@@ -35,17 +35,17 @@ export default async function ClubsContentPage() {
     videos,
     gallery: {
       title: <><span>A CURATED COLLECTION OF OUR</span><br />CINEMATIC CLUB PRODUCTIONS</>,
-      copy: "Event films, aftermovies and social edits built with rhythm, contrast and nightlife-led intent.",
+      copy: "Event promos, aftermovies and social-first edits built around the energy of the venue and the audience.",
     },
     about: {
       intro:
-        "This section will later contain final client-approved details. For now, it reflects the intended production approach for a premium club content system.",
+        "We create nightlife campaigns and event films that capture the atmosphere, build anticipation and give audiences a reason to show up.",
       details: [
         { title: "Creative Direction", copy: "The visual direction leans into high-energy movement, premium contrast and sharp brand recall. Each sequence is planned around the energy of the crowd and the commercial message behind the event.", icon: Target },
         { title: "Camera And Lighting", copy: "Dynamic gimbal movement, low-light crowd frames and controlled practical lighting create a polished nightlife environment without losing the energy of the real event.", icon: Film },
         { title: "Post Workflow", copy: "The edit is structured for retention first: fast hooks, clean pacing, sound-led transitions, precise color separation and motion graphics that support the brand instead of overpowering it.", icon: Sparkles },
       ],
-      marketingGoals: <>Build instant credibility, make the venue feel aspirational,<br />and turn club content into a conversion asset across ads, reels, website sections and sales conversations.</>,
+      marketingGoals: <>Build anticipation before the event,<br />and keep the venue in the conversation with promotional films, reels and aftermovies.</>,
     },
   } satisfies ProjectPageConfig;
 
