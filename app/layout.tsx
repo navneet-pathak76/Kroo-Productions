@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 },
 
 description:
-  "Kroo Production is a leading video production company in India creating commercial films, brand videos, corporate films, social media content, product photography, motion graphics and post-production services.",
+  "Kroo Production is a Kolkata-based creative production studio creating commercial films, brand content, social videos, motion graphics and post-production for brands across India.",
 
 creator: "Kroo Production",
 publisher: "Kroo Production",
@@ -66,7 +66,7 @@ keywords: [
   title: "Video Production Company in India | Commercial Films & Brand Content | Kroo Production",
 
   description:
-    "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
+    "Kroo Production is a Kolkata-based creative production studio producing brand films, commercials, social content, product visuals and motion graphics for brands across India.",
 
   url: "https://www.krooproduction.in",
 
@@ -90,7 +90,7 @@ keywords: [
   card: "summary_large_image",
   title: "Video Production Company in India | Commercial Films & Brand Content | Kroo Production",
   description:
-    "Kroo Production is a creative video production company in Kolkata specializing in brand films, commercial videos, social media content, product advertisements, motion graphics, and cinematic storytelling for ambitious brands.",
+    "Kroo Production is a Kolkata-based creative production studio producing brand films, commercials, social content, product visuals and motion graphics for brands across India.",
   images: ["/og-image.jpg"],
 },
   icons: {
