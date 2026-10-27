@@ -52,7 +52,6 @@ import {
   founders,
   projects,
   services,
-  stats,
   testimonials,
 } from "@/lib/content";
 import { cn } from "@/lib/utils";
@@ -1518,29 +1517,38 @@ WE MAKE BRANDS
 }
 
 function StatsSection() {
+  const proofPoints = [
+    {
+      title: "Creative direction",
+      copy: "Concepts shaped around your brand, audience and campaign objective.",
+      icon: Aperture,
+    },
+    {
+      title: "End-to-end production",
+      copy: "One coordinated workflow from pre-production through final delivery.",
+      icon: Clapperboard,
+    },
+    {
+      title: "Platform-ready content",
+      copy: "Commercial films, campaign assets and social-first edits.",
+      icon: MonitorPlay,
+    },
+    {
+      title: "Pan-India production",
+      copy: "Kolkata based, with production planned across India.",
+      icon: MapPin,
+    },
+  ];
+
   return (
-    <section className="relative z-10 scroll-mt-28 px-5 py-5 sm:px-8 sm:py-8 lg:py-16">
-      <div className="absolute left-1/2 top-1/2 -z-20 h-[560px] w-[1400px] -translate-x-1/2 -translate-y-1/2 rounded-[28px] bg-[radial-gradient(circle_at_center,rgba(255,90,0,0.18)_0%,rgba(255,90,0,0.08)_30%,rgba(255,255,255,0.015)_55%,transparent_80%)] blur-[120px] opacity-70" />
-      <div className="relative z-20 mx-auto grid max-w-[1480px] translate-y-0 grid-cols-4 gap-1 rounded-[28px] border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-2 py-3 shadow-[0_20px_80px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04),0_0_80px_rgba(255,77,18,0.08)] backdrop-blur-xl sm:translate-y-[-40px] sm:grid-cols-4 sm:gap-4 sm:px-8 sm:py-10 xl:px-10">
-        {stats.map((stat) => (
-          <div
-            key={stat.label}
-            data-reveal
-            className="relative flex min-h-0 flex-col items-center gap-1 border border-transparent bg-transparent p-1.5 text-center transition duration-[400ms] ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1.5 sm:block sm:min-h-40 sm:gap-0 sm:p-7 sm:text-left"
-            >
-              <>
-                <stat.icon className="shrink-0 text-primary sm:hidden" size={16} />
-                <stat.icon className="hidden shrink-0 text-primary sm:mb-7 sm:block" size={24} />
-              </>
-              <div>
-                <p className="text-lg font-black leading-none text-white sm:text-5xl">
-                  <CountUp value={stat.value} suffix={stat.suffix} />
-                </p>
-                <p className="mt-0.5 text-[8px] leading-tight font-bold uppercase tracking-[0.04em] text-white/60 sm:mt-3 sm:text-sm sm:tracking-[0.08em] sm:leading-normal">
-                  {stat.label}
-                </p>
-              </div>
-          </div>
+    <section aria-label="Kroo Production capabilities" className="relative z-10 px-5 py-5 sm:px-8 sm:py-8 lg:py-16">
+      <div className="relative mx-auto grid max-w-[1480px] grid-cols-2 gap-3 rounded-[28px] border border-white/[0.08] bg-[linear-gradient(180deg,rgba(255,255,255,0.05),transparent),rgba(10,10,10,0.75)] px-3 py-4 backdrop-blur-xl sm:grid-cols-2 sm:gap-4 sm:px-8 sm:py-8 lg:grid-cols-4">
+        {proofPoints.map((point) => (
+          <article key={point.title} data-reveal className="flex flex-col gap-3 rounded-xl border border-white/[0.06] p-4 sm:p-6">
+            <point.icon className="text-primary" size={22} aria-hidden="true" />
+            <h3 className="text-sm font-black uppercase tracking-[0.08em] text-white sm:text-base">{point.title}</h3>
+            <p className="text-xs leading-5 text-white/60 sm:text-sm sm:leading-6">{point.copy}</p>
+          </article>
         ))}
       </div>
     </section>
@@ -1581,7 +1589,7 @@ function ShowreelSection() {
   </h2>
 
   <p className="mt-6 max-w-md text-base leading-17 text-white/60">
-    Commercials, brand films, social campaigns and visual content crafted to turn attention into brand value.
+    Commercials, brand films, social campaigns and visual content built to earn attention, strengthen brands and drive action.
   </p>
 </div>
       <div
@@ -1788,7 +1796,7 @@ function ServicesSection() {
             WE BUILD THE WHOLE PICTURE.
           </>
         }
-        copy="From creative strategy to delivery masters, every frame is treated like a brand asset with cultural weight."
+        copy="From concept and production to post-production, we create brand films and platform-ready content around your audience and objective."
       />
 
       {/* DESKTOP — untouched, same grid/spacing/animation/component */}
@@ -1842,7 +1850,7 @@ function ProjectsSection() {
             YOU GET THE ATTENTION.
           </>
         }
-        copy="A selection of visual systems designed to travel from cinema screens to thumb-stopping social edits."
+        copy="A selection of work created for brands, businesses and audiences across platforms."
       />
 
       {/*
@@ -2082,7 +2090,7 @@ function ContactSection() {
 
   <p className="flex min-w-0 items-center gap-4">
     <MapPin className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" />
-    <span>Kolkata, India</span>
+    <span>Kolkata, India · Pan-India production</span>
   </p>
 </div>
 
@@ -2232,8 +2240,7 @@ function Footer() {
           </div>
 
           <p className="max-w-xs text-sm leading-6 text-white/50">
-            Cinematic storytelling through powerful visuals and purposeful
-            execution.
+            A creative production studio based in Kolkata, working with brands across India.
           </p>
         </div>
 
