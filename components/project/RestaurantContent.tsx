@@ -37,17 +37,17 @@ export default async function RestaurantContentPage() {
     featuredButtonLabel: "View projects",
     gallery: {
       title: <><span className="block">A CURATED COLLECTION OF OUR</span><span className="block">CINEMATIC RESTAURANT PRODUCTIONS</span></>,
-      copy: "Brand films, chef stories and food-forward social edits built to make every dish feel irresistible.",
+      copy: "Food films, chef stories and social-first edits designed to showcase the menu, atmosphere and experience.",
     },
     about: {
       intro:
-        "This section will later contain final client-approved details. For now, it reflects the intended production approach for a premium restaurant content system.",
+        "We create food films and hospitality content that help audiences experience the atmosphere, craft and character of a restaurant before they arrive.",
       details: [
         { title: "Creative Direction", copy: "The visual direction leans into warmth, texture and appetite appeal. Each sequence is planned around plating, ambience and the story the restaurant wants to tell before a guest ever sits down.", icon: Target },
         { title: "Food Cinematography", copy: "Macro detail shots, steam, sauce pours and controlled practical lighting turn every dish into a hero moment without losing the honesty of real ingredients.", icon: Flame },
         { title: "Post Production", copy: "The edit is structured for craving first: fast hooks, clean pacing, sound-led transitions, rich color separation and motion graphics that support the menu instead of overpowering it.", icon: Sparkles },
       ],
-      marketingGoals: <>Build instant appetite, make the restaurant feel like a destination,<br />and turn food content into a reservation-driving asset across ads, reels, website sections and delivery apps.</>,
+      marketingGoals: <>Showcase the menu and atmosphere,<br />and give audiences a reason to visit through ads, reels, websites and delivery platforms.</>,
     },
     cta: {
       title: <>Let&apos;s Make People Hungry Before They Visit.</>,
