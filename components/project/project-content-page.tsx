@@ -183,7 +183,7 @@ function ProjectFooter() {
             <span className="text-lg font-black uppercase tracking-[0.12em]">Kroo</span>
           </div>
           <p className="max-w-xs text-sm leading-6 text-white/50">
-            Cinematic storytelling through powerful visuals and purposeful execution.
+            A creative production studio based in Kolkata, working with brands across India.
           </p>
         </div>
         <div>
