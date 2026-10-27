@@ -2,6 +2,7 @@ import {
   Aperture,
   BadgeCheck,
   BarChart3,
+  MapPin,
   Bot,
   Camera,
   Clapperboard,
@@ -22,12 +23,7 @@ export const navItems = [
   { label: "Contact", href: "#contact" },
 ];
 
-export const stats = [
-  { value: 200, suffix: "+", label: "Projects Delivered", icon: Film },
-  { value: 50, suffix: "+", label: "Happy Clients", icon: Users },
-  { value: 20, suffix: "M+", label: "Views Generated", icon: Play },
-  { value: 5, suffix: "+", label: "Years of Experience", icon: Star },
-];
+export const stats = [];
 
 export const founders = [
   {
@@ -58,37 +54,37 @@ export const founders = [
 
 export const services = [
   {
-    title: "Video Production",
+    title: "Commercial & Brand Films",
     description:
-      "Commercials, social content, events, launches, and branded visual content.",
+      "Brand films, digital commercials, product films and launch campaigns built around a clear message.",
     icon: Clapperboard,
     span: "lg:col-span-2",
   },
   {
-    title: "Film Production",
+    title: "Social & Short-Form Content",
     description:
-      "Concept development, casting, crews, locations, lighting, and on-set direction.",
+      "Reels, campaign edits and platform-specific video for brands that need consistent content.",
+    icon: Megaphone,
+    span: "lg:col-span-1",
+  },
+  {
+    title: "Production & Direction",
+    description:
+      "Concept development, scripting, crew, locations, cinematography and on-set direction.",
     icon: Camera,
     span: "lg:col-span-1",
   },
   {
-    title: "Post Production",
+    title: "Post-Production",
     description:
-      "Editing, colour, motion graphics, sound design, VFX, and final delivery.",
+      "Editing, colour grading, motion graphics, sound design, VFX and final delivery.",
     icon: MonitorPlay,
-    span: "lg:col-span-1",
-  },
-  {
-    title: "Social Media",
-    description:
-      "Content strategy, social creatives, creator content, campaigns, and platform-ready content.",
-    icon: Megaphone,
     span: "lg:col-span-2",
   },
   {
-    title: "AI Content Production",
+    title: "AI & Visual Content",
     description:
-      "AI-powered visuals, commercials, product renders, virtual worlds, avatars, and branded content.",
+      "AI-assisted visuals, product concepts, generative environments and branded content where they add value.",
     icon: Bot,
     span: "lg:col-span-2",
   },
@@ -192,8 +188,8 @@ export const testimonials = [
 export const brandMarks = [];
 
 export const capabilities = [
-  { label: "Cinematic Direction", icon: Aperture },
-  { label: "Production Logistics", icon: BadgeCheck },
-  { label: "Digital Performance", icon: BarChart3 },
-  { label: "Motion Systems", icon: Sparkles },
+  { label: "Creative Direction", icon: Aperture, description: "Concepts shaped around your brand, audience and campaign objective." },
+  { label: "End-to-End Production", icon: BadgeCheck, description: "One coordinated workflow from pre-production through final delivery." },
+  { label: "Social-Ready Content", icon: BarChart3, description: "Commercial films, campaign assets and social-first edits." },
+  { label: "Pan-India Production", icon: MapPin, description: "Kolkata based, with production planned across India." },
 ];
