@@ -11,6 +11,9 @@ import {
 } from "react";
 import Image from "next/image";
 import {
+  Aperture,
+  Clapperboard,
+  MonitorPlay,
   ArrowRight,
   ArrowUpRight,
   CheckCircle2,
