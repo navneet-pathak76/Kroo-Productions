@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "Motion Graphics & Logo Animation | Kroo Production",
     description:
       "A premium project showcase for cinematic motion graphics and digital motion design content.",
-    url: "https://krooproduction.com/projects/motion-graphics-content",
+    url: "https://krooproduction.in/motion-graphics-content",
     siteName: "Kroo Production",
     type: "website",
   },
