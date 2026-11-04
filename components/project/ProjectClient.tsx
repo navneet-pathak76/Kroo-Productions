@@ -99,6 +99,8 @@ export type ProjectHeroProps = {
 export function ProjectHero({
   title,
   description,
+  thumbnail,
+  alt,
   featuredButtonLabel,
 }: ProjectHeroProps) {
   const capability = useDeviceCapability();
@@ -127,8 +129,9 @@ export function ProjectHero({
       <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_68%,transparent)]" />
 
       <div className="mx-auto max-w-[1480px] lg:min-h-[calc(92vh-10rem)] lg:flex lg:items-center">
+        <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]">
         <motion.div
-          className="relative z-10"
+          className="relative z-10 max-w-4xl lg:max-w-none"
           initial="hidden"
           animate="visible"
           transition={{ staggerChildren: 0.075 }}
@@ -169,6 +172,18 @@ export function ProjectHero({
             </Button>
           </motion.div>
         </motion.div>
+        <div className="relative hidden aspect-[4/5] w-full max-w-[440px] justify-self-end overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:block">
+          <Image
+            src={thumbnail}
+            alt={alt}
+            fill
+            priority
+            sizes="(min-width: 1024px) 34vw, 0px"
+            className="object-cover"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+        </div>
+        </div>
       </div>
     </section>
   );
@@ -719,8 +734,15 @@ export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
 
   if (videos.length === 0) {
     return (
-      <div className="mx-auto max-w-[1480px] rounded-md border border-white/10 bg-white/[0.025] px-5 py-10 text-center text-sm leading-6 text-white/55">
-        Media is not available in this environment.
+      <div className="mx-auto max-w-[1480px] rounded-md border border-white/10 bg-white/[0.025] px-6 py-12 text-center">
+        <p className="text-xs font-black uppercase tracking-[0.28em] text-primary">Portfolio update</p>
+        <h3 className="mt-4 text-xl font-black uppercase tracking-tight text-white sm:text-2xl">New work is being added</h3>
+        <p className="mx-auto mt-3 max-w-xl text-sm leading-6 text-white/60">
+          This gallery is being updated. Contact Kroo Production for relevant work samples and campaign enquiries.
+        </p>
+        <a href="mailto:team@krooproduction.in" className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/20 px-5 py-3 text-xs font-black uppercase tracking-[0.16em] text-white transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          Request work samples <ArrowRight size={15} />
+        </a>
       </div>
     );
   }
