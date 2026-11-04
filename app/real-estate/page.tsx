@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "Real Estate Content | Kroo Production",
     description:
       "A premium project showcase for cinematic real estate walkthroughs and commercial property content.",
-    url: "https://krooproduction.com/projects/real-estate-content",
+    url: "https://krooproduction.in/real-estate",
     siteName: "Kroo Production",
     type: "website",
   },
