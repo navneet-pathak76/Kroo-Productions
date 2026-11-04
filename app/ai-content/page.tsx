@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "AI Video Production | Kroo Production",
     description:
       "A premium project showcase for AI-generated commercials, campaigns and concept films.",
-    url: "https://krooproduction.com/projects/ai-content",
+    url: "https://krooproduction.in/ai-content",
     siteName: "Kroo Production",
     type: "website",
   },
