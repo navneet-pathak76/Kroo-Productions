@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     title: "Clubs Content | Kroo Production",
     description:
       "A premium project showcase for cinematic club productions and nightlife event content.",
-    url: "https://krooproduction.com/projects/clubs-content",
+    url: "https://krooproduction.in/clubs-content",
     siteName: "Kroo Production",
     type: "website",
   },
