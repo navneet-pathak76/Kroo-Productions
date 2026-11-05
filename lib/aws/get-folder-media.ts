@@ -164,13 +164,12 @@ export function resolveMediaPrefixes(folder: string): ResolvedMediaPrefixes {
   const projectFolder = resolveProjectFolder(folder, projectSlug);
   const realFolder = REAL_FOLDER_OVERRIDES[projectSlug] ?? projectFolder;
 
+  // Keep every portfolio page isolated to its one canonical S3 folder.
+  // The media/ prefix is retained only as the parallel admin-upload location
+  // for that same category; never merge slug aliases or another category.
   const prefixes = uniquePrefixes(
     `videos/${realFolder}/`,
-    `videos/${projectFolder}/`,
-    `videos/${normalizeSlug(folder)}/`,
     `media/${realFolder}/`,
-    `media/${projectFolder}/`,
-    `media/${normalizeSlug(folder)}/`,
   );
 
   return { projectSlug, projectFolder, prefixes };
