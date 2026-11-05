@@ -13,7 +13,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, Maximize, Play } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
@@ -705,7 +704,7 @@ export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
 
   return (
     <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 sm:gap-4 lg:gap-5">
-      {videos.map((video, index) => (
+      {videos.map((video) => (
         <VideoCard
           key={video.id}
           video={video}
