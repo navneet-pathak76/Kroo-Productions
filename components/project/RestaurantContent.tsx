@@ -19,7 +19,7 @@ export default async function RestaurantContentPage() {
     description:
       "Cinematic restaurant films, food storytelling and hospitality content that turns viewers into customers.",
     hero: {
-      thumbnail: "/images/gym-content/hero-thumb.svg",
+      thumbnail: "/images/restaurant-content/hero-thumb.svg",
       alt: "Restaurant Content project thumbnail",
       icon: ChefHat,
       accentIcon: Flame,
