@@ -963,7 +963,7 @@ function SpatialCard({
         marginLeft: -cardWidth / 2,
         willChange: "transform",
         zIndex: style.zIndex,
-        pointerEvents: isActive ? "auto" : "none",
+        pointerEvents: "auto",
         x: reducedMotion ? undefined : dragX,
       }}
     >
