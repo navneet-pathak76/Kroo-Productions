@@ -13,7 +13,6 @@ import { motion } from "framer-motion";
 import { ArrowRight, Maximize, Play } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { useDeviceCapability } from "@/hooks/use-device-capability";
 import { useGsapReveal } from "@/hooks/use-gsap-reveal";
 import { useLenis } from "@/hooks/use-lenis";
 import { useMagnetic } from "@/hooks/use-magnetic";
@@ -264,15 +263,12 @@ function VideoThumbnail({
   src,
   active,
   previewing = false,
-  eagerOnMobile = false,
-  mobilePerformance = false,
+  poster,
 }: {
   src: string;
+  poster?: string;
   active: boolean;
   previewing?: boolean;
-  /** Keep only the first couple of mobile cards warm; the rest load on tap. */
-  eagerOnMobile?: boolean;
-  mobilePerformance?: boolean;
 }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -281,11 +277,13 @@ function VideoThumbnail({
   const [mediaError, setMediaError] = useState<string | null>(null);
   const { effectiveSrc, tryFallback } = useResilientMediaSrc(src);
 
-  const isMobilePerformance = Boolean(mobilePerformance);
+  // The card itself remains lightweight. Mount the video only when the
+  // user activates it or invokes the existing desktop hover preview.
+  const shouldLoadVideo = active || previewing;
 
   const { ref: inViewRef, inView } = useInView({
     triggerOnce: true,
-    rootMargin: isMobilePerformance ? "80px" : "400px",
+    rootMargin: "120px",
   });
 
   useEffect(() => {
@@ -479,21 +477,23 @@ function VideoThumbnail({
           transition: `width 320ms ${PREVIEW_EASE}, height 320ms ${PREVIEW_EASE}, box-shadow 320ms ${PREVIEW_EASE}`,
         }}
       >
-        {inView &&
-          effectiveSrc &&
-          (!isMobilePerformance || active || previewing || eagerOnMobile) && (
+        {poster && inView && !shouldLoadVideo && (
+          <Image
+            src={poster}
+            alt=""
+            fill
+            sizes="(max-width:768px) 50vw, 33vw"
+            loading="lazy"
+            className="object-cover"
+          />
+        )}
+        {inView && shouldLoadVideo && effectiveSrc && (
           <video
             key={effectiveSrc}
             ref={setVideoRef}
             loop
             playsInline
-            preload={
-              active || previewing
-                ? "auto"
-                : isMobilePerformance
-                  ? "metadata"
-                  : "metadata"
-            }
+            preload="none"
             aria-hidden
             tabIndex={-1}
             onLoadedMetadata={handleLoadedMetadata}
@@ -520,6 +520,11 @@ function VideoThumbnail({
           >
             <source src={effectiveSrc} type={getVideoMimeType(effectiveSrc)} />
           </video>
+        )}
+        {!poster && !shouldLoadVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/35" aria-hidden>
+            <Play size={28} className="text-white/75" />
+          </div>
         )}
         <KrooWatermark />
         {inView && mediaError && (
@@ -597,14 +602,10 @@ function VideoCard({
   video,
   isActive,
   onToggle,
-  eagerOnMobile = false,
-  mobilePerformance = false,
 }: {
   video: ProjectVideo;
   isActive: boolean;
   onToggle: () => void;
-  eagerOnMobile?: boolean;
-  mobilePerformance?: boolean;
 }) {
   const cellRef = useRef<HTMLDivElement>(null);
 
@@ -669,10 +670,9 @@ function VideoCard({
         ) : (
           <VideoThumbnail
             src={video.video!}
+            poster={video.thumbnail}
             active={isActive}
             previewing={isPreviewing}
-            eagerOnMobile={eagerOnMobile}
-            mobilePerformance={mobilePerformance}
           />
         )}
       </div>
@@ -686,11 +686,6 @@ function VideoCard({
  */
 export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
   const [activeId, setActiveId] = useState<number | null>(null);
-  const capability = useDeviceCapability();
-  const mobilePerformance =
-    capability.touch ||
-    capability.pointer === "coarse" ||
-    capability.viewportWidth <= 768;
 
   if (videos.length === 0) {
     return (
@@ -709,13 +704,11 @@ export function ProjectGallery({ videos }: { videos: ProjectVideo[] }) {
 
   return (
     <div className="mx-auto grid max-w-[1480px] grid-cols-2 gap-3 overflow-visible sm:grid-cols-3 sm:gap-4 lg:gap-5">
-      {videos.map((video, index) => (
+      {videos.map((video) => (
         <VideoCard
           key={video.id}
           video={video}
           isActive={activeId === video.id}
-          eagerOnMobile={index < 2}
-          mobilePerformance={mobilePerformance}
           onToggle={() =>
             setActiveId((prev) => (prev === video.id ? null : video.id))
           }
