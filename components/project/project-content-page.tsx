@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Activity, ArrowUpRight, Instagram, Linkedin, Youtube } from "lucide-react";
+import { ArrowUpRight, Instagram, Linkedin, Youtube } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -232,9 +232,6 @@ function ProjectFooter() {
 }
 
 export default function ProjectContentPage({ config }: { config: ProjectPageConfig }) {
-  const HeroIcon = config.hero.icon;
-  const AccentIcon = config.hero.accentIcon ?? Activity;
-
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#020202] text-white">
       <Ambient />
@@ -245,13 +242,7 @@ export default function ProjectContentPage({ config }: { config: ProjectPageConf
         <ProjectHero
           title={config.title}
           description={config.description}
-          thumbnail={config.hero.thumbnail}
-          alt={config.hero.alt}
-          label={config.hero.label}
-          visualTitle={config.hero.visualTitle}
           featuredButtonLabel={config.featuredButtonLabel}
-          heroIcon={<HeroIcon size={27} />}
-          accentIcon={<AccentIcon size={32} />}
         />
 
         <section id="work" className="relative scroll-mt-28 overflow-visible px-5 py-16 sm:px-8 lg:py-20">

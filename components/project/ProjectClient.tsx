@@ -7,10 +7,9 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { useInView } from "react-intersection-observer";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { ArrowRight, Maximize, Play } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -69,14 +68,14 @@ export function ProjectPageEffects() {
 const revealEase = [0.22, 1, 0.36, 1] as [number, number, number, number];
 
 const fadeUp = {
-  hidden: { y: 32, opacity: 0, filter: "blur(10px)" },
+  hidden: { y: 20, opacity: 0, filter: "blur(4px)" },
   visible: (i = 0) => ({
     y: 0,
     opacity: 1,
     filter: "blur(0px)",
     transition: {
-      delay: i * 0.08,
-      duration: 0.82,
+      delay: i * 0.04,
+      duration: 0.48,
       ease: revealEase,
     },
   }),
@@ -85,57 +84,29 @@ const fadeUp = {
 export type ProjectHeroProps = {
   title: string;
   description: string;
-  thumbnail: string;
-  alt: string;
-  label: string;
-  visualTitle: string;
   featuredButtonLabel?: string;
-  /** Pre-rendered on the server as `<config.hero.icon size={27} />`. */
-  heroIcon: ReactNode;
-  /** Pre-rendered on the server as `<config.hero.accentIcon size={32} />`. */
-  accentIcon: ReactNode;
 };
 
 export function ProjectHero({
   title,
   description,
-  thumbnail,
-  alt,
   featuredButtonLabel,
 }: ProjectHeroProps) {
-  const capability = useDeviceCapability();
-  const ref = useRef<HTMLElement>(null);
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  const y = useTransform(scrollYProgress, [0, 1], [0, 82]);
-  const scale = useTransform(scrollYProgress, [0, 1], [1, 0.965]);
-  const reduceEffects =
-    capability.reducedMotion ||
-    capability.performanceTier === "LOW" ||
-    capability.saveData ||
-    capability.touch ||
-    capability.pointer === "coarse";
-
   return (
     <section
       id="home"
-      ref={ref}
       className="relative scroll-mt-28 overflow-hidden px-5 pb-16 pt-32 sm:px-8 lg:min-h-[92svh] lg:px-5 lg:pb-20 lg:pt-40"
     >
       <div className="pointer-events-none absolute right-[-16rem] top-10 h-[44rem] w-[44rem] rounded-full bg-primary/20 blur-[120px]" />
       <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-72 bg-[radial-gradient(ellipse_at_72%_100%,rgba(255,77,18,0.44),transparent_64%)]" />
       <div className="pointer-events-none absolute inset-0 opacity-30 [background-image:linear-gradient(rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:80px_80px] [mask-image:linear-gradient(to_bottom,transparent,black_18%,black_68%,transparent)]" />
 
-      <div className="mx-auto max-w-[1480px] lg:min-h-[calc(92vh-10rem)] lg:flex lg:items-center">
-        <div className="relative grid items-center gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(280px,0.72fr)]">
+      <div className="mx-auto flex min-h-[min(76svh,760px)] max-w-[1480px] items-center">
         <motion.div
-          className="relative z-10 max-w-4xl lg:max-w-none"
+          className="relative z-10 w-full max-w-6xl"
           initial="hidden"
           animate="visible"
-          transition={{ staggerChildren: 0.075 }}
-          style={{ y: reduceEffects ? 0 : y, scale: reduceEffects ? 1 : scale }}
+          transition={{ staggerChildren: 0.04 }}
         >
           <motion.p
             variants={fadeUp}
@@ -172,18 +143,7 @@ export function ProjectHero({
             </Button>
           </motion.div>
         </motion.div>
-        <div className="relative hidden aspect-[4/5] w-full max-w-[440px] justify-self-end overflow-hidden rounded-xl border border-white/10 bg-white/[0.03] shadow-[0_30px_100px_rgba(0,0,0,0.45)] lg:block">
-          <Image
-            src={thumbnail}
-            alt={alt}
-            fill
-            priority
-            sizes="(min-width: 1024px) 34vw, 0px"
-            className="object-cover"
-          />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-        </div>
-        </div>
+
       </div>
     </section>
   );
