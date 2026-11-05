@@ -1,5 +1,5 @@
 import "server-only";
-import { unstable_noStore as noStore } from "next/cache";
+import { unstable_cache } from "next/cache";
 import {
   GetObjectCommand,
   ListObjectsV2Command,
@@ -167,9 +167,12 @@ export function resolveMediaPrefixes(folder: string): ResolvedMediaPrefixes {
   // Keep every portfolio page isolated to its one canonical S3 folder.
   // The media/ prefix is retained only as the parallel admin-upload location
   // for that same category; never merge slug aliases or another category.
+  // Public legacy assets keep their verified bucket names (e.g. FOOD),
+  // while the admin uploader uses the stable project slug (e.g. restaurant).
+  // Resolve both explicitly so uploads appear on the correct page only.
   const prefixes = uniquePrefixes(
     `videos/${realFolder}/`,
-    `media/${realFolder}/`,
+    `media/${projectFolder}/`,
   );
 
   return { projectSlug, projectFolder, prefixes };
@@ -236,13 +239,14 @@ export async function locatePopulatedPrefix(
 export async function locateAllPopulatedPrefixes(
   prefixes: string[],
 ): Promise<{ prefix: string; objects: S3Object[] }[]> {
-  const results: { prefix: string; objects: S3Object[] }[] = [];
-  for (const prefix of prefixes) {
-    const listed = await listAllObjects(prefix);
-    console.log(`[getFolderMedia] "${prefix}" -> ${listed.length} object(s)`);
-    if (listed.length > 0) results.push({ prefix, objects: listed });
-  }
-  return results;
+  const listedPrefixes = await Promise.all(
+    prefixes.map(async (prefix) => {
+      const objects = await listAllObjects(prefix);
+      console.log(`[getFolderMedia] "${prefix}" -> ${objects.length} object(s)`);
+      return { prefix, objects };
+    }),
+  );
+  return listedPrefixes.filter(({ objects }) => objects.length > 0);
 }
 
 function isOrderManifestKey(key: string): boolean {
@@ -424,11 +428,10 @@ function processedStem(key: string): string {
  * control display order without ever renaming/moving the underlying S3
  * objects — see applySavedOrder / readOrderManifest above.
  */
-export async function getFolderMedia(
+async function loadFolderMedia(
   folder: string,
   meta: { category: string; client: string; services: string[] },
 ): Promise<MediaItem[]> {
-  noStore();
 
   const { projectSlug, projectFolder, prefixes } = resolveMediaPrefixes(folder);
 
@@ -497,4 +500,23 @@ export async function getFolderMedia(
     client: meta.client,
     services: meta.services,
   }));
+}
+
+/**
+ * Cache the S3-backed gallery briefly so project navigation does not wait
+ * for repeated bucket listings and order-manifest reads on every request.
+ * Admin changes naturally appear within 30 seconds without serving stale
+ * media for long periods.
+ */
+export async function getFolderMedia(
+  folder: string,
+  meta: { category: string; client: string; services: string[] },
+): Promise<MediaItem[]> {
+  const { projectSlug } = resolveMediaPrefixes(folder);
+  const getCachedMedia = unstable_cache(
+    () => loadFolderMedia(folder, meta),
+    ["project-media-v2", projectSlug, JSON.stringify(meta)],
+    { revalidate: 30, tags: [`project-media-${projectSlug}`] },
+  );
+  return getCachedMedia();
 }
