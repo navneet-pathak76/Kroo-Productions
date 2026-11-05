@@ -2,6 +2,18 @@ import type { MetadataRoute } from "next";
 
 const baseUrl = "https://krooproduction.in";
 
+const projectRoutes = [
+  "/gym-content",
+  "/clothing-content",
+  "/clubs-content",
+  "/motion-graphics-content",
+  "/restaurant-content",
+  "/real-estate",
+  "/product-content",
+  "/ai-content",
+  "/digital-marketing-content",
+];
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const lastModified = new Date();
 
@@ -12,29 +24,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 1,
     },
-    {
-      url: `${baseUrl}/gym-content`,
+    ...projectRoutes.map((route) => ({
+      url: `${baseUrl}${route}`,
       lastModified,
-      changeFrequency: "monthly",
+      changeFrequency: "monthly" as const,
       priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/clubs-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/clothing-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
-    {
-      url: `${baseUrl}/motion-graphics-content`,
-      lastModified,
-      changeFrequency: "monthly",
-      priority: 0.9,
-    },
+    })),
   ];
 }

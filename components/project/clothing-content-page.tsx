@@ -39,7 +39,7 @@ export default async function ClothingContentPage() {
     },
     about: {
       intro:
-        "This section will later contain final client-approved details. For now, it reflects the intended production approach for a premium fashion content system.",
+        "Our fashion production approach is built around the garment, the styling and the brand message. The final treatment is shaped to the campaign brief, from product-led detail to lifestyle storytelling.",
       details: [
         { title: "Creative Direction", copy: "The visual direction leans into elevated styling, premium contrast and sharp brand recall. Each sequence is planned around the movement of the garment and the commercial message behind the campaign.", icon: Target },
         { title: "Camera And Lighting", copy: "Dynamic gimbal movement, locked-off product frames and controlled practical lighting create a polished fashion environment without losing the texture of real fabric.", icon: Film },

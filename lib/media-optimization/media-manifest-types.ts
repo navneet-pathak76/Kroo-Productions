@@ -47,7 +47,7 @@ export const PROJECT_OPTIONS: MediaProjectOption[] = [
   { slug: "product", title: "Products", route: "/product-content", folder: "product" },
   { slug: "ai", title: "AI Videos", route: "/ai-content", folder: "ai" },
   { slug: "digital-marketing", title: "Social Media", route: "/digital-marketing-content", folder: "digital-marketing" },
-  { slug: "logo-graphics", title: "Logo & Graphics", route: "/logo-graphics-content", folder: "logo-graphics" },
+  { slug: "logo-graphics", title: "Logo & Graphics", route: "/motion-graphics-content", folder: "logo-graphics" },
 ];
 
 export function getProjectOptions(): MediaProjectOption[] {
